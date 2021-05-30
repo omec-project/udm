@@ -7,6 +7,7 @@ package factory
 import (
 	"fmt"
 	"io/ioutil"
+	"reflect"
 
 	"gopkg.in/yaml.v2"
 
@@ -30,6 +31,37 @@ func InitConfigFactory(f string) error {
 	return nil
 }
 
+func UpdateUdmConfig(f string) error {
+	if content, err := ioutil.ReadFile(f); err != nil {
+		return err
+	} else {
+		var udmConfig Config
+
+		if yamlErr := yaml.Unmarshal(content, &udmConfig); yamlErr != nil {
+			return yamlErr
+		}
+		//Checking which config has been changed
+		if reflect.DeepEqual(UdmConfig.Configuration.UdmName, udmConfig.Configuration.UdmName) == false {
+			logger.CfgLog.Infoln("updated Udm Name ", udmConfig.Configuration.UdmName)
+		}
+		if reflect.DeepEqual(UdmConfig.Configuration.Sbi, udmConfig.Configuration.Sbi) == false {
+			logger.CfgLog.Infoln("updated Sbi ", udmConfig.Configuration.Sbi)
+		}
+		if reflect.DeepEqual(UdmConfig.Configuration.ServiceNameList, udmConfig.Configuration.ServiceNameList) == false {
+			logger.CfgLog.Infoln("updated ServiceNameList ", udmConfig.Configuration.ServiceNameList)
+		}
+		if reflect.DeepEqual(UdmConfig.Configuration.NrfUri, udmConfig.Configuration.NrfUri) == false {
+			logger.CfgLog.Infoln("updated NrfUri ", udmConfig.Configuration.NrfUri)
+		}
+		if reflect.DeepEqual(UdmConfig.Configuration.Keys, udmConfig.Configuration.Keys) == false {
+			logger.CfgLog.Infoln("updated Keys ", udmConfig.Configuration.Keys)
+		}
+
+		UdmConfig = udmConfig
+	}
+
+	return nil
+}
 func CheckConfigVersion() error {
 	currentVersion := UdmConfig.GetVersion()
 

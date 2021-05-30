@@ -4,6 +4,8 @@ go 1.14
 
 require (
 	github.com/antihax/optional v1.0.0
+    github.com/fsnotify/fsnotify v1.4.7
+    github.com/spf13/viper v1.7.1
 	github.com/antonfisher/nested-logrus-formatter v1.3.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/free5gc/UeauCommon v1.0.0

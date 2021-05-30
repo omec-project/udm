@@ -11,6 +11,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"github.com/spf13/viper"
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/free5gc/http2_util"
 	"github.com/free5gc/logger_util"
@@ -84,9 +86,29 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 		return err
 	}
 
+	viper.SetConfigName("udmcfg.conf") 
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("/free5gc/config")
+	err := viper.ReadInConfig() // Find and read the config file
+	if err != nil { // Handle errors reading the config file
+		return err
+	}
 	return nil
 }
 
+func (udm *UDM) WatchConfig() {
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		fmt.Println("Config file changed:", e.Name)
+		if err := factory.UpdateUdmConfig("/free5gc/config/udmcfg.conf"); err != nil {
+			fmt.Println("error in loading updated configuration")
+		} else {
+			self := context.UDM_Self()
+			util.InitUDMContext(self)
+			fmt.Println("successfully updated configuration")
+		}
+	})
+}
 func (udm *UDM) setLogLevel() {
 	if factory.UdmConfig.Logger == nil {
 		initLog.Warnln("UDM config without log level setting!!!")

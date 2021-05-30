@@ -39,6 +39,8 @@ func action(c *cli.Context) error {
 		return fmt.Errorf("Failed to initialize !!")
 	}
 
+	UDM.WatchConfig()
+
 	UDM.Start()
 
 	return nil
