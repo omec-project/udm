@@ -100,7 +100,7 @@ func (udm *UDM) WatchConfig() {
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
 		fmt.Println("Config file changed:", e.Name)
-		if err := factory.UpdateUdmConfig("/free5gc/config/udmcfg.conf"); err != nil {
+		if err := factory.UpdateUdmConfig(e.Name + "/udmcfg.conf"); err != nil {
 			fmt.Println("error in loading updated configuration")
 		} else {
 			self := context.UDM_Self()
