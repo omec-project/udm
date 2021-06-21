@@ -3,11 +3,13 @@ package service
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -28,6 +30,8 @@ import (
 	"github.com/free5gc/udm/ueauthentication"
 	"github.com/free5gc/udm/uecontextmanagement"
 	"github.com/free5gc/udm/util"
+	gClient "github.com/omec-project/udm/proto/client"
+	"google.golang.org/grpc/connectivity"
 )
 
 type UDM struct{}
@@ -156,6 +160,49 @@ func (udm *UDM) FilterCli(c *cli.Context) (args []string) {
 	return args
 }
 
+func getConfigClient() (*gClient.ConfigClient, error) {
+	//var confClient *gClient.ConfigClient
+	confClient, err := gClient.CreateChannel("webui:9876", 10000)
+	if err != nil {
+		log.Println("create grpc channel to config pod failed. : ", err)
+		return nil, err
+	}
+
+	return confClient, nil
+}
+
+func readConfigInLoop(confClient *gClient.ConfigClient) {
+	connReady := make(chan bool)
+	go func() {
+		for {
+			status := confClient.Conn.GetState()
+			if status == connectivity.Ready {
+				connReady <- true
+			}
+		}
+	}()
+
+	configReadTimeout := time.NewTicker(5000 * time.Millisecond)
+	for {
+		select {
+		case <-configReadTimeout.C:
+			select {
+			case ok := <-connReady:
+				if ok {
+					var cResp gClient.ConfigResp
+					err := confClient.ReadConfig(&cResp)
+					if err != nil {
+						log.Println("read config from webconsole failed : ", err)
+						continue
+					}
+				}
+			default:
+				log.Println("client connection not ready")
+			}
+		}
+	}
+}
+
 func (udm *UDM) Start() {
 	config := factory.UdmConfig
 	configuration := config.Configuration
@@ -212,6 +259,10 @@ func (udm *UDM) Start() {
 		os.Exit(0)
 	}()
 
+	confClient, err := getConfigClient()
+	if err == nil {
+		go readConfigInLoop(confClient)
+	}
 	server, err := http2_util.NewServer(addr, udmLogPath, router)
 	if server == nil {
 		initLog.Errorf("Initialize HTTP server failed: %+v", err)
