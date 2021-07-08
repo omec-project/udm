@@ -11,6 +11,7 @@ package factory
 
 import (
 	"github.com/free5gc/logger_util"
+	"github.com/free5gc/openapi/models"
 )
 
 const (
@@ -40,6 +41,7 @@ type Configuration struct {
 	ServiceNameList []string `yaml:"serviceNameList,omitempty"`
 	NrfUri          string   `yaml:"nrfUri,omitempty"`
 	Keys            *Keys    `yaml:"keys,omitempty"`
+	PlmnSupportList []models.PlmnId `yaml:"plmnSupportList,omitempty"`
 }
 
 type Sbi struct {

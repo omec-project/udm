@@ -20,6 +20,7 @@ import (
 	"github.com/free5gc/http2_util"
 	"github.com/free5gc/logger_util"
 	openApiLogger "github.com/free5gc/openapi/logger"
+	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/path_util"
 	pathUtilLogger "github.com/free5gc/path_util/logger"
 	"github.com/free5gc/udm/consumer"
@@ -33,9 +34,17 @@ import (
 	"github.com/free5gc/udm/ueauthentication"
 	"github.com/free5gc/udm/uecontextmanagement"
 	"github.com/free5gc/udm/util"
+	"github.com/omec-project/config5g/proto/client"
+	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
 )
 
 type UDM struct{}
+
+var ConfigPodTrigger chan bool
+
+func init() {
+	ConfigPodTrigger = make(chan bool)
+}
 
 type (
 	// Config information.
@@ -87,6 +96,18 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 
 	if err := factory.CheckConfigVersion(); err != nil {
 		return err
+	}
+
+	roc := os.Getenv("MANAGED_BY_CONFIG_POD")
+	if roc == "true" {
+		initLog.Infoln("MANAGED_BY_CONFIG_POD is true")
+		commChannel := client.ConfigWatcher()
+		go udm.updateConfig(commChannel)
+	} else {
+		go func() {
+			initLog.Infoln("Use helm chart config ")
+			ConfigPodTrigger <- true
+		}()
 	}
 
 	return nil
@@ -195,19 +216,7 @@ func (udm *UDM) Start() {
 
 	addr := fmt.Sprintf("%s:%d", self.BindingIPv4, self.SBIPort)
 
-	proflie, err := consumer.BuildNFInstance(self)
-	if err != nil {
-		logger.InitLog.Errorln(err.Error())
-	} else {
-		var newNrfUri string
-		var err1 error
-		newNrfUri, self.NfId, err1 = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, proflie)
-		if err1 != nil {
-			logger.InitLog.Errorln(err1.Error())
-		} else {
-			self.NrfUri = newNrfUri
-		}
-	}
+	go udm.registerNF()
 
 	signalChannel := make(chan os.Signal, 1)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
@@ -297,4 +306,78 @@ func (udm *UDM) Terminate() {
 		logger.InitLog.Infof("Deregister from NRF successfully")
 	}
 	logger.InitLog.Infof("UDM terminated")
+}
+
+func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool {
+	var minConfig bool
+	self := context.UDM_Self()
+	for rsp := range commChannel {
+		logger.GrpcLog.Infoln("Received updateConfig in the udm app : ", rsp)
+		for _, ns := range rsp.NetworkSlice {
+			logger.GrpcLog.Infoln("Network Slice Name ", ns.Name)
+			if ns.Site != nil {
+				temp := models.PlmnId{}
+				var found bool = false
+				logger.GrpcLog.Infoln("Network Slice has site name present ")
+				site := ns.Site
+				logger.GrpcLog.Infoln("Site name ", site.SiteName)
+				if site.Plmn != nil {
+					temp.Mcc = site.Plmn.Mcc
+					temp.Mnc = site.Plmn.Mnc
+					logger.GrpcLog.Infoln("Plmn mcc ", site.Plmn.Mcc)
+					for _, item := range self.PlmnList {
+						if item.Mcc == temp.Mcc && item.Mnc == temp.Mnc {
+							found = true
+							break
+						}
+					}
+					if found == false {
+						self.PlmnList = append(self.PlmnList, temp)
+						logger.GrpcLog.Infoln("Plmn added in the context", self.PlmnList)
+					}
+				} else {
+					logger.GrpcLog.Infoln("Plmn not present in the message ")
+				}
+			}
+		}
+		if minConfig == false {
+			// first slice Created
+			if len(self.PlmnList) > 0 {
+				minConfig = true
+				ConfigPodTrigger <- true
+				logger.GrpcLog.Infoln("Send config trigger to main routine")
+			}
+		} else {
+			// all slices deleted
+			if len(self.PlmnList) == 0 {
+				minConfig = false
+				ConfigPodTrigger <- false
+				logger.GrpcLog.Infoln("Send config trigger to main routine")
+			} else {
+				ConfigPodTrigger <- true
+				logger.GrpcLog.Infoln("Send config trigger to main routine")
+			}
+		}
+	}
+	return true
+}
+
+func (udm *UDM) registerNF() {
+	self := context.UDM_Self()
+	for msg := range ConfigPodTrigger {
+		initLog.Infof("Minimum configuration from config pod available %v", msg)
+		proflie, err := consumer.BuildNFInstance(self)
+		if err != nil {
+			logger.InitLog.Errorln(err.Error())
+		} else {
+			var newNrfUri string
+			var err1 error
+			newNrfUri, self.NfId, err1 = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, proflie)
+			if err1 != nil {
+				logger.InitLog.Errorln(err1.Error())
+			} else {
+				self.NrfUri = newNrfUri
+			}
+		}
+	}
 }

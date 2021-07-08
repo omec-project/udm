@@ -31,6 +31,14 @@ func BuildNFInstance(udmContext *udm_context.UDMContext) (profile models.NfProfi
 		profile.NfServices = &services
 	}
 
+	var plmns []models.PlmnId
+	for _, plmn := range udmContext.PlmnList {
+		plmns = append(plmns, plmn)
+	}
+	if len(plmns) > 0 {
+		profile.PlmnList = &plmns
+	}
+
 	var udmInfo models.UdmInfo
 	profile.UdmInfo = &udmInfo
 	profile.UdmInfo.GroupId = udmContext.GroupId
