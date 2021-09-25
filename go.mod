@@ -19,7 +19,7 @@ require (
 	github.com/free5gc/version v1.0.0
 	github.com/gin-gonic/gin v1.6.3
 	github.com/google/uuid v1.1.2
-	github.com/omec-project/config5g v1.0.0
+	github.com/omec-project/config5g v1.0.1
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.5
