@@ -20,7 +20,6 @@ import (
 	"github.com/free5gc/http2_util"
 	"github.com/free5gc/logger_util"
 	openApiLogger "github.com/free5gc/openapi/logger"
-	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/path_util"
 	pathUtilLogger "github.com/free5gc/path_util/logger"
 	"github.com/free5gc/udm/consumer"
@@ -316,17 +315,17 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 		for _, ns := range rsp.NetworkSlice {
 			logger.GrpcLog.Infoln("Network Slice Name ", ns.Name)
 			if ns.Site != nil {
-				temp := models.PlmnId{}
+				temp := factory.PlmnSupportItem{}
 				var found bool = false
 				logger.GrpcLog.Infoln("Network Slice has site name present ")
 				site := ns.Site
 				logger.GrpcLog.Infoln("Site name ", site.SiteName)
 				if site.Plmn != nil {
-					temp.Mcc = site.Plmn.Mcc
-					temp.Mnc = site.Plmn.Mnc
+					temp.PlmnId.Mcc = site.Plmn.Mcc
+					temp.PlmnId.Mnc = site.Plmn.Mnc
 					logger.GrpcLog.Infoln("Plmn mcc ", site.Plmn.Mcc)
 					for _, item := range self.PlmnList {
-						if item.Mcc == temp.Mcc && item.Mnc == temp.Mnc {
+						if item.PlmnId.Mcc == temp.PlmnId.Mcc && item.PlmnId.Mnc == temp.PlmnId.Mnc {
 							found = true
 							break
 						}

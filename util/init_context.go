@@ -54,6 +54,6 @@ func InitUDMContext(udmContext *context.UDMContext) {
 	servingNameList := configuration.ServiceNameList
 
 	udmContext.Keys = configuration.Keys
-
+	udmContext.PlmnList = configuration.PlmnList
 	udmContext.InitNFService(servingNameList, config.Info.Version)
 }
