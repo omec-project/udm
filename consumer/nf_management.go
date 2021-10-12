@@ -32,8 +32,8 @@ func BuildNFInstance(udmContext *udm_context.UDMContext) (profile models.NfProfi
 	}
 
 	var plmns []models.PlmnId
-	for _, plmn := range udmContext.PlmnList {
-		plmns = append(plmns, plmn)
+	for _, plmnItem := range udmContext.PlmnList {
+		plmns = append(plmns, plmnItem.PlmnId)
 	}
 	if len(plmns) > 0 {
 		profile.PlmnList = &plmns

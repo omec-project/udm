@@ -42,6 +42,7 @@ type Configuration struct {
 	NrfUri          string   `yaml:"nrfUri,omitempty"`
 	Keys            *Keys    `yaml:"keys,omitempty"`
 	PlmnSupportList []models.PlmnId `yaml:"plmnSupportList,omitempty"`
+	PlmnList        []PlmnSupportItem `yaml:"plmnList,omitempty"`
 }
 
 type Sbi struct {
@@ -64,6 +65,10 @@ type Keys struct {
 	UdmProfileAHNPublicKey  string `yaml:"udmProfileAHNPublicKey,omitempty"`
 	UdmProfileBHNPrivateKey string `yaml:"udmProfileBHNPrivateKey,omitempty"`
 	UdmProfileBHNPublicKey  string `yaml:"udmProfileBHNPublicKey,omitempty"`
+}
+
+type PlmnSupportItem struct {
+	PlmnId     models.PlmnId   `yaml:"plmnId"`
 }
 
 func (c *Config) GetVersion() string {

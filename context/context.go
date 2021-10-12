@@ -51,7 +51,7 @@ type UDMContext struct {
 	SubscriptionOfSharedDataChange sync.Map                     // subscriptionID as key
 	Keys                           *factory.Keys
 	EeSubscriptionIDGenerator      *idgenerator.IDGenerator
-	PlmnList                       []models.PlmnId
+	PlmnList                       []factory.PlmnSupportItem
 }
 
 type UdmUeContext struct {
