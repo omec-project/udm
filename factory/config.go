@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
 //
 // SPDX-License-Identifier: Apache-2.0
-// SPDX-License-Identifier: LicenseRef-ONF-Member-Only-1.0
+//
 
 /*
  * UDM Configuration Factory
@@ -36,12 +36,12 @@ const (
 )
 
 type Configuration struct {
-	UdmName         string   `yaml:"udmName,omitempty"`
-	Sbi             *Sbi     `yaml:"sbi,omitempty"`
-	ServiceNameList []string `yaml:"serviceNameList,omitempty"`
-	NrfUri          string   `yaml:"nrfUri,omitempty"`
-	Keys            *Keys    `yaml:"keys,omitempty"`
-	PlmnSupportList []models.PlmnId `yaml:"plmnSupportList,omitempty"`
+	UdmName         string            `yaml:"udmName,omitempty"`
+	Sbi             *Sbi              `yaml:"sbi,omitempty"`
+	ServiceNameList []string          `yaml:"serviceNameList,omitempty"`
+	NrfUri          string            `yaml:"nrfUri,omitempty"`
+	Keys            *Keys             `yaml:"keys,omitempty"`
+	PlmnSupportList []models.PlmnId   `yaml:"plmnSupportList,omitempty"`
 	PlmnList        []PlmnSupportItem `yaml:"plmnList,omitempty"`
 }
 
@@ -68,7 +68,7 @@ type Keys struct {
 }
 
 type PlmnSupportItem struct {
-	PlmnId     models.PlmnId   `yaml:"plmnId"`
+	PlmnId models.PlmnId `yaml:"plmnId"`
 }
 
 func (c *Config) GetVersion() string {
