@@ -1,13 +1,4 @@
 # UDM
-<!--
-SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
-Copyright 2019 free5GC.org
-
-SPDX-License-Identifier: Apache-2.0
-
--->
-
-# UDM
 
 Implements 3gpp 29.503 specification. Provides service
 to PCF, AUSF, AMF, SMF. UDM supports SBI interface and any other network function can use the 
