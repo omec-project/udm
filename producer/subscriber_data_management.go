@@ -14,13 +14,13 @@ import (
 	"github.com/antihax/optional"
 
 	"github.com/free5gc/http_wrapper"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nudm_SubscriberDataManagement"
-	Nudr "github.com/free5gc/openapi/Nudr_DataRepository"
-	"github.com/free5gc/openapi/models"
-	udm_context "github.com/free5gc/udm/context"
-	"github.com/free5gc/udm/logger"
-	"github.com/free5gc/udm/util"
+	"github.com/omec-project/openapi"
+	"github.com/omec-project/openapi/Nudm_SubscriberDataManagement"
+	Nudr "github.com/omec-project/openapi/Nudr_DataRepository"
+	"github.com/omec-project/openapi/models"
+	udm_context "github.com/omec-project/udm/context"
+	"github.com/omec-project/udm/logger"
+	"github.com/omec-project/udm/util"
 )
 
 func HandleGetAmDataRequest(request *http_wrapper.Request) *http_wrapper.Response {

@@ -41,4 +41,4 @@ RUN mkdir -p udm/
 
 # Copy executable and default certs
 COPY --from=builder /go/src/udm/bin/* ./udm
-WORKDIR /free5gc/udm
+WORKDIR /omec-project/udm

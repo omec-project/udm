@@ -15,14 +15,14 @@ import (
 	"github.com/antihax/optional"
 
 	"github.com/free5gc/http_wrapper"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nudr_DataRepository"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/udm/consumer"
-	udm_context "github.com/free5gc/udm/context"
-	"github.com/free5gc/udm/logger"
-	"github.com/free5gc/udm/producer/callback"
-	"github.com/free5gc/udm/util"
+	"github.com/omec-project/openapi"
+	"github.com/omec-project/openapi/Nudr_DataRepository"
+	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/udm/consumer"
+	udm_context "github.com/omec-project/udm/context"
+	"github.com/omec-project/udm/logger"
+	"github.com/omec-project/udm/producer/callback"
+	"github.com/omec-project/udm/util"
 )
 
 func createUDMClientToUDR(id string) (*Nudr_DataRepository.APIClient, error) {

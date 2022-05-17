@@ -20,20 +20,19 @@ import (
 
 	"github.com/free5gc/http2_util"
 	"github.com/free5gc/logger_util"
-	openApiLogger "github.com/free5gc/openapi/logger"
 	"github.com/free5gc/path_util"
 	pathUtilLogger "github.com/free5gc/path_util/logger"
-	"github.com/free5gc/udm/consumer"
-	"github.com/free5gc/udm/context"
-	"github.com/free5gc/udm/eventexposure"
-	"github.com/free5gc/udm/factory"
-	"github.com/free5gc/udm/httpcallback"
-	"github.com/free5gc/udm/logger"
-	"github.com/free5gc/udm/parameterprovision"
-	"github.com/free5gc/udm/subscriberdatamanagement"
-	"github.com/free5gc/udm/ueauthentication"
-	"github.com/free5gc/udm/uecontextmanagement"
-	"github.com/free5gc/udm/util"
+	"github.com/omec-project/udm/consumer"
+	"github.com/omec-project/udm/context"
+	"github.com/omec-project/udm/eventexposure"
+	"github.com/omec-project/udm/factory"
+	"github.com/omec-project/udm/httpcallback"
+	"github.com/omec-project/udm/logger"
+	"github.com/omec-project/udm/parameterprovision"
+	"github.com/omec-project/udm/subscriberdatamanagement"
+	"github.com/omec-project/udm/ueauthentication"
+	"github.com/omec-project/udm/uecontextmanagement"
+	"github.com/omec-project/udm/util"
 	"github.com/omec-project/config5g/proto/client"
 	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
 )
@@ -152,21 +151,6 @@ func (udm *UDM) setLogLevel() {
 		pathUtilLogger.SetReportCaller(factory.UdmConfig.Logger.PathUtil.ReportCaller)
 	}
 
-	if factory.UdmConfig.Logger.OpenApi != nil {
-		if factory.UdmConfig.Logger.OpenApi.DebugLevel != "" {
-			if level, err := logrus.ParseLevel(factory.UdmConfig.Logger.OpenApi.DebugLevel); err != nil {
-				openApiLogger.OpenApiLog.Warnf("OpenAPI Log level [%s] is invalid, set to [info] level",
-					factory.UdmConfig.Logger.OpenApi.DebugLevel)
-				openApiLogger.SetLogLevel(logrus.InfoLevel)
-			} else {
-				openApiLogger.SetLogLevel(level)
-			}
-		} else {
-			openApiLogger.OpenApiLog.Warnln("OpenAPI Log level not set. Default set to [info] level")
-			openApiLogger.SetLogLevel(logrus.InfoLevel)
-		}
-		openApiLogger.SetReportCaller(factory.UdmConfig.Logger.OpenApi.ReportCaller)
-	}
 }
 
 func (udm *UDM) FilterCli(c *cli.Context) (args []string) {
@@ -201,7 +185,7 @@ func (udm *UDM) Start() {
 	ueauthentication.AddService(router)
 	uecontextmanagement.AddService(router)
 
-	udmLogPath := path_util.Free5gcPath("free5gc/udmsslkey.log")
+	udmLogPath := path_util.Free5gcPath("omec-project/udmsslkey.log")
 	udmPemPath := path_util.Free5gcPath("free5gc/support/TLS/udm.pem")
 	udmKeyPath := path_util.Free5gcPath("free5gc/support/TLS/udm.key")
 	if sbi.Tls != nil {

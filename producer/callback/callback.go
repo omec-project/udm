@@ -9,11 +9,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/free5gc/openapi/Nudm_SubscriberDataManagement"
-	"github.com/free5gc/openapi/Nudm_UEContextManagement"
-	"github.com/free5gc/openapi/models"
-	udm_context "github.com/free5gc/udm/context"
-	"github.com/free5gc/udm/logger"
+	"github.com/omec-project/openapi/Nudm_SubscriberDataManagement"
+	"github.com/omec-project/openapi/Nudm_UEContextManagement"
+	"github.com/omec-project/openapi/models"
+	udm_context "github.com/omec-project/udm/context"
+	"github.com/omec-project/udm/logger"
 )
 
 func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi string) *models.ProblemDetails {
