@@ -14,10 +14,10 @@ import (
 	"sync"
 
 	"github.com/free5gc/idgenerator"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/udm/factory"
+	"github.com/omec-project/openapi"
+	"github.com/omec-project/openapi/Nnrf_NFDiscovery"
+	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/udm/factory"
 )
 
 var udmContext UDMContext

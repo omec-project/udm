@@ -10,11 +10,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
-	"github.com/free5gc/openapi/models"
-	udm_context "github.com/free5gc/udm/context"
-	"github.com/free5gc/udm/logger"
-	"github.com/free5gc/udm/util"
+	"github.com/omec-project/openapi/Nnrf_NFDiscovery"
+	"github.com/omec-project/openapi/models"
+	udm_context "github.com/omec-project/udm/context"
+	"github.com/omec-project/udm/logger"
+	"github.com/omec-project/udm/util"
 )
 
 const (

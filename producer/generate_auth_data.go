@@ -22,12 +22,12 @@ import (
 	"github.com/free5gc/UeauCommon"
 	"github.com/free5gc/http_wrapper"
 	"github.com/free5gc/milenage"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nudr_DataRepository"
-	"github.com/free5gc/openapi/models"
-	udm_context "github.com/free5gc/udm/context"
-	"github.com/free5gc/udm/logger"
-	"github.com/free5gc/udm/util"
+	"github.com/omec-project/openapi"
+	"github.com/omec-project/openapi/Nudr_DataRepository"
+	"github.com/omec-project/openapi/models"
+	udm_context "github.com/omec-project/udm/context"
+	"github.com/omec-project/udm/logger"
+	"github.com/omec-project/udm/util"
 	"github.com/free5gc/util_3gpp/suci"
 )
 
