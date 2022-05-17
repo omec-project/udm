@@ -14,7 +14,6 @@ import (
 
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/service"
-	"github.com/free5gc/version"
 )
 
 var UDM = &service.UDM{}
@@ -29,7 +28,6 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "udm"
 	fmt.Print(app.Name, "\n")
-	appLog.Infoln("UDM version: ", version.GetVersion())
 	app.Usage = "-free5gccfg common configuration file -udmcfg udm configuration file"
 	app.Action = action
 	app.Flags = UDM.GetCliCmd()

@@ -14,7 +14,7 @@ import (
 
 	"github.com/antihax/optional"
 
-	"github.com/free5gc/http_wrapper"
+	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nudr_DataRepository"
 	"github.com/omec-project/openapi/models"

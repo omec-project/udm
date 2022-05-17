@@ -9,7 +9,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/free5gc/http_wrapper"
+	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"

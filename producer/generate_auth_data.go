@@ -20,7 +20,7 @@ import (
 	"github.com/antihax/optional"
 
 	"github.com/free5gc/UeauCommon"
-	"github.com/free5gc/http_wrapper"
+	"github.com/omec-project/http_wrapper"
 	"github.com/free5gc/milenage"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nudr_DataRepository"
@@ -28,7 +28,7 @@ import (
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/util"
-	"github.com/free5gc/util_3gpp/suci"
+	"github.com/omec-project/util_3gpp/suci"
 )
 
 const (

@@ -19,9 +19,9 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/omec-project/http2_util"
-	"github.com/free5gc/logger_util"
-	"github.com/free5gc/path_util"
-	pathUtilLogger "github.com/free5gc/path_util/logger"
+	"github.com/omec-project/logger_util"
+	"github.com/omec-project/path_util"
+	pathUtilLogger "github.com/omec-project/path_util/logger"
 	"github.com/omec-project/udm/consumer"
 	"github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/eventexposure"

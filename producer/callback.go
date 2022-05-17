@@ -8,7 +8,7 @@ package producer
 import (
 	"net/http"
 
-	"github.com/free5gc/http_wrapper"
+	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/producer/callback"

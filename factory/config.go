@@ -11,7 +11,7 @@
 package factory
 
 import (
-	"github.com/free5gc/logger_util"
+	"github.com/omec-project/logger_util"
 	"github.com/omec-project/openapi/models"
 )
 

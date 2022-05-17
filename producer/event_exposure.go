@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/free5gc/http_wrapper"
+	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/openapi/models"
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
