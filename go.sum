@@ -68,8 +68,6 @@ github.com/free5gc/logger_conf v1.0.0 h1:cMqqB8L4HjE57tP36mBmiVUPIcHv8Ayr12jKfei
 github.com/free5gc/logger_conf v1.0.0/go.mod h1:DHecLXVV1qA5Z+lSoUvZdZ6tCtZidTNmtx99jsCfgLE=
 github.com/free5gc/logger_util v1.0.0 h1:hLTCTnKlEqJURrBwooNFQLavWPdJzS0o9KGIYUNKdJI=
 github.com/free5gc/logger_util v1.0.0/go.mod h1:TK/bAJbm/l2TMNmbsKn83+xUmDNqts69IEir/nCa8w0=
-github.com/free5gc/milenage v1.0.0 h1:OMSdAuJpOW71REje4iahCVt0sBJa5FNmJK+iDQtYJzo=
-github.com/free5gc/milenage v1.0.0/go.mod h1:QJYEh/7FTg2AXCo80BOrdwbAvm3q8OpVckR3SjwTvw8=
 github.com/free5gc/path_util v1.0.0 h1:vJPGTymaWtavz6fJ/7k6WKEYv5BQLAq/O04RP54sab0=
 github.com/free5gc/path_util v1.0.0/go.mod h1:OpmcebEKrMPnH7Jg5lZ8y9ZWJNAjQ4l9FGWXUv58Mo0=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
@@ -186,6 +184,8 @@ github.com/omec-project/logger_conf v1.0.100-dev h1:cQkWo0jiSy3XtsggB1zArL9R9OMB
 github.com/omec-project/logger_conf v1.0.100-dev/go.mod h1:Upj0MgzSpB/Ifw+3WsBaYbqWuF4SyyUeKqW7/HhL8Aw=
 github.com/omec-project/logger_util v1.0.100-dev h1:8P1mudVxTQ/LflO1V+Jb0LvvHHI+nQ2uf6cyAgJOB7I=
 github.com/omec-project/logger_util v1.0.100-dev/go.mod h1:UkD09amIhlh8P0k82A6Uz/atiZGeFS3C2wd334CKpuY=
+github.com/omec-project/milenage v1.0.100-dev h1:vNy3qWvTuPWN+ee7S7j6fITJbXX6UbKsAK8O7Hspha4=
+github.com/omec-project/milenage v1.0.100-dev/go.mod h1:Tw5HLvxWEQN0JA+EXEVwZ17TL9adEZk3kWqKGgsNmHc=
 github.com/omec-project/openapi v1.0.100-dev h1:bBtZ7wK90drsOLf1ot7fcfa6ZgOeBUiKOGxO18Io9RU=
 github.com/omec-project/openapi v1.0.100-dev/go.mod h1:Fv9ajWROYypcNER+ZwWXPhLCdV4pBz75KqFp/R/2gCw=
 github.com/omec-project/path_util v1.0.100-dev h1:J6lro3EFqMlMQloDa3c7IG6xwbW0u91XYkN2MJGdLC4=

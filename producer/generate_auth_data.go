@@ -21,7 +21,7 @@ import (
 
 	"github.com/free5gc/UeauCommon"
 	"github.com/omec-project/http_wrapper"
-	"github.com/free5gc/milenage"
+	"github.com/omec-project/milenage"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nudr_DataRepository"
 	"github.com/omec-project/openapi/models"
