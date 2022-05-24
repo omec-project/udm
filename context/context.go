@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/free5gc/idgenerator"
+	"github.com/omec-project/idgenerator"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nnrf_NFDiscovery"
 	"github.com/omec-project/openapi/models"

@@ -19,7 +19,7 @@ import (
 
 	"github.com/antihax/optional"
 
-	"github.com/free5gc/UeauCommon"
+	"github.com/omec-project/UeauCommon"
 	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/milenage"
 	"github.com/omec-project/openapi"
