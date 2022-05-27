@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/free5gc/http_wrapper"
-	"github.com/free5gc/openapi/models"
-	udm_context "github.com/free5gc/udm/context"
-	"github.com/free5gc/udm/logger"
+	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/openapi/models"
+	udm_context "github.com/omec-project/udm/context"
+	"github.com/omec-project/udm/logger"
 )
 
 func HandleCreateEeSubscription(request *http_wrapper.Request) *http_wrapper.Response {

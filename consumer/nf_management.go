@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFManagement"
-	"github.com/free5gc/openapi/models"
-	udm_context "github.com/free5gc/udm/context"
-	"github.com/free5gc/udm/logger"
+	"github.com/omec-project/openapi"
+	"github.com/omec-project/openapi/Nnrf_NFManagement"
+	"github.com/omec-project/openapi/models"
+	udm_context "github.com/omec-project/udm/context"
+	"github.com/omec-project/udm/logger"
 )
 
 func BuildNFInstance(udmContext *udm_context.UDMContext) (profile models.NfProfile, err error) {

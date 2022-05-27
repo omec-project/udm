@@ -25,7 +25,7 @@ func TestUpdate(t *testing.T) {
 		router := gin.Default()
 		Nudm_PP_Server.AddService(router)
 
-		udmLogPath := path_util.Free5gcPath("free5gc/udmsslkey.log")
+		udmLogPath := path_util.Free5gcPath("omec-project/udmsslkey.log")
 		udmPemPath := path_util.Free5gcPath("free5gc/support/TLS/udm.pem")
 		udmKeyPath := path_util.Free5gcPath("free5gc/support/TLS/udm.key")
 		server, err := http2_util.NewServer(":29503", udmLogPath, router)

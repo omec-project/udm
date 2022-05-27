@@ -15,7 +15,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/free5gc/udm/logger"
+	"github.com/omec-project/udm/logger"
 )
 
 var UdmConfig Config

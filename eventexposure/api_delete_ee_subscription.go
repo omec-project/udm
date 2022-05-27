@@ -17,8 +17,8 @@ package eventexposure
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/free5gc/http_wrapper"
-	"github.com/free5gc/udm/producer"
+	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/udm/producer"
 )
 
 // DeleteEeSubscription - Unsubscribe
