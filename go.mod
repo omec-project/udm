@@ -15,7 +15,7 @@ require (
 	github.com/omec-project/idgenerator v1.0.100-dev
 	github.com/omec-project/logger_util v1.0.100-dev
 	github.com/omec-project/milenage v1.0.100-dev
-	github.com/omec-project/openapi v1.2.99
+	github.com/omec-project/openapi v1.0.100-dev
 	github.com/omec-project/path_util v1.0.100-dev
 	github.com/omec-project/util_3gpp v1.0.101-dev
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect

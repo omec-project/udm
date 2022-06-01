@@ -178,9 +178,8 @@ github.com/omec-project/logger_util v1.0.100-dev h1:8P1mudVxTQ/LflO1V+Jb0LvvHHI+
 github.com/omec-project/logger_util v1.0.100-dev/go.mod h1:UkD09amIhlh8P0k82A6Uz/atiZGeFS3C2wd334CKpuY=
 github.com/omec-project/milenage v1.0.100-dev h1:vNy3qWvTuPWN+ee7S7j6fITJbXX6UbKsAK8O7Hspha4=
 github.com/omec-project/milenage v1.0.100-dev/go.mod h1:Tw5HLvxWEQN0JA+EXEVwZ17TL9adEZk3kWqKGgsNmHc=
+github.com/omec-project/openapi v1.0.100-dev h1:bBtZ7wK90drsOLf1ot7fcfa6ZgOeBUiKOGxO18Io9RU=
 github.com/omec-project/openapi v1.0.100-dev/go.mod h1:Fv9ajWROYypcNER+ZwWXPhLCdV4pBz75KqFp/R/2gCw=
-github.com/omec-project/openapi v1.2.99 h1:Ukl+5svs/neyu5QsY0iGwRmGmtlRY0n23BqR//0YDK8=
-github.com/omec-project/openapi v1.2.99/go.mod h1:Fv9ajWROYypcNER+ZwWXPhLCdV4pBz75KqFp/R/2gCw=
 github.com/omec-project/path_util v1.0.100-dev h1:J6lro3EFqMlMQloDa3c7IG6xwbW0u91XYkN2MJGdLC4=
 github.com/omec-project/path_util v1.0.100-dev/go.mod h1:O1ch35al6+FXKmg6+5vOpKusl4fiB0u36oYjxwI4QK4=
 github.com/omec-project/util_3gpp v1.0.101-dev h1:hn7GQDV2htHcDbnuqKX2ErKFsGX58CZXw/VB3mc3J2g=
