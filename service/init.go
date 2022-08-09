@@ -14,10 +14,14 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
+	"github.com/omec-project/openapi/models"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
+	"github.com/omec-project/config5g/proto/client"
+	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
 	"github.com/omec-project/http2_util"
 	"github.com/omec-project/logger_util"
 	"github.com/omec-project/path_util"
@@ -33,8 +37,6 @@ import (
 	"github.com/omec-project/udm/ueauthentication"
 	"github.com/omec-project/udm/uecontextmanagement"
 	"github.com/omec-project/udm/util"
-	"github.com/omec-project/config5g/proto/client"
-	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
 )
 
 type UDM struct{}
@@ -48,7 +50,8 @@ func init() {
 type (
 	// Config information.
 	Config struct {
-		udmcfg string
+		udmcfg         string
+		heartBeatTimer string
 	}
 )
 
@@ -64,6 +67,11 @@ var udmCLi = []cli.Flag{
 		Usage: "config file",
 	},
 }
+
+var (
+	KeepAliveTimer      *time.Timer
+	KeepAliveTimerMutex sync.Mutex
+)
 
 var initLog *logrus.Entry
 
@@ -346,6 +354,79 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 	return true
 }
 
+func (udm *UDM) StartKeepAliveTimer(nfProfile models.NfProfile) {
+	KeepAliveTimerMutex.Lock()
+	defer KeepAliveTimerMutex.Unlock()
+	udm.StopKeepAliveTimer()
+	if nfProfile.HeartBeatTimer == 0 {
+		nfProfile.HeartBeatTimer = 60
+	}
+	logger.InitLog.Infof("Started KeepAlive Timer: %v sec", nfProfile.HeartBeatTimer)
+	//AfterFunc starts timer and waits for KeepAliveTimer to elapse and then calls udm.UpdateNF function
+	KeepAliveTimer = time.AfterFunc(time.Duration(nfProfile.HeartBeatTimer)*time.Second, udm.UpdateNF)
+}
+
+func (udm *UDM) StopKeepAliveTimer() {
+	if KeepAliveTimer != nil {
+		logger.InitLog.Infof("Stopped KeepAlive Timer.")
+		KeepAliveTimer.Stop()
+		KeepAliveTimer = nil
+	}
+}
+
+func (udm *UDM) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
+	self := context.UDM_Self()
+	profile, err := consumer.BuildNFInstance(self)
+	if err != nil {
+		initLog.Error("Build UDM Profile Error: %v", err)
+		return profile, err
+	}
+	initLog.Infof("Pcf Profile Registering to NRF: %v", profile)
+	//Indefinite attempt to register until success
+	profile, _, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, profile)
+	return profile, err
+}
+
+//UpdateNF is the callback function, this is called when keepalivetimer elapsed
+func (udm *UDM) UpdateNF() {
+	KeepAliveTimerMutex.Lock()
+	defer KeepAliveTimerMutex.Unlock()
+	if KeepAliveTimer == nil {
+		initLog.Warnf("KeepAlive timer has been stopped.")
+		return
+	}
+	//setting default value 30 sec
+	var heartBeatTimer int32 = 30
+	pitem := models.PatchItem{
+		Op:    "replace",
+		Path:  "/nfStatus",
+		Value: "REGISTERED",
+	}
+	var patchItem []models.PatchItem
+	patchItem = append(patchItem, pitem)
+	nfProfile, problemDetails, err := consumer.SendUpdateNFInstance(patchItem)
+	if problemDetails != nil {
+		initLog.Errorf("UDM update to NRF ProblemDetails[%v]", problemDetails)
+		//5xx response from NRF, 404 Not Found, 400 Bad Request
+		if (problemDetails.Status/100) == 5 ||
+			problemDetails.Status == 404 || problemDetails.Status == 400 {
+			//register with NRF full profile
+			nfProfile, err = udm.BuildAndSendRegisterNFInstance()
+		}
+	} else if err != nil {
+		initLog.Errorf("UDM update to NRF Error[%s]", err.Error())
+		nfProfile, err = udm.BuildAndSendRegisterNFInstance()
+	}
+
+	if nfProfile.HeartBeatTimer != 0 {
+		// use hearbeattimer value with received timer value from NRF
+		heartBeatTimer = nfProfile.HeartBeatTimer
+	}
+	logger.InitLog.Debugf("Restarted KeepAlive Timer: %v sec", heartBeatTimer)
+	//restart timer with received HeartBeatTimer value
+	KeepAliveTimer = time.AfterFunc(time.Duration(heartBeatTimer)*time.Second, udm.UpdateNF)
+}
+
 func (udm *UDM) registerNF() {
 	self := context.UDM_Self()
 	for msg := range ConfigPodTrigger {
@@ -356,10 +437,13 @@ func (udm *UDM) registerNF() {
 		} else {
 			var newNrfUri string
 			var err1 error
-			newNrfUri, self.NfId, err1 = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, proflie)
+			var prof models.NfProfile
+			prof, newNrfUri, self.NfId, err1 = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, proflie)
 			if err1 != nil {
 				logger.InitLog.Errorln(err1.Error())
 			} else {
+				udm.StartKeepAliveTimer(prof)
+				logger.CfgLog.Infof("Sent Register NF Instance with updated profile")
 				self.NrfUri = newNrfUri
 			}
 		}
