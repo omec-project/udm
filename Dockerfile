@@ -3,13 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-FROM golang:1.14.4-stretch AS builder
+FROM golang:1.16.0-stretch AS builder
 
 LABEL maintainer="ONF <omec-dev@opennetworking.org>"
 
 #RUN apt remove cmdtest yarn
-RUN apt-get update
-RUN apt-get -y install apt-transport-https ca-certificates
+RUN apt-get update && apt-get -y install apt-transport-https ca-certificates
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg > pubkey.gpg
 RUN apt-key add pubkey.gpg
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
@@ -24,7 +23,7 @@ COPY . $GOPATH/src/udm
 RUN cd $GOPATH/src/udm \
     && make all
 
-FROM alpine:3.8 as udm
+FROM alpine:3.16 as udm
 
 LABEL description="ONF open source 5G Core Network" \
     version="Stage 3"
@@ -32,8 +31,7 @@ LABEL description="ONF open source 5G Core Network" \
 ARG DEBUG_TOOLS
 
 # Install debug tools ~ 100MB (if DEBUG_TOOLS is set to true)
-RUN apk update
-RUN apk add -U vim strace net-tools curl netcat-openbsd bind-tools
+RUN apk update && apk add -U vim strace net-tools curl netcat-openbsd bind-tools
 
 # Set working dir
 WORKDIR /free5gc
