@@ -172,8 +172,8 @@ github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 h1:W6apQkHrMkS0Muv8G/TipAy
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32/go.mod h1:9wM+0iRr9ahx58uYLpLIr5fm8diHn0JbqRycJi6w0Ms=
 github.com/omec-project/UeauCommon v1.1.0 h1:ynW22r/Xx/z6saviuzUeNjYlqdJfiMNtNwlv6Ot76Wk=
 github.com/omec-project/UeauCommon v1.1.0/go.mod h1:brKbJNGvDPgHcubWt6G45hVuxZ2Crdp/1tKXWw6zTCY=
-github.com/omec-project/config5g v1.1.0 h1:NwXNSmy08xHBY5uF4iA3cEUVJRw2wKSxwc641FgCz20=
-github.com/omec-project/config5g v1.1.0/go.mod h1:AWFzCbbgCBx/iJwt+zWbpDGLHRpFzg24OYHqIkdcMVA=
+github.com/omec-project/config5g v1.2.0 h1:fyIg+1LZ9jn8DTkVUbD4jyxA4FgMICdIBwZVnzCyMd4=
+github.com/omec-project/config5g v1.2.0/go.mod h1:AWFzCbbgCBx/iJwt+zWbpDGLHRpFzg24OYHqIkdcMVA=
 github.com/omec-project/http2_util v1.1.0 h1:8H2NME/V8iONth8TlyK/3w4pguAzaeUnEv9pmeAocwQ=
 github.com/omec-project/http2_util v1.1.0/go.mod h1:QwoZRaUyhEp/kTEqXvf0gCYtfQrNHBdkVw939vsMjZY=
 github.com/omec-project/http_wrapper v1.1.0 h1:2hD8RUaR/VVg3tUUfuxsuo1/JNpZLiAE8IvATGqDME4=

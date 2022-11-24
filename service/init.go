@@ -1,7 +1,7 @@
-// SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
-// Copyright 2019 free5GC.org
-//
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2019 free5GC.org
+// Copyright 2021 Open Networking Foundation <info@opennetworking.org>
+// Copyright 2022 Intel Corporation
 //
 
 package service
@@ -378,7 +378,7 @@ func (udm *UDM) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 	self := context.UDM_Self()
 	profile, err := consumer.BuildNFInstance(self)
 	if err != nil {
-		initLog.Error("Build UDM Profile Error: %v", err)
+		initLog.Error("Build UDM Profile Error: ", err)
 		return profile, err
 	}
 	initLog.Infof("Pcf Profile Registering to NRF: %v", profile)
