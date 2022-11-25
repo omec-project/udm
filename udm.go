@@ -25,7 +25,7 @@ func init() {
 
 func main() {
 	app := cli.NewApp()
-	    app.Name = "udm"
+	app.Name = "udm"
 	fmt.Print(app.Name, "\n")
 	app.Usage = "-free5gccfg common configuration file -udmcfg udm configuration file"
 	app.Action = action
