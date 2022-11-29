@@ -1,7 +1,6 @@
-# Copyright 2019 free5GC.org
-#
 # SPDX-License-Identifier: Apache-2.0
-#
+# Copyright 2019 free5GC.org
+# Copyright 2022 Intel Corporation
 #
 
 PROJECT_NAME             := sdcore
@@ -81,3 +80,28 @@ docker-push:
 	for target in $(DOCKER_TARGETS); do \
 		docker push ${DOCKER_REGISTRY}${DOCKER_REPOSITORY}5gc-$$target:${DOCKER_TAG}; \
 	done
+
+.coverage:
+	rm -rf $(CURDIR)/.coverage
+	mkdir -p $(CURDIR)/.coverage
+
+test: .coverage
+	docker run --rm -v $(CURDIR):/udm -w /udm golang:latest \
+		go test \
+			-race \
+			-failfast \
+			-coverprofile=.coverage/coverage-unit.txt \
+			-covermode=atomic \
+			-v \
+			./ ./...
+
+
+fmt:
+	@go fmt ./...
+
+golint:
+	@docker run --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:latest golangci-lint run -v --config /app/.golangci.yml
+
+check-reuse:
+	@docker run --rm -v $(CURDIR):/udm -w /udm omecproject/reuse-verify:latest reuse lint
+
