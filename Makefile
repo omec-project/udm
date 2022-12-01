@@ -105,3 +105,12 @@ golint:
 check-reuse:
 	@docker run --rm -v $(CURDIR):/udm -w /udm omecproject/reuse-verify:latest reuse lint
 
+run-aiab:
+	rm -rf $(HOME)/aether-in-a-box && rm -rf $(HOME)/cord
+	cd $(HOME) && git clone "https://gerrit.opencord.org/aether-in-a-box"
+	mkdir $(HOME)/cord && cd $(HOME)/cord && \
+		git clone "https://gerrit.opencord.org/sdcore-helm-charts" && \
+		git clone "https://gerrit.opencord.org/sdfabric-helm-charts" && cd ../aether-in-a-box && \
+			yq -i '.5g-control-plane.images |= {"udm": "5gc-udm:0.0.1-dev"}' sd-core-5g-values.yaml && \
+                make 5g-test
+
