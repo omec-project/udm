@@ -8,11 +8,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
-
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/service"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
 var UDM = &service.UDM{}

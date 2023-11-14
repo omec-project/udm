@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-
 	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
