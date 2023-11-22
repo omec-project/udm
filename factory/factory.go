@@ -13,9 +13,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/omec-project/udm/logger"
+	"gopkg.in/yaml.v2"
 )
 
 var UdmConfig Config

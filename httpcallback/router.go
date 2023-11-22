@@ -10,10 +10,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
-
 	"github.com/omec-project/logger_util"
 	"github.com/omec-project/udm/logger"
+	"github.com/sirupsen/logrus"
 )
 
 var HttpLog *logrus.Entry
