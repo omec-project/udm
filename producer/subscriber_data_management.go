@@ -154,11 +154,9 @@ func getIdTranslationResultProcedure(gpsi string) (response *models.IdTranslatio
 	}()
 
 	if res.StatusCode == http.StatusOK {
-		idList := udm_context.UDM_Self().GpsiSupiList
-		idList = idTranslationResultResp
-		if idList.SupiList != nil {
+		if idTranslationResultResp.SupiList != nil {
 			// GetCorrespondingSupi get corresponding Supi(here IMSI) matching the given Gpsi from the queried SUPI list from UDR
-			idTranslationResult.Supi = udm_context.GetCorrespondingSupi(idList)
+			idTranslationResult.Supi = udm_context.GetCorrespondingSupi(idTranslationResultResp)
 			idTranslationResult.Gpsi = gpsi
 
 			return &idTranslationResult, nil

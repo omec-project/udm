@@ -503,6 +503,7 @@ func UpdateAmfNon3gppAccessProcedure(request models.AmfNon3GppAccessRegistration
 				Status: http.StatusForbidden,
 				Cause:  "INVALID_GUAMI",
 			}
+			return problemDetails
 		}
 
 		var patchItemTmp models.PatchItem

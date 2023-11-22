@@ -7,7 +7,6 @@ FROM golang:1.21.3-bookworm AS builder
 
 LABEL maintainer="ONF <omec-dev@opennetworking.org>"
 
-#RUN apt remove cmdtest yarn
 RUN apt-get update && apt-get -y install apt-transport-https ca-certificates
 RUN apt-get update
 RUN apt-get -y install gcc cmake autoconf libtool pkg-config libmnl-dev libyaml-dev
