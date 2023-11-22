@@ -387,7 +387,7 @@ func (udm *UDM) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 	return profile, err
 }
 
-//UpdateNF is the callback function, this is called when keepalivetimer elapsed
+// UpdateNF is the callback function, this is called when keepalivetimer elapsed
 func (udm *UDM) UpdateNF() {
 	KeepAliveTimerMutex.Lock()
 	defer KeepAliveTimerMutex.Unlock()
