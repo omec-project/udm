@@ -387,7 +387,7 @@ func (udm *UDM) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 	return profile, err
 }
 
-//UpdateNF is the callback function, this is called when keepalivetimer elapsed
+// UpdateNF is the callback function, this is called when keepalivetimer elapsed
 func (udm *UDM) UpdateNF() {
 	KeepAliveTimerMutex.Lock()
 	defer KeepAliveTimerMutex.Unlock()
@@ -435,16 +435,14 @@ func (udm *UDM) registerNF() {
 		if err != nil {
 			logger.InitLog.Errorln(err.Error())
 		} else {
-			var newNrfUri string
 			var err1 error
 			var prof models.NfProfile
-			prof, newNrfUri, self.NfId, err1 = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, proflie)
+			prof, _, self.NfId, err1 = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, proflie)
 			if err1 != nil {
 				logger.InitLog.Errorln(err1.Error())
 			} else {
 				udm.StartKeepAliveTimer(prof)
 				logger.CfgLog.Infof("Sent Register NF Instance with updated profile")
-				self.NrfUri = newNrfUri
 			}
 		}
 	}
