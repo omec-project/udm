@@ -38,7 +38,8 @@ func HandleCreateEeSubscription(request *http_wrapper.Request) *http_wrapper.Res
 
 // TODO: complete this procedure based on TS 29503 5.5
 func CreateEeSubscriptionProcedure(ueIdentity string,
-	eesubscription models.EeSubscription) (*models.CreatedEeSubscription, *models.ProblemDetails) {
+	eesubscription models.EeSubscription,
+) (*models.CreatedEeSubscription, *models.ProblemDetails) {
 	udmSelf := udm_context.UDM_Self()
 
 	logger.EeLog.Debugf("udIdentity: %s", ueIdentity)
@@ -188,7 +189,8 @@ func HandleUpdateEeSubscription(request *http_wrapper.Request) *http_wrapper.Res
 
 // TODO: complete this procedure based on TS 29503 5.5
 func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
-	patchList []models.PatchItem) *models.ProblemDetails {
+	patchList []models.PatchItem,
+) *models.ProblemDetails {
 	udmSelf := udm_context.UDM_Self()
 
 	switch {

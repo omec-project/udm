@@ -16,14 +16,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/omec-project/openapi/models"
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
-
 	"github.com/omec-project/config5g/proto/client"
 	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
 	"github.com/omec-project/http2_util"
 	"github.com/omec-project/logger_util"
+	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/path_util"
 	pathUtilLogger "github.com/omec-project/path_util/logger"
 	"github.com/omec-project/udm/consumer"
@@ -37,6 +34,8 @@ import (
 	"github.com/omec-project/udm/ueauthentication"
 	"github.com/omec-project/udm/uecontextmanagement"
 	"github.com/omec-project/udm/util"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
 type UDM struct{}
@@ -158,7 +157,6 @@ func (udm *UDM) setLogLevel() {
 		}
 		pathUtilLogger.SetReportCaller(factory.UdmConfig.Logger.PathUtil.ReportCaller)
 	}
-
 }
 
 func (udm *UDM) FilterCli(c *cli.Context) (args []string) {
@@ -362,7 +360,7 @@ func (udm *UDM) StartKeepAliveTimer(nfProfile models.NfProfile) {
 		nfProfile.HeartBeatTimer = 60
 	}
 	logger.InitLog.Infof("Started KeepAlive Timer: %v sec", nfProfile.HeartBeatTimer)
-	//AfterFunc starts timer and waits for KeepAliveTimer to elapse and then calls udm.UpdateNF function
+	// AfterFunc starts timer and waits for KeepAliveTimer to elapse and then calls udm.UpdateNF function
 	KeepAliveTimer = time.AfterFunc(time.Duration(nfProfile.HeartBeatTimer)*time.Second, udm.UpdateNF)
 }
 
@@ -382,7 +380,7 @@ func (udm *UDM) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 		return profile, err
 	}
 	initLog.Infof("Pcf Profile Registering to NRF: %v", profile)
-	//Indefinite attempt to register until success
+	// Indefinite attempt to register until success
 	profile, _, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, profile)
 	return profile, err
 }
@@ -395,7 +393,7 @@ func (udm *UDM) UpdateNF() {
 		initLog.Warnf("KeepAlive timer has been stopped.")
 		return
 	}
-	//setting default value 30 sec
+	// setting default value 30 sec
 	var heartBeatTimer int32 = 30
 	pitem := models.PatchItem{
 		Op:    "replace",
@@ -407,10 +405,10 @@ func (udm *UDM) UpdateNF() {
 	nfProfile, problemDetails, err := consumer.SendUpdateNFInstance(patchItem)
 	if problemDetails != nil {
 		initLog.Errorf("UDM update to NRF ProblemDetails[%v]", problemDetails)
-		//5xx response from NRF, 404 Not Found, 400 Bad Request
+		// 5xx response from NRF, 404 Not Found, 400 Bad Request
 		if (problemDetails.Status/100) == 5 ||
 			problemDetails.Status == 404 || problemDetails.Status == 400 {
-			//register with NRF full profile
+			// register with NRF full profile
 			nfProfile, err = udm.BuildAndSendRegisterNFInstance()
 		}
 	} else if err != nil {
@@ -423,7 +421,7 @@ func (udm *UDM) UpdateNF() {
 		heartBeatTimer = nfProfile.HeartBeatTimer
 	}
 	logger.InitLog.Debugf("Restarted KeepAlive Timer: %v sec", heartBeatTimer)
-	//restart timer with received HeartBeatTimer value
+	// restart timer with received HeartBeatTimer value
 	KeepAliveTimer = time.AfterFunc(time.Duration(heartBeatTimer)*time.Second, udm.UpdateNF)
 }
 

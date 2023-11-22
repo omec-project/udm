@@ -110,7 +110,8 @@ func (context *UDMContext) GetUdmProfileBHNPrivateKey() string {
 
 func (context *UDMContext) ManageSmData(smDatafromUDR []models.SessionManagementSubscriptionData, snssaiFromReq string,
 	dnnFromReq string) (mp map[string]models.SessionManagementSubscriptionData, ind string,
-	Dnns []models.DnnConfiguration, allDnns []map[string]models.DnnConfiguration) {
+	Dnns []models.DnnConfiguration, allDnns []map[string]models.DnnConfiguration,
+) {
 	smDataMap := make(map[string]models.SessionManagementSubscriptionData)
 	sNssaiList := make([]string, len(smDatafromUDR))
 	// to obtain all DNN configurations identified by "dnn" for all network slices where such DNN is available
@@ -280,7 +281,8 @@ func (context *UDMContext) UdmUeFindByGpsi(gpsi string) (*UdmUeContext, bool) {
 
 // Function to create the AccessAndMobilitySubscriptionData for Ue
 func (context *UDMContext) CreateAccessMobilitySubsDataForUe(supi string,
-	body models.AccessAndMobilitySubscriptionData) {
+	body models.AccessAndMobilitySubscriptionData,
+) {
 	ue, ok := context.UdmUeFindBySupi(supi)
 	if !ok {
 		ue = context.NewUdmUe(supi)

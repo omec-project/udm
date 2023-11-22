@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/antihax/optional"
-
 	"github.com/omec-project/UeauCommon"
 	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/milenage"
@@ -159,7 +158,8 @@ func ConfirmAuthDataProcedure(authEvent models.AuthEvent, supi string) (problemD
 }
 
 func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest, supiOrSuci string) (
-	response *models.AuthenticationInfoResult, problemDetails *models.ProblemDetails) {
+	response *models.AuthenticationInfoResult, problemDetails *models.ProblemDetails,
+) {
 	logger.UeauLog.Traceln("In GenerateAuthDataProcedure")
 
 	response = &models.AuthenticationInfoResult{}
