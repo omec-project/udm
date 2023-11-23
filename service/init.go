@@ -429,15 +429,14 @@ func (udm *UDM) registerNF() {
 	self := context.UDM_Self()
 	for msg := range ConfigPodTrigger {
 		initLog.Infof("Minimum configuration from config pod available %v", msg)
-		proflie, err := consumer.BuildNFInstance(self)
+		profile, err := consumer.BuildNFInstance(self)
 		if err != nil {
 			logger.InitLog.Errorln(err.Error())
 		} else {
-			var err1 error
 			var prof models.NfProfile
-			prof, _, self.NfId, err1 = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, proflie)
-			if err1 != nil {
-				logger.InitLog.Errorln(err1.Error())
+			prof, _, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, profile)
+			if err != nil {
+				logger.InitLog.Errorln(err.Error())
 			} else {
 				udm.StartKeepAliveTimer(prof)
 				logger.CfgLog.Infof("Sent Register NF Instance with updated profile")
