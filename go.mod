@@ -18,7 +18,7 @@ require (
 	github.com/omec-project/path_util v1.1.0
 	github.com/omec-project/util_3gpp v1.1.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli v1.22.5
+	github.com/urfave/cli v1.22.14
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -26,7 +26,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
