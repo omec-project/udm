@@ -53,7 +53,8 @@ func BuildNFInstance(udmContext *udm_context.UDMContext) (profile models.NfProfi
 }
 
 var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.NfProfile) (prof models.NfProfile, resouceNrfUri string,
-	retrieveNfInstanceId string, err error) {
+	retrieveNfInstanceId string, err error,
+) {
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
 	client := Nnrf_NFManagement.NewAPIClient(configuration)
