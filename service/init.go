@@ -379,8 +379,8 @@ func (udm *UDM) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 		initLog.Error("Build UDM Profile Error: ", err)
 		return profile, err
 	}
-	initLog.Infof("Pcf Profile Registering to NRF: %v", profile)
-	// Indefinite attempt to register until success
+	initLog.Infof("UDM Profile Registering to NRF: %v", profile)
+	//Indefinite attempt to register until success
 	profile, _, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, profile)
 	return profile, err
 }
