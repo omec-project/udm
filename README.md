@@ -10,7 +10,7 @@ SPDX-License-Identifier: Apache-2.0
 # UDM
 
 Implements 3gpp 29.503 specification. Provides service
-to AUSF, AMF, SMF and consume from UDR. UDM supports SBI interface and any other network function can use the 
+to AUSF, AMF, SMF and consumes service from UDR. UDM supports SBI interface and any other network function can use the 
 service.
 
 ## UDM block diagram
