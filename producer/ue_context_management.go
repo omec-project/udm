@@ -40,9 +40,7 @@ func getUdrURI(id string) string {
 	if strings.Contains(id, "imsi") || strings.Contains(id, "nai") { // supi
 		ue, ok := udm_context.UDM_Self().UdmUeFindBySupi(id)
 		if ok {
-			if ue.UdrUri == "" {
-				ue.UdrUri = consumer.SendNFIntancesUDR(id, consumer.NFDiscoveryToUDRParamSupi)
-			}
+			ue.UdrUri = consumer.SendNFIntancesUDR(id, consumer.NFDiscoveryToUDRParamSupi)
 			return ue.UdrUri
 		} else {
 			ue = udm_context.UDM_Self().NewUdmUe(id)
@@ -54,15 +52,11 @@ func getUdrURI(id string) string {
 		udm_context.UDM_Self().UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.Amf3GppAccessRegistration != nil && ue.Amf3GppAccessRegistration.Pei == id {
-				if ue.UdrUri == "" {
-					ue.UdrUri = consumer.SendNFIntancesUDR(ue.Supi, consumer.NFDiscoveryToUDRParamSupi)
-				}
+				ue.UdrUri = consumer.SendNFIntancesUDR(ue.Supi, consumer.NFDiscoveryToUDRParamSupi)
 				udrURI = ue.UdrUri
 				return false
 			} else if ue.AmfNon3GppAccessRegistration != nil && ue.AmfNon3GppAccessRegistration.Pei == id {
-				if ue.UdrUri == "" {
-					ue.UdrUri = consumer.SendNFIntancesUDR(ue.Supi, consumer.NFDiscoveryToUDRParamSupi)
-				}
+				ue.UdrUri = consumer.SendNFIntancesUDR(ue.Supi, consumer.NFDiscoveryToUDRParamSupi)
 				udrURI = ue.UdrUri
 				return false
 			}
