@@ -49,8 +49,7 @@ func init() {
 type (
 	// Config information.
 	Config struct {
-		udmcfg         string
-		heartBeatTimer string
+		udmcfg string
 	}
 )
 
