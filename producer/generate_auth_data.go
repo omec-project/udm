@@ -7,15 +7,13 @@ package producer
 
 import (
 	"context"
-	cryptoRand "crypto/rand"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"net/http"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/antihax/optional"
 	"github.com/omec-project/UeauCommon"
@@ -163,7 +161,6 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	logger.UeauLog.Traceln("In GenerateAuthDataProcedure")
 
 	response = &models.AuthenticationInfoResult{}
-	rand.Seed(time.Now().UnixNano())
 	supi, err := suci.ToSupi(supiOrSuci, udm_context.UDM_Self().GetUdmProfileAHNPrivateKey())
 	if err != nil {
 		problemDetails = &models.ProblemDetails{
@@ -327,7 +324,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	// fmt.Printf("K=%x\nsqn=%x\nOP=%x\nOPC=%x\n", K, sqn, OP, OPC)
 
 	RAND := make([]byte, 16)
-	_, err = cryptoRand.Read(RAND)
+	_, err = rand.Read(RAND)
 	if err != nil {
 		problemDetails = &models.ProblemDetails{
 			Status: http.StatusForbidden,
@@ -386,7 +383,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 
 		SQNms, macS := aucSQN(opc, k, Auts, randHex)
 		if reflect.DeepEqual(macS, Auts[6:]) {
-			_, err = cryptoRand.Read(RAND)
+			_, err = rand.Read(RAND)
 			if err != nil {
 				problemDetails = &models.ProblemDetails{
 					Status: http.StatusForbidden,
