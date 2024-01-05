@@ -11,7 +11,7 @@ package factory
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/omec-project/udm/logger"
 	"gopkg.in/yaml.v2"
@@ -21,7 +21,7 @@ var UdmConfig Config
 
 // TODO: Support configuration update from REST api
 func InitConfigFactory(f string) error {
-	if content, err := ioutil.ReadFile(f); err != nil {
+	if content, err := os.ReadFile(f); err != nil {
 		return err
 	} else {
 		UdmConfig = Config{}
