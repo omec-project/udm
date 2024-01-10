@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: reuse lint
-        run: make check-reuse
+        uses: fsfe/reuse-action@v2
 
   fossa-check:
     runs-on: ubuntu-latest
