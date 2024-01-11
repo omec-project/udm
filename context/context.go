@@ -39,7 +39,6 @@ type UDMContext struct {
 	Name                           string
 	NfId                           string
 	GroupId                        string
-	SBIPort                        int
 	RegisterIPv4                   string // IP register to NRF
 	BindingIPv4                    string
 	UriScheme                      models.UriScheme
@@ -53,6 +52,7 @@ type UDMContext struct {
 	Keys                           *factory.Keys
 	EeSubscriptionIDGenerator      *idgenerator.IDGenerator
 	PlmnList                       []factory.PlmnSupportItem
+	SBIPort                        int
 }
 
 type UdmUeContext struct {
@@ -65,7 +65,6 @@ type UdmUeContext struct {
 	AccessAndMobilitySubscriptionData *models.AccessAndMobilitySubscriptionData
 	SmfSelSubsData                    *models.SmfSelectionSubscriptionData
 	UeCtxtInSmfData                   *models.UeContextInSmfData
-	TraceDataResponse                 models.TraceDataResponse
 	TraceData                         *models.TraceData
 	SessionManagementSubsData         map[string]models.SessionManagementSubscriptionData
 	SubsDataSets                      *models.SubscriptionDataSets
@@ -75,6 +74,7 @@ type UdmUeContext struct {
 	UdrUri                            string
 	UdmSubsToNotify                   map[string]*models.SubscriptionDataSubscriptions
 	EeSubscriptions                   map[string]*models.EeSubscription // subscriptionID as key
+	TraceDataResponse                 models.TraceDataResponse
 	amSubsDataLock                    sync.Mutex
 	smfSelSubsDataLock                sync.Mutex
 	SmSubsDataLock                    sync.RWMutex
@@ -87,9 +87,9 @@ func (ue *UdmUeContext) init() {
 }
 
 type UdmNFContext struct {
-	SubscriptionID                   string
 	SubscribeToNotifChange           *models.SdmSubscription // SubscriptionID as key
 	SubscribeToNotifSharedDataChange *models.SdmSubscription // SubscriptionID as key
+	SubscriptionID                   string
 }
 
 func (context *UDMContext) GetUdmProfileAHNPublicKey() string {
