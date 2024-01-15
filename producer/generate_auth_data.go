@@ -388,10 +388,10 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 				problemDetails = &models.ProblemDetails{
 					Status: http.StatusForbidden,
 					Cause:  authenticationRejected,
-					Detail: deCodeErr.Error(),
+					Detail: err.Error(),
 				}
 
-				logger.UeauLog.Errorln("err", deCodeErr)
+				logger.UeauLog.Errorln("err", err)
 				return nil, problemDetails
 			}
 
