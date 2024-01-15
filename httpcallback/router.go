@@ -74,7 +74,7 @@ var routes = Routes{
 		Pattern: "/", HandlerFunc: Index,
 	},
 	{
-		Name: "DataChangeNotificationToNF", Method: strings.ToUpper("Post"),
+		Name: "DataChangeNotificationToNF", Method: "POST",
 		Pattern: "/sdm-subscriptions", HandlerFunc: HTTPDataChangeNotificationToNF,
 	},
 }
