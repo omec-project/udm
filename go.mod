@@ -7,7 +7,6 @@ require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.6.0
-	github.com/omec-project/UeauCommon v1.1.0
 	github.com/omec-project/config5g v1.2.0
 	github.com/omec-project/http2_util v1.1.0
 	github.com/omec-project/http_wrapper v1.1.0
@@ -16,6 +15,7 @@ require (
 	github.com/omec-project/milenage v1.1.0
 	github.com/omec-project/openapi v1.1.0
 	github.com/omec-project/path_util v1.1.0
+	github.com/omec-project/util v1.0.12
 	github.com/omec-project/util_3gpp v1.1.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli v1.22.14
@@ -23,7 +23,7 @@ require (
 )
 
 require (
-	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
