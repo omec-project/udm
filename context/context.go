@@ -13,11 +13,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/omec-project/idgenerator"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nnrf_NFDiscovery"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/factory"
+	"github.com/omec-project/util/idgenerator"
 )
 
 var udmContext UDMContext
