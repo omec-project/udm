@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/antihax/optional"
-	"github.com/omec-project/UeauCommon"
 	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/milenage"
 	"github.com/omec-project/openapi"
@@ -25,6 +24,7 @@ import (
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/util"
+	"github.com/omec-project/util/ueauth"
 	"github.com/omec-project/util_3gpp/suci"
 )
 
@@ -506,21 +506,27 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 
 		// derive XRES*
 		key := append(CK, IK...)
-		FC := UeauCommon.FC_FOR_RES_STAR_XRES_STAR_DERIVATION
+		FC := ueauth.FC_FOR_RES_STAR_XRES_STAR_DERIVATION
 		P0 := []byte(authInfoRequest.ServingNetworkName)
 		P1 := RAND
 		P2 := RES
 
-		kdfValForXresStar := UeauCommon.GetKDFValue(
-			key, FC, P0, UeauCommon.KDFLen(P0), P1, UeauCommon.KDFLen(P1), P2, UeauCommon.KDFLen(P2))
+		kdfValForXresStar, err := ueauth.GetKDFValue(
+			key, FC, P0, ueauth.KDFLen(P0), P1, ueauth.KDFLen(P1), P2, ueauth.KDFLen(P2))
+		if err != nil {
+			logger.UeauLog.Error(err)
+		}
 		xresStar := kdfValForXresStar[len(kdfValForXresStar)/2:]
 		// fmt.Printf("xresStar = %x\n", xresStar)
 
 		// derive Kausf
-		FC = UeauCommon.FC_FOR_KAUSF_DERIVATION
+		FC = ueauth.FC_FOR_KAUSF_DERIVATION
 		P0 = []byte(authInfoRequest.ServingNetworkName)
 		P1 = SQNxorAK
-		kdfValForKausf := UeauCommon.GetKDFValue(key, FC, P0, UeauCommon.KDFLen(P0), P1, UeauCommon.KDFLen(P1))
+		kdfValForKausf, err := ueauth.GetKDFValue(key, FC, P0, ueauth.KDFLen(P0), P1, ueauth.KDFLen(P1))
+		if err != nil {
+			logger.UeauLog.Error(err)
+		}
 		// fmt.Printf("Kausf = %x\n", kdfValForKausf)
 
 		// Fill in rand, xresStar, autn, kausf
@@ -533,10 +539,13 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 
 		// derive CK' and IK'
 		key := append(CK, IK...)
-		FC := UeauCommon.FC_FOR_CK_PRIME_IK_PRIME_DERIVATION
+		FC := ueauth.FC_FOR_CK_PRIME_IK_PRIME_DERIVATION
 		P0 := []byte(authInfoRequest.ServingNetworkName)
 		P1 := SQNxorAK
-		kdfVal := UeauCommon.GetKDFValue(key, FC, P0, UeauCommon.KDFLen(P0), P1, UeauCommon.KDFLen(P1))
+		kdfVal, err := ueauth.GetKDFValue(key, FC, P0, ueauth.KDFLen(P0), P1, ueauth.KDFLen(P1))
+		if err != nil {
+			logger.UeauLog.Error(err)
+		}
 		// fmt.Printf("kdfVal = %x (len = %d)\n", kdfVal, len(kdfVal))
 
 		// For TS 35.208 test set 19 & RFC 5448 test vector 1
