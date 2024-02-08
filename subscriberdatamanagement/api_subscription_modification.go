@@ -19,7 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
@@ -57,7 +57,7 @@ func HTTPModify(c *gin.Context) {
 		return
 	}
 
-	req := http_wrapper.NewRequest(c.Request, sdmSubsModificationReq)
+	req := httpwrapper.NewRequest(c.Request, sdmSubsModificationReq)
 	req.Params["supi"] = c.Params.ByName("supi")
 	req.Params["subscriptionId"] = c.Params.ByName("subscriptionId")
 
@@ -107,7 +107,7 @@ func HTTPModifyForSharedData(c *gin.Context) {
 		return
 	}
 
-	req := http_wrapper.NewRequest(c.Request, sharedDataSubscriptions)
+	req := httpwrapper.NewRequest(c.Request, sharedDataSubscriptions)
 	req.Params["supi"] = c.Params.ByName("supi")
 	req.Params["subscriptionId"] = c.Params.ByName("subscriptionId")
 

@@ -9,14 +9,14 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/util"
+	"github.com/omec-project/util/httpwrapper"
 )
 
-func HandleUpdateRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleUpdateRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.PpLog.Infoln("Handle UpdateRequest")
 
@@ -29,9 +29,9 @@ func HandleUpdateRequest(request *http_wrapper.Request) *http_wrapper.Response {
 
 	// step 4: process the return value from step 3
 	if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
-		return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
 }
 

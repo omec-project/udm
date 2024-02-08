@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/antihax/optional"
-	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/milenage"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nudr_DataRepository"
@@ -24,6 +23,7 @@ import (
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/util"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/util/ueauth"
 	"github.com/omec-project/util_3gpp/suci"
 )
@@ -85,7 +85,7 @@ func strictHex(s string, n int) string {
 	}
 }
 
-func HandleGenerateAuthDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGenerateAuthDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.UeauLog.Infoln("Handle GenerateAuthDataRequest")
 
@@ -99,18 +99,18 @@ func HandleGenerateAuthDataRequest(request *http_wrapper.Request) *http_wrapper.
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
-func HandleConfirmAuthDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleConfirmAuthDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.UeauLog.Infoln("Handle ConfirmAuthDataRequest")
 
 	authEvent := request.Body.(models.AuthEvent)
@@ -119,9 +119,9 @@ func HandleConfirmAuthDataRequest(request *http_wrapper.Request) *http_wrapper.R
 	problemDetails := ConfirmAuthDataProcedure(authEvent, supi)
 
 	if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
-		return http_wrapper.NewResponse(http.StatusCreated, nil, nil)
+		return httpwrapper.NewResponse(http.StatusCreated, nil, nil)
 	}
 }
 

@@ -9,11 +9,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/producer"
+	"github.com/omec-project/util/httpwrapper"
 )
 
 func HTTPDataChangeNotificationToNF(c *gin.Context) {
@@ -46,7 +46,7 @@ func HTTPDataChangeNotificationToNF(c *gin.Context) {
 		return
 	}
 
-	req := http_wrapper.NewRequest(c.Request, dataChangeNotify)
+	req := httpwrapper.NewRequest(c.Request, dataChangeNotify)
 	req.Params["supi"] = c.Params.ByName("supi")
 
 	rsp := producer.HandleDataChangeNotificationToNFRequest(req)

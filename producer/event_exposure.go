@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/openapi/models"
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
+	"github.com/omec-project/util/httpwrapper"
 )
 
-func HandleCreateEeSubscription(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleCreateEeSubscription(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.EeLog.Infoln("Handle Create EE Subscription")
 
 	eesubscription := request.Body.(models.EeSubscription)
@@ -24,15 +24,15 @@ func HandleCreateEeSubscription(request *http_wrapper.Request) *http_wrapper.Res
 
 	createdEESubscription, problemDetails := CreateEeSubscriptionProcedure(ueIdentity, eesubscription)
 	if createdEESubscription != nil {
-		return http_wrapper.NewResponse(http.StatusCreated, nil, createdEESubscription)
+		return httpwrapper.NewResponse(http.StatusCreated, nil, createdEESubscription)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
 		problemDetails = &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
 			Cause:  "UNSPECIFIED_NF_FAILURE",
 		}
-		return http_wrapper.NewResponse(http.StatusInternalServerError, nil, problemDetails)
+		return httpwrapper.NewResponse(http.StatusInternalServerError, nil, problemDetails)
 	}
 }
 
@@ -130,12 +130,12 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 	}
 }
 
-func HandleDeleteEeSubscription(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleDeleteEeSubscription(request *httpwrapper.Request) *httpwrapper.Response {
 	ueIdentity := request.Params["ueIdentity"]
 	subscriptionID := request.Params["subscriptionID"]
 
 	DeleteEeSubscriptionProcedure(ueIdentity, subscriptionID)
-	return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
 // TODO: complete this procedure based on TS 29503 5.5
@@ -171,7 +171,7 @@ func DeleteEeSubscriptionProcedure(ueIdentity string, subscriptionID string) {
 	}
 }
 
-func HandleUpdateEeSubscription(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleUpdateEeSubscription(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.EeLog.Infoln("Handle Update EE subscription")
 	logger.EeLog.Warnln("Update EE Subscription is not implemented")
 
@@ -181,9 +181,9 @@ func HandleUpdateEeSubscription(request *http_wrapper.Request) *http_wrapper.Res
 
 	problemDetails := UpdateEeSubscriptionProcedure(ueIdentity, subscriptionID, patchList)
 	if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
-		return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
 }
 

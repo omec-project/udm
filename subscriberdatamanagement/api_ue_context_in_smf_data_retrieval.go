@@ -19,7 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
@@ -28,7 +28,7 @@ import (
 
 // GetUeContextInSmfData - retrieve a UE's UE Context In SMF Data
 func HTTPGetUeContextInSmfData(c *gin.Context) {
-	req := http_wrapper.NewRequest(c.Request, nil)
+	req := httpwrapper.NewRequest(c.Request, nil)
 	req.Params["supi"] = c.Params.ByName("supi")
 	req.Query.Set("supported-features", c.Query("supported-features"))
 
