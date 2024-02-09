@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/antihax/optional"
-	"github.com/omec-project/milenage"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nudr_DataRepository"
 	"github.com/omec-project/openapi/models"
@@ -24,6 +23,7 @@ import (
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/util"
 	"github.com/omec-project/util/httpwrapper"
+	"github.com/omec-project/util/milenage"
 	"github.com/omec-project/util/ueauth"
 	"github.com/omec-project/util_3gpp/suci"
 )

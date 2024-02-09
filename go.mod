@@ -10,7 +10,6 @@ require (
 	github.com/omec-project/config5g v1.2.0
 	github.com/omec-project/http2_util v1.1.0
 	github.com/omec-project/logger_util v1.1.0
-	github.com/omec-project/milenage v1.1.0
 	github.com/omec-project/openapi v1.1.0
 	github.com/omec-project/path_util v1.1.0
 	github.com/omec-project/util v1.0.12
