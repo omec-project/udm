@@ -19,7 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
@@ -56,7 +56,7 @@ func HTTPCreateEeSubscription(c *gin.Context) {
 		return
 	}
 
-	req := http_wrapper.NewRequest(c.Request, eeSubscriptionReq)
+	req := httpwrapper.NewRequest(c.Request, eeSubscriptionReq)
 	req.Params["ueIdentity"] = c.Params.ByName("ueIdentity")
 
 	rsp := producer.HandleCreateEeSubscription(req)

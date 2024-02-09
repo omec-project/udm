@@ -12,7 +12,6 @@ import (
 	"strconv"
 
 	"github.com/antihax/optional"
-	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nudm_SubscriberDataManagement"
 	Nudr "github.com/omec-project/openapi/Nudr_DataRepository"
@@ -20,9 +19,10 @@ import (
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/util"
+	"github.com/omec-project/util/httpwrapper"
 )
 
-func HandleGetAmDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetAmDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle GetAmData")
 
@@ -37,15 +37,15 @@ func HandleGetAmDataRequest(request *http_wrapper.Request) *http_wrapper.Respons
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 // GetAmDataProcedure
@@ -95,7 +95,7 @@ func getAmDataProcedure(supi string, plmnID string, supportedFeatures string) (
 	}
 }
 
-func HandleGetIdTranslationResultRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetIdTranslationResultRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle GetIdTranslationResultRequest")
 
@@ -108,15 +108,15 @@ func HandleGetIdTranslationResultRequest(request *http_wrapper.Request) *http_wr
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func getIdTranslationResultProcedure(gpsi string) (response *models.IdTranslationResult,
@@ -178,7 +178,7 @@ func getIdTranslationResultProcedure(gpsi string) (response *models.IdTranslatio
 	}
 }
 
-func HandleGetSupiRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetSupiRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle GetSupiRequest")
 
@@ -194,15 +194,15 @@ func HandleGetSupiRequest(request *http_wrapper.Request) *http_wrapper.Response 
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func getSupiProcedure(supi string, plmnID string, dataSetNames []string, supportedFeatures string) (
@@ -444,7 +444,7 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	}
 }
 
-func HandleGetSharedDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle GetSharedData")
 
@@ -457,15 +457,15 @@ func HandleGetSharedDataRequest(request *http_wrapper.Request) *http_wrapper.Res
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func getSharedDataProcedure(sharedDataIds []string, supportedFeatures string) (
@@ -516,7 +516,7 @@ func getSharedDataProcedure(sharedDataIds []string, supportedFeatures string) (
 	}
 }
 
-func HandleGetSmDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetSmDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle GetSmData")
 
@@ -533,15 +533,15 @@ func HandleGetSmDataRequest(request *http_wrapper.Request) *http_wrapper.Respons
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func getSmDataProcedure(supi string, plmnID string, Dnn string, Snssai string, supportedFeatures string) (
@@ -621,7 +621,7 @@ func getSmDataProcedure(supi string, plmnID string, Dnn string, Snssai string, s
 	}
 }
 
-func HandleGetNssaiRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetNssaiRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle GetNssai")
 
@@ -636,15 +636,15 @@ func HandleGetNssaiRequest(request *http_wrapper.Request) *http_wrapper.Response
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func getNssaiProcedure(supi string, plmnID string, supportedFeatures string) (
@@ -697,7 +697,7 @@ func getNssaiProcedure(supi string, plmnID string, supportedFeatures string) (
 	}
 }
 
-func HandleGetSmfSelectDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetSmfSelectDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle GetSmfSelectData")
 
@@ -712,15 +712,15 @@ func HandleGetSmfSelectDataRequest(request *http_wrapper.Request) *http_wrapper.
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func getSmfSelectDataProcedure(supi string, plmnID string, supportedFeatures string) (
@@ -774,7 +774,7 @@ func getSmfSelectDataProcedure(supi string, plmnID string, supportedFeatures str
 	}
 }
 
-func HandleSubscribeToSharedDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleSubscribeToSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle SubscribeToSharedData")
 
@@ -787,11 +787,11 @@ func HandleSubscribeToSharedDataRequest(request *http_wrapper.Request) *http_wra
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusCreated, header, response)
+		return httpwrapper.NewResponse(http.StatusCreated, header, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
-		return http_wrapper.NewResponse(http.StatusNotFound, nil, nil)
+		return httpwrapper.NewResponse(http.StatusNotFound, nil, nil)
 	}
 }
 
@@ -846,7 +846,7 @@ func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
 	}
 }
 
-func HandleSubscribeRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleSubscribeRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle Subscribe")
 
@@ -860,11 +860,11 @@ func HandleSubscribeRequest(request *http_wrapper.Request) *http_wrapper.Respons
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusCreated, header, response)
+		return httpwrapper.NewResponse(http.StatusCreated, header, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
-		return http_wrapper.NewResponse(http.StatusNotFound, nil, nil)
+		return httpwrapper.NewResponse(http.StatusNotFound, nil, nil)
 	}
 }
 
@@ -923,7 +923,7 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, supi string) (
 	}
 }
 
-func HandleUnsubscribeForSharedDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleUnsubscribeForSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.SdmLog.Infof("Handle UnsubscribeForSharedData")
 
 	// step 2: retrieve request
@@ -933,10 +933,10 @@ func HandleUnsubscribeForSharedDataRequest(request *http_wrapper.Request) *http_
 
 	// step 4: process the return value from step 3
 	if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
-	return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
 func unsubscribeForSharedDataProcedure(subscriptionID string) *models.ProblemDetails {
@@ -977,7 +977,7 @@ func unsubscribeForSharedDataProcedure(subscriptionID string) *models.ProblemDet
 	}
 }
 
-func HandleUnsubscribeRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleUnsubscribeRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.SdmLog.Infof("Handle Unsubscribe")
 
 	// step 2: retrieve request
@@ -989,10 +989,10 @@ func HandleUnsubscribeRequest(request *http_wrapper.Request) *http_wrapper.Respo
 
 	// step 4: process the return value from step 3
 	if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
-	return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
 func unsubscribeProcedure(supi string, subscriptionID string) *models.ProblemDetails {
@@ -1034,7 +1034,7 @@ func unsubscribeProcedure(supi string, subscriptionID string) *models.ProblemDet
 	}
 }
 
-func HandleModifyRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleModifyRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle Modify")
 
@@ -1049,15 +1049,15 @@ func HandleModifyRequest(request *http_wrapper.Request) *http_wrapper.Response {
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func modifyProcedure(sdmSubsModification *models.SdmSubsModification, supi string, subscriptionID string) (
@@ -1106,7 +1106,7 @@ func modifyProcedure(sdmSubsModification *models.SdmSubsModification, supi strin
 	}
 }
 
-func HandleModifyForSharedDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleModifyForSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle ModifyForSharedData")
 
@@ -1121,15 +1121,15 @@ func HandleModifyForSharedDataRequest(request *http_wrapper.Request) *http_wrapp
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func modifyForSharedDataProcedure(sdmSubsModification *models.SdmSubsModification, supi string,
@@ -1180,7 +1180,7 @@ func modifyForSharedDataProcedure(sdmSubsModification *models.SdmSubsModificatio
 	}
 }
 
-func HandleGetTraceDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetTraceDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle GetTraceData")
 
@@ -1194,15 +1194,15 @@ func HandleGetTraceDataRequest(request *http_wrapper.Request) *http_wrapper.Resp
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func getTraceDataProcedure(supi string, plmnID string) (
@@ -1257,7 +1257,7 @@ func getTraceDataProcedure(supi string, plmnID string) (
 	}
 }
 
-func HandleGetUeContextInSmfDataRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetUeContextInSmfDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.SdmLog.Infof("Handle GetUeContextInSmfData")
 
@@ -1271,15 +1271,15 @@ func HandleGetUeContextInSmfDataRequest(request *http_wrapper.Request) *http_wra
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func getUeContextInSmfDataProcedure(supi string, supportedFeatures string) (

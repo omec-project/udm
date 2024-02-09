@@ -19,7 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
@@ -58,7 +58,7 @@ func HTTPUpdate(c *gin.Context) {
 		return
 	}
 
-	req := http_wrapper.NewRequest(c.Request, ppDataReq)
+	req := httpwrapper.NewRequest(c.Request, ppDataReq)
 	req.Params["gspi"] = c.Params.ByName("gpsi")
 
 	rsp := producer.HandleUpdateRequest(req)

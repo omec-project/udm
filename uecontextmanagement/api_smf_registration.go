@@ -19,7 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
@@ -57,7 +57,7 @@ func HTTPRegistrationSmfRegistrations(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
-	req := http_wrapper.NewRequest(c.Request, smfRegistration)
+	req := httpwrapper.NewRequest(c.Request, smfRegistration)
 	req.Params["ueId"] = c.Params.ByName("ueId")
 	req.Params["pduSessionId"] = c.Params.ByName("pduSessionId")
 

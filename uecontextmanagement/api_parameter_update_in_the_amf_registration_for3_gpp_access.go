@@ -20,7 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	// "fmt"
-	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
@@ -59,7 +59,7 @@ func HTTPUpdateAmf3gppAccess(c *gin.Context) {
 		return
 	}
 
-	req := http_wrapper.NewRequest(c.Request, amf3GppAccessRegistrationModification)
+	req := httpwrapper.NewRequest(c.Request, amf3GppAccessRegistrationModification)
 	req.Params["ueId"] = c.Param("ueId")
 
 	rsp := producer.HandleUpdateAmf3gppAccessRequest(req)

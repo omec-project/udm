@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/antihax/optional"
-	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nudr_DataRepository"
 	"github.com/omec-project/openapi/models"
@@ -22,6 +21,7 @@ import (
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/producer/callback"
 	"github.com/omec-project/udm/util"
+	"github.com/omec-project/util/httpwrapper"
 )
 
 func createUDMClientToUDR(id string) (*Nudr_DataRepository.APIClient, error) {
@@ -73,7 +73,7 @@ func getUdrURI(id string) string {
 	return consumer.SendNFIntancesUDR("", consumer.NFDiscoveryToUDRParamNone)
 }
 
-func HandleGetAmf3gppAccessRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetAmf3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.UecmLog.Infof("Handle HandleGetAmf3gppAccessRequest")
 
@@ -87,15 +87,15 @@ func HandleGetAmf3gppAccessRequest(request *http_wrapper.Request) *http_wrapper.
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func GetAmf3gppAccessProcedure(ueID string, supportedFeatures string) (
@@ -128,7 +128,7 @@ func GetAmf3gppAccessProcedure(ueID string, supportedFeatures string) (
 	return &amf3GppAccessRegistration, nil
 }
 
-func HandleGetAmfNon3gppAccessRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleGetAmfNon3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.UecmLog.Infoln("Handle GetAmfNon3gppAccessRequest")
 
@@ -144,15 +144,15 @@ func HandleGetAmfNon3gppAccessRequest(request *http_wrapper.Request) *http_wrapp
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func GetAmfNon3gppAccessProcedure(queryAmfContextNon3gppParamOpts Nudr_DataRepository.
@@ -183,7 +183,7 @@ func GetAmfNon3gppAccessProcedure(queryAmfContextNon3gppParamOpts Nudr_DataRepos
 	return &amfNon3GppAccessRegistration, nil
 }
 
-func HandleRegistrationAmf3gppAccessRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleRegistrationAmf3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.UecmLog.Infof("Handle RegistrationAmf3gppAccess")
 
@@ -198,11 +198,11 @@ func HandleRegistrationAmf3gppAccessRequest(request *http_wrapper.Request) *http
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusCreated, header, response)
+		return httpwrapper.NewResponse(http.StatusCreated, header, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
-		return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
 }
 
@@ -264,7 +264,7 @@ func RegistrationAmf3gppAccessProcedure(registerRequest models.Amf3GppAccessRegi
 }
 
 // TS 29.503 5.3.2.2.3
-func HandleRegisterAmfNon3gppAccessRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleRegisterAmfNon3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.UecmLog.Infof("Handle RegisterAmfNon3gppAccessRequest")
 
@@ -278,11 +278,11 @@ func HandleRegisterAmfNon3gppAccessRequest(request *http_wrapper.Request) *http_
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusCreated, header, response)
+		return httpwrapper.NewResponse(http.StatusCreated, header, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
-		return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
 }
 
@@ -341,7 +341,7 @@ func RegisterAmfNon3gppAccessProcedure(registerRequest models.AmfNon3GppAccessRe
 }
 
 // TODO: ueID may be SUPI or GPSI, but this function did not handle this condition
-func HandleUpdateAmf3gppAccessRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleUpdateAmf3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.UecmLog.Infof("Handle UpdateAmf3gppAccessRequest")
 
@@ -354,9 +354,9 @@ func HandleUpdateAmf3gppAccessRequest(request *http_wrapper.Request) *http_wrapp
 
 	// step 4: process the return value from step 3
 	if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
-		return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
 }
 
@@ -453,7 +453,7 @@ func UpdateAmf3gppAccessProcedure(request models.Amf3GppAccessRegistrationModifi
 }
 
 // TODO: ueID may be SUPI or GPSI, but this function did not handle this condition
-func HandleUpdateAmfNon3gppAccessRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleUpdateAmfNon3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.UecmLog.Infof("Handle UpdateAmfNon3gppAccessRequest")
 
@@ -466,9 +466,9 @@ func HandleUpdateAmfNon3gppAccessRequest(request *http_wrapper.Request) *http_wr
 
 	// step 4: process the return value from step 3
 	if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
-		return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
 }
 
@@ -563,7 +563,7 @@ func UpdateAmfNon3gppAccessProcedure(request models.AmfNon3GppAccessRegistration
 	return nil
 }
 
-func HandleDeregistrationSmfRegistrations(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleDeregistrationSmfRegistrations(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.UecmLog.Infof("Handle DeregistrationSmfRegistrations")
 
@@ -576,9 +576,9 @@ func HandleDeregistrationSmfRegistrations(request *http_wrapper.Request) *http_w
 
 	// step 4: process the return value from step 3
 	if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
-		return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
 }
 
@@ -607,7 +607,7 @@ func DeregistrationSmfRegistrationsProcedure(ueID string, pduSessionID string) (
 }
 
 // SmfRegistrations
-func HandleRegistrationSmfRegistrationsRequest(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleRegistrationSmfRegistrationsRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	// step 1: log
 	logger.UecmLog.Infof("Handle RegistrationSmfRegistrations")
 
@@ -622,12 +622,12 @@ func HandleRegistrationSmfRegistrationsRequest(request *http_wrapper.Request) *h
 	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
-		return http_wrapper.NewResponse(http.StatusCreated, header, response)
+		return httpwrapper.NewResponse(http.StatusCreated, header, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
 		// all nil
-		return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
 }
 

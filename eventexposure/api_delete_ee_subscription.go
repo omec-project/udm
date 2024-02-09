@@ -17,13 +17,13 @@ package eventexposure
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/udm/producer"
 )
 
 // DeleteEeSubscription - Unsubscribe
 func HTTPDeleteEeSubscription(c *gin.Context) {
-	req := http_wrapper.NewRequest(c.Request, nil)
+	req := httpwrapper.NewRequest(c.Request, nil)
 	req.Params["ueIdentity"] = c.Params.ByName("ueIdentity")
 	req.Params["subscriptionID"] = c.Params.ByName("subscriptionId")
 

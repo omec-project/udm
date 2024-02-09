@@ -20,7 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	// "fmt"
-	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
@@ -29,7 +29,7 @@ import (
 
 // GetAmf3gppAccess - retrieve the AMF registration for 3GPP access information
 func HTTPGetAmf3gppAccess(c *gin.Context) {
-	req := http_wrapper.NewRequest(c.Request, nil)
+	req := httpwrapper.NewRequest(c.Request, nil)
 	req.Params["ueId"] = c.Param("ueId")
 	req.Query.Add("supported-features", c.Query("supported-features"))
 
