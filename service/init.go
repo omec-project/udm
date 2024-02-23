@@ -21,8 +21,6 @@ import (
 	"github.com/omec-project/http2_util"
 	"github.com/omec-project/logger_util"
 	"github.com/omec-project/openapi/models"
-	"github.com/omec-project/path_util"
-	pathUtilLogger "github.com/omec-project/path_util/logger"
 	"github.com/omec-project/udm/consumer"
 	"github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/eventexposure"
@@ -34,6 +32,8 @@ import (
 	"github.com/omec-project/udm/ueauthentication"
 	"github.com/omec-project/udm/uecontextmanagement"
 	"github.com/omec-project/udm/util"
+	"github.com/omec-project/util/path_util"
+	pathUtilLogger "github.com/omec-project/util/path_util/logger"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
