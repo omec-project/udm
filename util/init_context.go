@@ -14,6 +14,7 @@ import (
 	"github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/factory"
 	"github.com/omec-project/udm/logger"
+	"github.com/omec-project/util_3gpp/suci"
 )
 
 func InitUDMContext(udmContext *context.UDMContext) {
@@ -53,7 +54,18 @@ func InitUDMContext(udmContext *context.UDMContext) {
 	udmContext.NrfUri = configuration.NrfUri
 	servingNameList := configuration.ServiceNameList
 
-	udmContext.Keys = configuration.Keys
+	udmContext.SuciProfiles = []suci.SuciProfile{
+		{
+			ProtectionScheme: "1",
+			PrivateKey:       configuration.Keys.UdmProfileAHNPrivateKey,
+			PublicKey:        configuration.Keys.UdmProfileAHNPublicKey,
+		},
+		{
+			ProtectionScheme: "2",
+			PrivateKey:       configuration.Keys.UdmProfileBHNPrivateKey,
+			PublicKey:        configuration.Keys.UdmProfileBHNPublicKey,
+		},
+	}
 	udmContext.PlmnList = configuration.PlmnList
 	udmContext.InitNFService(servingNameList, config.Info.Version)
 }

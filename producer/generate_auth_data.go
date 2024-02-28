@@ -161,19 +161,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	logger.UeauLog.Traceln("In GenerateAuthDataProcedure")
 
 	response = &models.AuthenticationInfoResult{}
-	profiles := []suci.SuciProfile{
-		{
-			ProtectionScheme: "1",
-			PrivateKey:       udm_context.UDM_Self().GetUdmProfileAHNPrivateKey(),
-			PublicKey:        udm_context.UDM_Self().GetUdmProfileAHNPublicKey(),
-		},
-		{
-			ProtectionScheme: "2",
-			PrivateKey:       udm_context.UDM_Self().GetUdmProfileBHNPrivateKey(),
-			PublicKey:        udm_context.UDM_Self().GetUdmProfileBHNPublicKey(),
-		},
-	}
-	supi, err := suci.ToSupi(supiOrSuci, profiles)
+	supi, err := suci.ToSupi(supiOrSuci, udm_context.UDM_Self().SuciProfiles)
 	if err != nil {
 		problemDetails = &models.ProblemDetails{
 			Status: http.StatusForbidden,
