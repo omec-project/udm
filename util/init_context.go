@@ -56,12 +56,12 @@ func InitUDMContext(udmContext *context.UDMContext) {
 
 	udmContext.SuciProfiles = []suci.SuciProfile{
 		{
-			ProtectionScheme: "1",
+			ProtectionScheme: "1", // Standard defined value for Protection Scheme A (TS 33.501 Annex C)
 			PrivateKey:       configuration.Keys.UdmProfileAHNPrivateKey,
 			PublicKey:        configuration.Keys.UdmProfileAHNPublicKey,
 		},
 		{
-			ProtectionScheme: "2",
+			ProtectionScheme: "2", // Standard defined value for Protection Scheme B (TS 33.501 Annex C)
 			PrivateKey:       configuration.Keys.UdmProfileBHNPrivateKey,
 			PublicKey:        configuration.Keys.UdmProfileBHNPublicKey,
 		},
