@@ -18,6 +18,7 @@ import (
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/factory"
 	"github.com/omec-project/util/idgenerator"
+	"github.com/omec-project/util_3gpp/suci"
 )
 
 var udmContext UDMContext
@@ -49,7 +50,7 @@ type UDMContext struct {
 	GpsiSupiList                   models.IdentityData
 	SharedSubsDataMap              map[string]models.SharedData // sharedDataIds as key
 	SubscriptionOfSharedDataChange sync.Map                     // subscriptionID as key
-	Keys                           *factory.Keys
+	SuciProfiles                   []suci.SuciProfile
 	EeSubscriptionIDGenerator      *idgenerator.IDGenerator
 	PlmnList                       []factory.PlmnSupportItem
 	SBIPort                        int
@@ -90,22 +91,6 @@ type UdmNFContext struct {
 	SubscribeToNotifChange           *models.SdmSubscription // SubscriptionID as key
 	SubscribeToNotifSharedDataChange *models.SdmSubscription // SubscriptionID as key
 	SubscriptionID                   string
-}
-
-func (context *UDMContext) GetUdmProfileAHNPublicKey() string {
-	return context.Keys.UdmProfileAHNPublicKey
-}
-
-func (context *UDMContext) GetUdmProfileAHNPrivateKey() string {
-	return context.Keys.UdmProfileAHNPrivateKey
-}
-
-func (context *UDMContext) GetUdmProfileBHNPublicKey() string {
-	return context.Keys.UdmProfileBHNPublicKey
-}
-
-func (context *UDMContext) GetUdmProfileBHNPrivateKey() string {
-	return context.Keys.UdmProfileBHNPrivateKey
 }
 
 func (context *UDMContext) ManageSmData(smDatafromUDR []models.SessionManagementSubscriptionData, snssaiFromReq string,
