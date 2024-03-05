@@ -6,7 +6,7 @@
 
 FROM golang:1.22.1-bookworm AS builder
 
-LABEL maintainer="Aether SD-Core <dev@aetherproject.org>
+LABEL maintainer="Aether SD-Core <dev@aetherproject.org>"
 
 RUN apt-get update && \
     apt-get -y install --no-install-recommends \
