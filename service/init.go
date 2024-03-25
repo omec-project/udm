@@ -106,7 +106,7 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 	roc := os.Getenv("MANAGED_BY_CONFIG_POD")
 	if roc == "true" {
 		initLog.Infoln("MANAGED_BY_CONFIG_POD is true")
-		commChannel := client.ConfigWatcher()
+		commChannel := client.ConfigWatcher(factory.UdmConfig.Configuration.WebuiUri)
 		go udm.updateConfig(commChannel)
 	} else {
 		go func() {
