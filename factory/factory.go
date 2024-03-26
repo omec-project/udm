@@ -29,6 +29,9 @@ func InitConfigFactory(f string) error {
 		if yamlErr := yaml.Unmarshal(content, &UdmConfig); yamlErr != nil {
 			return yamlErr
 		}
+		if UdmConfig.Configuration.WebuiUri == "" {
+			UdmConfig.Configuration.WebuiUri = "webui:9876"
+		}
 	}
 
 	return nil
