@@ -14,7 +14,7 @@ require (
 	github.com/omec-project/util v1.0.13
 	github.com/omec-project/util_3gpp v1.2.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli v1.22.14
 	gopkg.in/yaml.v2 v2.4.0
 )
