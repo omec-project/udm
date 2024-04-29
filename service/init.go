@@ -27,6 +27,7 @@ import (
 	"github.com/omec-project/udm/factory"
 	"github.com/omec-project/udm/httpcallback"
 	"github.com/omec-project/udm/logger"
+	"github.com/omec-project/udm/metrics"
 	"github.com/omec-project/udm/parameterprovision"
 	"github.com/omec-project/udm/subscriberdatamanagement"
 	"github.com/omec-project/udm/ueauthentication"
@@ -189,6 +190,8 @@ func (udm *UDM) Start() {
 	subscriberdatamanagement.AddService(router)
 	ueauthentication.AddService(router)
 	uecontextmanagement.AddService(router)
+
+	go metrics.InitMetrics()
 
 	udmLogPath := path_util.Free5gcPath("omec-project/udmsslkey.log")
 	udmPemPath := path_util.Free5gcPath("free5gc/support/TLS/udm.pem")
