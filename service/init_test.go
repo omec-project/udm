@@ -16,7 +16,10 @@ import (
 
 func Test_nrf_url_is_not_overwritten_when_registering(t *testing.T) {
 	svr := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "banana")
+		_, err := fmt.Fprintf(w, "banana")
+		if err != nil {
+			t.Errorf("Fprintf failed to format/write. Error: %v", err)
+		}
 	}))
 	svr.EnableHTTP2 = true
 	svr.StartTLS()
