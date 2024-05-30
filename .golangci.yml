@@ -234,7 +234,7 @@ linters:
     - gci
     - misspell
     - gofumpt
-    # - whitespace
+    - whitespace
     - unconvert
     - predeclared
     - noctx
