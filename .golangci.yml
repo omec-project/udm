@@ -225,7 +225,7 @@ linters:
     # - lll
     - godox
     #- gomnd
-    #- goconst
+    - goconst
     # - gocognit
     # - nestif
     # - gomodguard
