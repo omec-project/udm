@@ -219,7 +219,7 @@ linters:
     - staticcheck
     - unused
     - gosimple
-    # - ineffassign
+    - ineffassign
     - typecheck
     # Additional
     # - lll
@@ -227,7 +227,6 @@ linters:
     #- gomnd
     #- goconst
     # - gocognit
-    # - maligned
     # - nestif
     # - gomodguard
     # - nakedret
