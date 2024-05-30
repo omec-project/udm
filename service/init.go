@@ -382,7 +382,7 @@ func (udm *UDM) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 		return profile, err
 	}
 	initLog.Infof("UDM Profile Registering to NRF: %v", profile)
-	//Indefinite attempt to register until success
+	// Indefinite attempt to register until success
 	profile, _, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, profile)
 	return profile, err
 }

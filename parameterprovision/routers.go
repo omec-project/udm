@@ -20,8 +20,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	logger_util "github.com/omec-project/util/logger"
 	"github.com/omec-project/udm/logger"
+	logger_util "github.com/omec-project/util/logger"
 )
 
 // Route is the information for every URI.
