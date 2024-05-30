@@ -18,7 +18,7 @@ import (
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/factory"
 	"github.com/omec-project/util/idgenerator"
-	"github.com/omec-project/util_3gpp/suci"
+	"github.com/omec-project/util/util_3gpp/suci"
 )
 
 var udmContext UDMContext
