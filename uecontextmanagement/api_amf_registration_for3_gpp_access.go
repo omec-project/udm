@@ -20,11 +20,11 @@ import (
 	"github.com/gin-gonic/gin"
 
 	// "fmt"
-	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/producer"
+	"github.com/omec-project/util/httpwrapper"
 )
 
 // RegistrationAmf3gppAccess - register as AMF for 3GPP access
