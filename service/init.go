@@ -323,7 +323,7 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 							break
 						}
 					}
-					if found == false {
+					if !found {
 						self.PlmnList = append(self.PlmnList, temp)
 						logger.GrpcLog.Infoln("Plmn added in the context", self.PlmnList)
 					}
@@ -332,7 +332,7 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 				}
 			}
 		}
-		if minConfig == false {
+		if !minConfig {
 			// first slice Created
 			if len(self.PlmnList) > 0 {
 				minConfig = true

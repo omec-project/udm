@@ -218,7 +218,7 @@ linters:
     - errcheck
     - staticcheck
     - unused
-    # - gosimple
+    - gosimple
     # - ineffassign
     - typecheck
     # Additional
@@ -243,7 +243,7 @@ linters:
     - asciicheck
       #- stylecheck
       # - unparam
-      #- wsl
+      # - wsl
 
   #disable-all: false
   fast: true
