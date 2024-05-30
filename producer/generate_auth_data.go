@@ -25,7 +25,7 @@ import (
 	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/util/milenage"
 	"github.com/omec-project/util/ueauth"
-	"github.com/omec-project/util_3gpp/suci"
+	"github.com/omec-project/util/util_3gpp/suci"
 )
 
 const (

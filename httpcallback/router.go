@@ -9,8 +9,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/omec-project/logger_util"
 	"github.com/omec-project/udm/logger"
+	logger_util "github.com/omec-project/util/logger"
 	"github.com/sirupsen/logrus"
 )
 
