@@ -323,7 +323,7 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 							break
 						}
 					}
-					if found == false {
+					if !found {
 						self.PlmnList = append(self.PlmnList, temp)
 						logger.GrpcLog.Infoln("Plmn added in the context", self.PlmnList)
 					}
@@ -332,7 +332,7 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 				}
 			}
 		}
-		if minConfig == false {
+		if !minConfig {
 			// first slice Created
 			if len(self.PlmnList) > 0 {
 				minConfig = true
@@ -382,7 +382,7 @@ func (udm *UDM) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 		return profile, err
 	}
 	initLog.Infof("UDM Profile Registering to NRF: %v", profile)
-	//Indefinite attempt to register until success
+	// Indefinite attempt to register until success
 	profile, _, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, profile)
 	return profile, err
 }

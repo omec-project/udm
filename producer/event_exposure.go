@@ -16,6 +16,8 @@ import (
 	"github.com/omec-project/util/httpwrapper"
 )
 
+const anyUE = "anyUE"
+
 func HandleCreateEeSubscription(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.EeLog.Infoln("Handle Create EE Subscription")
 
@@ -96,7 +98,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 		})
 		return createdEeSubscription, nil
 	// represents any UEs
-	case ueIdentity == "anyUE":
+	case ueIdentity == anyUE:
 		id, err := udmSelf.EeSubscriptionIDGenerator.Allocate()
 		if err != nil {
 			problemDetails := &models.ProblemDetails{
@@ -157,7 +159,7 @@ func DeleteEeSubscriptionProcedure(ueIdentity string, subscriptionID string) {
 			}
 			return true
 		})
-	case ueIdentity == "anyUE":
+	case ueIdentity == anyUE:
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			delete(ue.EeSubscriptions, subscriptionID)
@@ -232,7 +234,7 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 			return true
 		})
 		return nil
-	case ueIdentity == "anyUE":
+	case ueIdentity == anyUE:
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if _, ok := ue.EeSubscriptions[subscriptionID]; ok {
