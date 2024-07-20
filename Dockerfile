@@ -26,7 +26,7 @@ WORKDIR $GOPATH/src/udm
 COPY . .
 RUN make all
 
-FROM alpine:3.20 as udm
+FROM alpine:3.20 AS udm
 
 LABEL description="ONF open source 5G Core Network" \
     version="Stage 3"
