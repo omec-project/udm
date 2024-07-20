@@ -198,8 +198,8 @@ func (udm *UDM) Start() {
 	udmKeyPath := path_util.Free5gcPath("free5gc/support/TLS/udm.key")
 	if sbi.Tls != nil {
 		udmLogPath = path_util.Free5gcPath(sbi.Tls.Log)
-		udmPemPath = path_util.Free5gcPath(sbi.Tls.Pem)
-		udmKeyPath = path_util.Free5gcPath(sbi.Tls.Key)
+		udmPemPath = sbi.Tls.Pem
+		udmKeyPath = sbi.Tls.Key
 	}
 
 	self := context.UDM_Self()
