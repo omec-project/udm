@@ -30,14 +30,14 @@ func main() {
 	app.Action = action
 	app.Flags = UDM.GetCliCmd()
 	if err := app.Run(os.Args); err != nil {
-		appLog.Errorf("UDM Run error: %v", err)
+		appLog.Errorf("udm run error: %v", err)
 	}
 }
 
 func action(c *cli.Context) error {
 	if err := UDM.Initialize(c); err != nil {
 		logger.CfgLog.Errorf("%+v", err)
-		return fmt.Errorf("Failed to initialize !!")
+		return fmt.Errorf("failed to initialize")
 	}
 
 	UDM.Start()

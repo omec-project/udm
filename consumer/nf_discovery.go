@@ -44,7 +44,7 @@ func SendNFIntances(nrfUri string, targetNfType, requestNfType models.NfType,
 	}()
 
 	if res != nil && res.StatusCode == http.StatusTemporaryRedirect {
-		err = fmt.Errorf("Temporary Redirect For Non NRF Consumer")
+		err = fmt.Errorf("temporary Redirect For Non NRF Consumer")
 	}
 	return
 }

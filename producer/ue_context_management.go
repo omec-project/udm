@@ -28,7 +28,7 @@ func createUDMClientToUDR(id string) (*Nudr_DataRepository.APIClient, error) {
 	uri := getUdrURI(id)
 	if uri == "" {
 		logger.Handlelog.Errorf("ID[%s] does not match any UDR", id)
-		return nil, fmt.Errorf("No UDR URI found")
+		return nil, fmt.Errorf("no UDR URI found")
 	}
 	cfg := Nudr_DataRepository.NewConfiguration()
 	cfg.SetBasePath(uri)
