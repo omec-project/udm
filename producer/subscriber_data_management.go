@@ -426,7 +426,7 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	} else {
 		var problemDetails models.ProblemDetails
 		problemDetails.Cause = "DATA_NOT_FOUND"
-		fmt.Printf(problemDetails.Cause)
+		fmt.Println(problemDetails.Cause)
 	}
 
 	if (res.StatusCode == http.StatusOK) && (res1.StatusCode == http.StatusOK) &&

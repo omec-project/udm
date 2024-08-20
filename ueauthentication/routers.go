@@ -107,12 +107,3 @@ var routes = Routes{
 		HTTPConfirmAuth,
 	},
 }
-
-var specialRoutes = Routes{
-	{
-		"GenerateAuthData",
-		strings.ToUpper("Post"),
-		"/:supiOrSuci/security-information/generate-auth-data",
-		HttpGenerateAuthData,
-	},
-}

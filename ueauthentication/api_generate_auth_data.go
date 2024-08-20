@@ -39,7 +39,7 @@ func HttpGenerateAuthData(c *gin.Context) {
 			Detail: err.Error(),
 			Cause:  "SYSTEM_FAILURE",
 		}
-		logger.UeauLog.Errorf("Get Request Body error: %+v", err)
+		logger.UeauLog.Errorf("get request body error: %+v", err)
 		c.JSON(http.StatusInternalServerError, problemDetail)
 		return
 	}
@@ -75,5 +75,4 @@ func HttpGenerateAuthData(c *gin.Context) {
 	} else {
 		c.Data(rsp.Status, "application/json", responseBody)
 	}
-	return
 }

@@ -47,5 +47,4 @@ func HTTPGetAmf3gppAccess(c *gin.Context) {
 	} else {
 		c.Data(rsp.Status, "application/json", responseBody)
 	}
-	return
 }

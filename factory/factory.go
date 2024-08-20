@@ -41,7 +41,7 @@ func CheckConfigVersion() error {
 	currentVersion := UdmConfig.GetVersion()
 
 	if currentVersion != UDM_EXPECTED_CONFIG_VERSION {
-		return fmt.Errorf("config version is [%s], but expected is [%s].",
+		return fmt.Errorf("config version is [%s], but expected is [%s]",
 			currentVersion, UDM_EXPECTED_CONFIG_VERSION)
 	}
 
