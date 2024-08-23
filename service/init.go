@@ -316,7 +316,7 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 			logger.GrpcLog.Infoln("Network Slice Name ", ns.Name)
 			if ns.Site != nil {
 				temp := factory.PlmnSupportItem{}
-				var found = false
+				var found bool = false
 				logger.GrpcLog.Infoln("Network Slice has site name present ")
 				site := ns.Site
 				logger.GrpcLog.Infoln("Site name ", site.SiteName)
