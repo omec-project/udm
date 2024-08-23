@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
 // Copyright 2019 free5GC.org
-//
+// SPDX-FileCopyrightText: 2024 Canonical Ltd.
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nnrf_NFDiscovery"
@@ -50,10 +51,13 @@ type UDMContext struct {
 	GpsiSupiList                   models.IdentityData
 	SharedSubsDataMap              map[string]models.SharedData // sharedDataIds as key
 	SubscriptionOfSharedDataChange sync.Map                     // subscriptionID as key
+	NfStatusSubscriptions          sync.Map                     // map[NfInstanceID]models.NrfSubscriptionData.SubscriptionId
 	SuciProfiles                   []suci.SuciProfile
 	EeSubscriptionIDGenerator      *idgenerator.IDGenerator
 	PlmnList                       []factory.PlmnSupportItem
 	SBIPort                        int
+	EnableNrfCaching               bool
+	NrfCacheEvictionInterval       time.Duration
 }
 
 type UdmUeContext struct {

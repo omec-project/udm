@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
 // Copyright 2019 free5GC.org
-//
+// SPDX-FileCopyrightText: 2024 Canonical Ltd.
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -8,6 +8,7 @@ package util
 
 import (
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/omec-project/openapi/models"
@@ -51,6 +52,16 @@ func InitUDMContext(udmContext *context.UDMContext) {
 			}
 		}
 	}
+
+	udmContext.EnableNrfCaching = configuration.EnableNrfCaching
+	if configuration.EnableNrfCaching {
+		if configuration.NrfCacheEvictionInterval == 0 {
+			udmContext.NrfCacheEvictionInterval = time.Duration(900) // 15 mins
+		} else {
+			udmContext.NrfCacheEvictionInterval = time.Duration(configuration.NrfCacheEvictionInterval)
+		}
+	}
+
 	udmContext.NrfUri = configuration.NrfUri
 	servingNameList := configuration.ServiceNameList
 

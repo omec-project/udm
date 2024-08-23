@@ -28,7 +28,7 @@ func Test_nrf_url_is_not_overwritten_when_registering(t *testing.T) {
 	self.NrfUri = svr.URL
 	self.RegisterIPv4 = "127.0.0.2"
 	var udm *UDM
-	go udm.registerNF()
+	go udm.RegisterNF()
 	ConfigPodTrigger <- true
 
 	time.Sleep(1 * time.Second)

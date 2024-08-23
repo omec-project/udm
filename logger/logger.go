@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
 // Copyright 2019 free5GC.org
-//
+// SPDX-FileCopyrightText: 2024 Canonical Ltd.
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -31,6 +31,7 @@ var (
 	ConsumerLog *logrus.Entry
 	GinLog      *logrus.Entry
 	GrpcLog     *logrus.Entry
+	ProducerLog *logrus.Entry
 )
 
 func init() {
@@ -61,6 +62,7 @@ func init() {
 	ConsumerLog = log.WithFields(logrus.Fields{"component": "UDM", "category": "Consumer"})
 	GinLog = log.WithFields(logrus.Fields{"component": "UDM", "category": "GIN"})
 	GrpcLog = log.WithFields(logrus.Fields{"component": "UDM", "category": "GRPC"})
+	ProducerLog = log.WithFields(logrus.Fields{"component": "UDM", "category": "Producer"})
 }
 
 func SetLogLevel(level logrus.Level) {

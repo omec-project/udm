@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2019 free5GC.org
 // Copyright 2021 Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2024 Canonical Ltd.
 // Copyright 2022 Intel Corporation
 //
 
@@ -19,6 +20,7 @@ import (
 	"github.com/omec-project/config5g/proto/client"
 	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
 	"github.com/omec-project/openapi/models"
+	nrfCache "github.com/omec-project/openapi/nrfcache"
 	"github.com/omec-project/udm/consumer"
 	"github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/eventexposure"
@@ -27,12 +29,13 @@ import (
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/metrics"
 	"github.com/omec-project/udm/parameterprovision"
+	"github.com/omec-project/udm/subscribecallback"
 	"github.com/omec-project/udm/subscriberdatamanagement"
 	"github.com/omec-project/udm/ueauthentication"
 	"github.com/omec-project/udm/uecontextmanagement"
 	"github.com/omec-project/udm/util"
 	"github.com/omec-project/util/http2_util"
-	logger_util "github.com/omec-project/util/logger"
+	loggerUtil "github.com/omec-project/util/logger"
 	"github.com/omec-project/util/path_util"
 	pathUtilLogger "github.com/omec-project/util/path_util/logger"
 	"github.com/sirupsen/logrus"
@@ -182,7 +185,7 @@ func (udm *UDM) Start() {
 
 	initLog.Infoln("Server started")
 
-	router := logger_util.NewGinWithLogrus(logger.GinLog)
+	router := loggerUtil.NewGinWithLogrus(logger.GinLog)
 
 	eventexposure.AddService(router)
 	httpcallback.AddService(router)
@@ -190,6 +193,7 @@ func (udm *UDM) Start() {
 	subscriberdatamanagement.AddService(router)
 	ueauthentication.AddService(router)
 	uecontextmanagement.AddService(router)
+	subscribecallback.AddService(router)
 
 	go metrics.InitMetrics()
 
@@ -207,8 +211,11 @@ func (udm *UDM) Start() {
 	context.UDM_Self().InitNFService(serviceName, config.Info.Version)
 
 	addr := fmt.Sprintf("%s:%d", self.BindingIPv4, self.SBIPort)
-
-	go udm.registerNF()
+	if self.EnableNrfCaching {
+		initLog.Infoln("Enable NRF caching feature")
+		nrfCache.InitNrfCaching(self.NrfCacheEvictionInterval*time.Second, consumer.SendNfDiscoveryToNrf)
+	}
+	go udm.RegisterNF()
 
 	signalChannel := make(chan os.Signal, 1)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
@@ -309,7 +316,7 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 			logger.GrpcLog.Infoln("Network Slice Name ", ns.Name)
 			if ns.Site != nil {
 				temp := factory.PlmnSupportItem{}
-				var found bool = false
+				var found = false
 				logger.GrpcLog.Infoln("Network Slice has site name present ")
 				site := ns.Site
 				logger.GrpcLog.Infoln("Site name ", site.SiteName)
@@ -433,7 +440,7 @@ func (udm *UDM) UpdateNF() {
 	KeepAliveTimer = time.AfterFunc(time.Duration(heartBeatTimer)*time.Second, udm.UpdateNF)
 }
 
-func (udm *UDM) registerNF() {
+func (udm *UDM) RegisterNF() {
 	self := context.UDM_Self()
 	for msg := range ConfigPodTrigger {
 		initLog.Infof("Minimum configuration from config pod available %v", msg)
