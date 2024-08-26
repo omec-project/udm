@@ -39,7 +39,7 @@ const (
 type Configuration struct {
 	UdmName                  string            `yaml:"udmName,omitempty"`
 	Sbi                      *Sbi              `yaml:"sbi,omitempty"`
-	ServiceNameList          []string          `yaml:"serviceNameList,omitempty"`
+	ServiceList              []string          `yaml:"serviceList,omitempty"`
 	NrfUri                   string            `yaml:"nrfUri,omitempty"`
 	WebuiUri                 string            `yaml:"webuiUri"`
 	Keys                     *Keys             `yaml:"keys,omitempty"`

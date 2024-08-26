@@ -179,7 +179,7 @@ func (udm *UDM) Start() {
 	config := factory.UdmConfig
 	configuration := config.Configuration
 	sbi := configuration.Sbi
-	serviceName := configuration.ServiceNameList
+	serviceName := configuration.ServiceList
 
 	initLog.Infof("UDM Config Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
 
@@ -212,7 +212,7 @@ func (udm *UDM) Start() {
 
 	addr := fmt.Sprintf("%s:%d", self.BindingIPv4, self.SBIPort)
 	if self.EnableNrfCaching {
-		initLog.Infoln("Enable NRF caching feature")
+		initLog.Infoln("enable NRF caching feature")
 		nrfCache.InitNrfCaching(self.NrfCacheEvictionInterval*time.Second, consumer.SendNfDiscoveryToNrf)
 	}
 	go udm.RegisterNF()

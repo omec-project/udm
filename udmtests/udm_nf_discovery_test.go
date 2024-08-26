@@ -36,7 +36,7 @@ var (
 
 func setupTest() {
 	if err := factory.InitConfigFactory("../factory/udmcfg.yaml"); err != nil {
-		fmt.Printf("Could not InitConfigFactory: %+v\n", err)
+		fmt.Printf("could not initialize UDM configuration: %+v\n", err)
 	}
 }
 

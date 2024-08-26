@@ -85,7 +85,7 @@ func SendNFInstancesUDR(id string, types int) string {
 	self := udmContext.UDM_Self()
 	targetNfType := models.NfType_UDR
 	requestNfType := models.NfType_UDM
-	localVarOptionals := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
+	localVarOptionals := &Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
 		// 	DataSet: optional.NewInterface(models.DataSetId_SUBSCRIPTION),
 	}
 	// switch types {
@@ -97,7 +97,7 @@ func SendNFInstancesUDR(id string, types int) string {
 	// 	localVarOptionals.Gpsi = optional.NewString(id)
 	// }
 	fmt.Println(self.NrfUri)
-	result, err := SendSearchNFInstances(self.NrfUri, targetNfType, requestNfType, &localVarOptionals)
+	result, err := SendSearchNFInstances(self.NrfUri, targetNfType, requestNfType, localVarOptionals)
 	if err != nil {
 		logger.Handlelog.Error(err.Error())
 		return ""

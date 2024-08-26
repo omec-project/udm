@@ -85,8 +85,7 @@ var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.Nf
 			retrieveNfInstanceId = resourceUri[strings.LastIndex(resourceUri, "/")+1:]
 			break
 		} else {
-			fmt.Println("handler returned wrong status code", status)
-			fmt.Println("NRF return wrong status code", status)
+			logger.ConsumerLog.Errorf("NRF returned wrong status code: %+v", status)
 		}
 	}
 	return prof, resourceNrfUri, retrieveNfInstanceId, err
