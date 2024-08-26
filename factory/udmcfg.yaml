@@ -5,6 +5,8 @@ configuration:
   keys:
     udmProfileAHNPrivateKey: whatever private key
   nrfUri: https://nrf:443
+  enableNrfCaching: true
+  nrfCacheEvictionInterval: 900
   sbi:
     bindingIPv4: 0.0.0.0
     port: 29503
@@ -14,7 +16,7 @@ configuration:
       key: free5gc/support/TLS/udm.key
       log: free5gc/udmsslkey.log
       pem: free5gc/support/TLS/udm.pem
-  serviceNameList:
+  serviceList:
     - nudm-sdm
     - nudm-uecm
     - nudm-ueau

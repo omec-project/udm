@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
 // Copyright 2019 free5GC.org
-//
+// SPDX-FileCopyrightText: 2024 Canonical Ltd.
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -37,14 +37,16 @@ const (
 )
 
 type Configuration struct {
-	UdmName         string            `yaml:"udmName,omitempty"`
-	Sbi             *Sbi              `yaml:"sbi,omitempty"`
-	ServiceNameList []string          `yaml:"serviceNameList,omitempty"`
-	NrfUri          string            `yaml:"nrfUri,omitempty"`
-	WebuiUri        string            `yaml:"webuiUri"`
-	Keys            *Keys             `yaml:"keys,omitempty"`
-	PlmnSupportList []models.PlmnId   `yaml:"plmnSupportList,omitempty"`
-	PlmnList        []PlmnSupportItem `yaml:"plmnList,omitempty"`
+	UdmName                  string            `yaml:"udmName,omitempty"`
+	Sbi                      *Sbi              `yaml:"sbi,omitempty"`
+	ServiceList              []string          `yaml:"serviceList,omitempty"`
+	NrfUri                   string            `yaml:"nrfUri,omitempty"`
+	WebuiUri                 string            `yaml:"webuiUri"`
+	Keys                     *Keys             `yaml:"keys,omitempty"`
+	PlmnSupportList          []models.PlmnId   `yaml:"plmnSupportList,omitempty"`
+	PlmnList                 []PlmnSupportItem `yaml:"plmnList,omitempty"`
+	EnableNrfCaching         bool              `yaml:"enableNrfCaching"`
+	NrfCacheEvictionInterval int               `yaml:"nrfCacheEvictionInterval,omitempty"`
 }
 
 type Sbi struct {
