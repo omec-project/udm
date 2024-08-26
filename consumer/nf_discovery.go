@@ -96,7 +96,6 @@ func SendNFInstancesUDR(id string, types int) string {
 	// case NFDiscoveryToUDRParamGpsi:
 	// 	localVarOptionals.Gpsi = optional.NewString(id)
 	// }
-	fmt.Println(self.NrfUri)
 	result, err := SendSearchNFInstances(self.NrfUri, targetNfType, requestNfType, localVarOptionals)
 	if err != nil {
 		logger.Handlelog.Error(err.Error())
