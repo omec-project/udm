@@ -9,7 +9,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
+	"strconv"
+	"strings"
 
+	"github.com/antihax/optional"
 	"github.com/omec-project/openapi/Nnrf_NFDiscovery"
 	"github.com/omec-project/openapi/models"
 	nrfCache "github.com/omec-project/openapi/nrfcache"
@@ -74,6 +78,7 @@ var SendNfDiscoveryToNrf = func(nrfUri string, targetNfType, requesterNfType mod
 			} else if err != nil {
 				logger.ConsumerLog.Errorf("SendCreateSubscription Error[%+v]", err)
 			}
+			logger.ConsumerLog.Infof("Storing subscription %s %s %s", udmSelf.GetIPv4Uri(), nfProfile.NfInstanceId, nrfSubData.SubscriptionId)
 			udmSelf.NfStatusSubscriptions.Store(nfProfile.NfInstanceId, nrfSubData.SubscriptionId)
 		}
 	}
@@ -83,9 +88,16 @@ var SendNfDiscoveryToNrf = func(nrfUri string, targetNfType, requesterNfType mod
 
 func SendNFInstancesUDR(id string, types int) string {
 	self := udmContext.UDM_Self()
+	Uenf, ok := self.UeNfProfile.Load(id)
+	if ok {
+		nf1 := Uenf.(*models.NfProfile)
+		logger.ConsumerLog.Warnln("for Ue: ", id, " found targetNfType ", string(models.NfType_UDR), " NF is: ", *nf1)
+		return util.SearchNFServiceUri(*nf1, models.ServiceName_NUDR_DR, models.NfServiceStatus_REGISTERED)
+	}
 	targetNfType := models.NfType_UDR
 	requestNfType := models.NfType_UDM
 	localVarOptionals := &Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
+		ServiceNames: optional.NewInterface([]models.ServiceName{models.ServiceName_NUDR_DR}),
 		// 	DataSet: optional.NewInterface(models.DataSetId_SUBSCRIPTION),
 	}
 	// switch types {
@@ -101,7 +113,33 @@ func SendNFInstancesUDR(id string, types int) string {
 		logger.Handlelog.Error(err.Error())
 		return ""
 	}
+	nfInstanceIds := make([]string, 0, len(result.NfInstances))
 	for _, profile := range result.NfInstances {
+		nfInstanceIds = append(nfInstanceIds, profile.NfInstanceId)
+	}
+	sort.Strings(nfInstanceIds)
+
+	nfInstanceIdIndexMap := make(map[string]int)
+	for index, value := range nfInstanceIds {
+		nfInstanceIdIndexMap[value] = index
+	}
+	nfInstanceIndex := 0
+	if self.EnableScaling {
+		// h := fnv.New32a()
+		// h.Write([]byte(id))
+		// key := int(h.Sum32())
+		// nfInstanceIndex = key % len(result.NfInstances)
+		parts := strings.Split(id, "-")
+		imsiNumber, _ := strconv.Atoi(parts[1])
+		nfInstanceIndex = imsiNumber % len(result.NfInstances)
+	}
+	for _, profile := range result.NfInstances {
+		if nfInstanceIndex != nfInstanceIdIndexMap[profile.NfInstanceId] {
+			continue
+		}
+		self.UeNfProfile.Store(id, &profile)
+		logger.ConsumerLog.Warnln("for Ue: ", id, " nfInstanceIndex: ", nfInstanceIndex, " for targetNfType ", string(models.NfType_UDR), " NF is: ", profile)
+
 		return util.SearchNFServiceUri(profile, models.ServiceName_NUDR_DR, models.NfServiceStatus_REGISTERED)
 	}
 	return ""

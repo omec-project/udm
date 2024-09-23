@@ -8,6 +8,7 @@ package util
 
 import (
 	"os"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -79,4 +80,6 @@ func InitUDMContext(udmContext *context.UDMContext) {
 	}
 	udmContext.PlmnList = configuration.PlmnList
 	udmContext.InitNFService(servingNameList, config.Info.Version)
+	udmContext.NfProfileList = make(map[models.NfType]map[string]int)
+	udmContext.UeNfProfile = sync.Map{}
 }
