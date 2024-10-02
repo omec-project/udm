@@ -31,7 +31,7 @@ type Routes []Route
 
 // NewRouter returns a new router.
 func NewRouter() *gin.Engine {
-	router := loggerUtil.NewGinWithLogrus(logger.GinLog)
+	router := loggerUtil.NewGinWithZap(logger.GinLog)
 	AddService(router)
 	return router
 }

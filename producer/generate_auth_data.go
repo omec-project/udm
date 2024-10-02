@@ -49,7 +49,7 @@ func aucSQN(opc, k, auts, rand []byte) ([]byte, []byte) {
 		return nil, nil
 	}
 
-	logger.UeauLog.Traceln("ConcSQNms", ConcSQNms)
+	logger.UeauLog.Debugln("ConcSQNms", ConcSQNms)
 
 	err = milenage.F2345(opc, k, rand, nil, nil, nil, nil, AK)
 	if err != nil {
@@ -60,19 +60,13 @@ func aucSQN(opc, k, auts, rand []byte) ([]byte, []byte) {
 		SQNms[i] = AK[i] ^ ConcSQNms[i]
 	}
 
-	// fmt.Printf("opc=%x\n", opc)
-	// fmt.Printf("k=%x\n", k)
-	// fmt.Printf("rand=%x\n", rand)
-	// fmt.Printf("AMF %x\n", AMF)
-	// fmt.Printf("SQNms %x\n", SQNms)
 	err = milenage.F1(opc, k, rand, SQNms, AMF, nil, macS)
 	if err != nil {
-		logger.UeauLog.Errorln("milenage F1 err ", err)
+		logger.UeauLog.Errorln("milenage F1 err", err)
 	}
-	// fmt.Printf("macS %x\n", macS)
 
-	logger.UeauLog.Traceln("SQNms", SQNms)
-	logger.UeauLog.Traceln("macS", macS)
+	logger.UeauLog.Debugln("SQNms", SQNms)
+	logger.UeauLog.Debugln("macS", macS)
 	return SQNms, macS
 }
 
@@ -86,17 +80,10 @@ func strictHex(s string, n int) string {
 }
 
 func HandleGenerateAuthDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	// step 1: log
-	logger.UeauLog.Infoln("Handle GenerateAuthDataRequest")
-
-	// step 2: retrieve request
+	logger.UeauLog.Infoln("handle GenerateAuthDataRequest")
 	authInfoRequest := request.Body.(models.AuthenticationInfoRequest)
 	supiOrSuci := request.Params["supiOrSuci"]
-
-	// step 3: handle the message
 	response, problemDetails := GenerateAuthDataProcedure(authInfoRequest, supiOrSuci)
-
-	// step 4: process the return value from step 3
 	if response != nil {
 		// status code is based on SPEC, and option headers
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
@@ -143,7 +130,7 @@ func ConfirmAuthDataProcedure(authEvent models.AuthEvent, supi string) (problemD
 			Detail: err.Error(),
 		}
 
-		logger.UeauLog.Errorln("[ConfirmAuth] ", err.Error())
+		logger.UeauLog.Errorln("[ConfirmAuth]", err.Error())
 		return problemDetails
 	}
 	defer func() {
@@ -158,7 +145,7 @@ func ConfirmAuthDataProcedure(authEvent models.AuthEvent, supi string) (problemD
 func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest, supiOrSuci string) (
 	response *models.AuthenticationInfoResult, problemDetails *models.ProblemDetails,
 ) {
-	logger.UeauLog.Traceln("In GenerateAuthDataProcedure")
+	logger.UeauLog.Debugln("in GenerateAuthDataProcedure")
 
 	response = &models.AuthenticationInfoResult{}
 	supi, err := suci.ToSupi(supiOrSuci, udm_context.UDM_Self().SuciProfiles)
@@ -169,11 +156,11 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 			Detail: err.Error(),
 		}
 
-		logger.UeauLog.Errorln("suciToSupi error: ", err.Error())
+		logger.UeauLog.Errorln("suciToSupi error:", err.Error())
 		return nil, problemDetails
 	}
 
-	logger.UeauLog.Tracef("supi conversion => %s\n", supi)
+	logger.UeauLog.Debugf("supi conversion => %s", supi)
 
 	client, err := createUDMClientToUDR(supi)
 	if err != nil {
@@ -187,7 +174,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 			Detail: err.Error(),
 		}
 
-		logger.UeauLog.Errorln("Return from UDR QueryAuthSubsData error")
+		logger.UeauLog.Errorln("return from UDR QueryAuthSubsData error")
 		return nil, problemDetails
 	}
 	defer func() {
@@ -208,7 +195,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 
 	k, op, opc := make([]byte, 16), make([]byte, 16), make([]byte, 16)
 
-	logger.UeauLog.Traceln("K", k)
+	logger.UeauLog.Debugln("K", k)
 
 	if authSubs.PermanentKey != nil {
 		kStr = authSubs.PermanentKey.PermanentKeyValue
@@ -225,7 +212,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 				Cause:  authenticationRejected,
 			}
 
-			logger.UeauLog.Errorln("kStr length is ", len(kStr))
+			logger.UeauLog.Errorln("kStr length is", len(kStr))
 			return nil, problemDetails
 		}
 	} else {
@@ -249,7 +236,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 					hasOP = true
 				}
 			} else {
-				logger.UeauLog.Errorln("opStr length is ", len(opStr))
+				logger.UeauLog.Errorln("opStr length is", len(opStr))
 			}
 		} else {
 			logger.UeauLog.Infoln("Nil Op")
@@ -274,7 +261,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 				hasOPC = true
 			}
 		} else {
-			logger.UeauLog.Errorln("opcStr length is ", len(opcStr))
+			logger.UeauLog.Errorln("opcStr length is", len(opcStr))
 		}
 	} else {
 		logger.UeauLog.Infoln("Nil Opc")
@@ -293,7 +280,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		if hasK && hasOP {
 			opc, err = milenage.GenerateOPC(k, op)
 			if err != nil {
-				logger.UeauLog.Errorln("milenage GenerateOPC err ", err)
+				logger.UeauLog.Errorln("milenage GenerateOPC err", err)
 			}
 		} else {
 			problemDetails = &models.ProblemDetails{
@@ -301,13 +288,13 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 				Cause:  authenticationRejected,
 			}
 
-			logger.UeauLog.Errorln("Unable to derive OPC")
+			logger.UeauLog.Errorln("unable to derive OPC")
 			return nil, problemDetails
 		}
 	}
 
 	sqnStr := strictHex(authSubs.SequenceNumber, 12)
-	logger.UeauLog.Traceln("sqnStr", sqnStr)
+	logger.UeauLog.Debugln("sqnStr", sqnStr)
 	sqn, err := hex.DecodeString(sqnStr)
 	if err != nil {
 		problemDetails = &models.ProblemDetails{
@@ -320,8 +307,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		return nil, problemDetails
 	}
 
-	logger.UeauLog.Traceln("sqn", sqn)
-	// fmt.Printf("K=%x\nsqn=%x\nOP=%x\nOPC=%x\n", K, sqn, OP, OPC)
+	logger.UeauLog.Debugln("sqn", sqn)
 
 	RAND := make([]byte, 16)
 	_, err = rand.Read(RAND)
@@ -347,13 +333,6 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		logger.UeauLog.Errorln("err", err)
 		return nil, problemDetails
 	}
-
-	// fmt.Printf("RAND=%x\nAMF=%x\n", RAND, AMF)
-
-	// for test
-	// RAND, _ = hex.DecodeString(TestGenAuthData.MilenageTestSet19.RAND)
-	// AMF, _ = hex.DecodeString(TestGenAuthData.MilenageTestSet19.AMF)
-	// fmt.Printf("For test: RAND=%x, AMF=%x\n", RAND, AMF)
 
 	// re-synchroniztion
 	if authInfoRequest.ResynchronizationInfo != nil {
@@ -398,7 +377,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 			// increment sqn authSubs.SequenceNumber
 			bigSQN := big.NewInt(0)
 			sqnStr = hex.EncodeToString(SQNms)
-			fmt.Printf("SQNstr %s\n", sqnStr)
+			logger.UeauLog.Infof("SQNstr %s", sqnStr)
 			bigSQN.SetString(sqnStr, 16)
 
 			bigInc := big.NewInt(ind + 1)
@@ -409,10 +388,10 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 			sqnStr = fmt.Sprintf("%x", bigSQN)
 			sqnStr = strictHex(sqnStr, 12)
 		} else {
-			logger.UeauLog.Errorln("Re-Sync MAC failed ", supi)
-			logger.UeauLog.Errorln("MACS ", macS)
-			logger.UeauLog.Errorln("Auts[6:] ", Auts[6:])
-			logger.UeauLog.Errorln("Sqn ", SQNms)
+			logger.UeauLog.Errorln("Re-Sync MAC failed", supi)
+			logger.UeauLog.Errorln("MACS", macS)
+			logger.UeauLog.Errorln("Auts[6:]", Auts[6:])
+			logger.UeauLog.Errorln("Sqn", SQNms)
 			problemDetails = &models.ProblemDetails{
 				Status: http.StatusForbidden,
 				Cause:  "modification is rejected",
@@ -485,20 +464,16 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	// RES == XRES (expected RES) for server
 	err = milenage.F2345(opc, k, RAND, RES, CK, IK, AK, AKstar)
 	if err != nil {
-		logger.UeauLog.Errorln("milenage F2345 err ", err)
+		logger.UeauLog.Errorln("milenage F2345 err", err)
 	}
-	// fmt.Printf("milenage RES = %s\n", hex.EncodeToString(RES))
 
 	// Generate AUTN
-	// fmt.Printf("SQN=%x\nAK =%x\n", SQN, AK)
-	// fmt.Printf("AMF=%x, macA=%x\n", AMF, macA)
 	SQNxorAK := make([]byte, 6)
 	for i := 0; i < len(sqn); i++ {
 		SQNxorAK[i] = sqn[i] ^ AK[i]
 	}
-	// fmt.Printf("SQN xor AK = %x\n", SQNxorAK)
 	AUTN := append(append(SQNxorAK, AMF...), macA...)
-	fmt.Printf("AUTN = %x\n", AUTN)
+	logger.UeauLog.Infof("AUTN = %x", AUTN)
 
 	var av models.AuthenticationVector
 	if authSubs.AuthenticationMethod == models.AuthMethod__5_G_AKA {
@@ -517,7 +492,6 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 			logger.UeauLog.Error(err)
 		}
 		xresStar := kdfValForXresStar[len(kdfValForXresStar)/2:]
-		// fmt.Printf("xresStar = %x\n", xresStar)
 
 		// derive Kausf
 		FC = ueauth.FC_FOR_KAUSF_DERIVATION
@@ -527,7 +501,6 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		if err != nil {
 			logger.UeauLog.Error(err)
 		}
-		// fmt.Printf("Kausf = %x\n", kdfValForKausf)
 
 		// Fill in rand, xresStar, autn, kausf
 		av.Rand = hex.EncodeToString(RAND)
@@ -546,7 +519,6 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		if err != nil {
 			logger.UeauLog.Error(err)
 		}
-		// fmt.Printf("kdfVal = %x (len = %d)\n", kdfVal, len(kdfVal))
 
 		// For TS 35.208 test set 19 & RFC 5448 test vector 1
 		// CK': 0093 962d 0dd8 4aa5 684b 045c 9edf fa04
@@ -554,7 +526,6 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 
 		ckPrime := kdfVal[:len(kdfVal)/2]
 		ikPrime := kdfVal[len(kdfVal)/2:]
-		// fmt.Printf("ckPrime: %x\nikPrime: %x\n", ckPrime, ikPrime)
 
 		// Fill in rand, xres, autn, ckPrime, ikPrime
 		av.Rand = hex.EncodeToString(RAND)

@@ -25,16 +25,10 @@ var (
 
 // HandleDataChangeNotificationToNFRequest ... Send Data Change Notification
 func HandleDataChangeNotificationToNFRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	// step 1: log
-	logger.CallbackLog.Infof("Handle DataChangeNotificationToNF")
-
-	// step 2: retrieve request
+	logger.CallbackLog.Infoln("handle DataChangeNotificationToNF")
 	dataChangeNotify := request.Body.(models.DataChangeNotify)
 	supi := request.Params["supi"]
-
 	problemDetails := callback.DataChangeNotificationProcedure(dataChangeNotify.NotifyItems, supi)
-
-	// step 4: process the return value from step 3
 	if problemDetails != nil {
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
@@ -45,7 +39,7 @@ func HandleDataChangeNotificationToNFRequest(request *httpwrapper.Request) *http
 // HandleNfSubscriptionStatusNotify gets the notification data from NRF
 // and perform some actions according to the notification types.
 func HandleNfSubscriptionStatusNotify(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.ProducerLog.Traceln("Handle NF Status Notify")
+	logger.ProducerLog.Debugln("handle NF Status Notify")
 
 	notificationData := request.Body.(models.NotificationData)
 
@@ -79,17 +73,17 @@ func NfSubscriptionStatusNotifyProcedure(notificationData models.NotificationDat
 	if notificationData.Event == models.NotificationEventType_DEREGISTERED {
 		if udmContext.UDM_Self().EnableNrfCaching {
 			ok := NRFCacheRemoveNfProfileFromNrfCache(nfInstanceId)
-			logger.ProducerLog.Tracef("nfinstance %v deleted from cache: %v", nfInstanceId, ok)
+			logger.ProducerLog.Debugf("nfinstance %v deleted from cache: %v", nfInstanceId, ok)
 		}
 		if subscriptionId, ok := udmContext.UDM_Self().NfStatusSubscriptions.Load(nfInstanceId); ok {
-			logger.ConsumerLog.Debugf("SubscriptionId of nfInstance %v is %v", nfInstanceId, subscriptionId.(string))
+			logger.ConsumerLog.Debugf("subscriptionId of nfInstance %v is %v", nfInstanceId, subscriptionId.(string))
 			problemDetails, err := SendRemoveSubscription(subscriptionId.(string))
 			if problemDetails != nil {
-				logger.ConsumerLog.Errorf("Remove NF Subscription Failed Problem[%+v]", problemDetails)
+				logger.ConsumerLog.Errorf("remove NF Subscription Failed Problem[%+v]", problemDetails)
 			} else if err != nil {
-				logger.ConsumerLog.Errorf("Remove NF Subscription Error[%+v]", err)
+				logger.ConsumerLog.Errorf("remove NF Subscription Error[%+v]", err)
 			} else {
-				logger.ConsumerLog.Infoln("Remove NF Subscription successful")
+				logger.ConsumerLog.Infoln("remove NF Subscription successful")
 				udmContext.UDM_Self().NfStatusSubscriptions.Delete(nfInstanceId)
 			}
 		} else {
