@@ -35,11 +35,11 @@ import (
 	"github.com/omec-project/udm/uecontextmanagement"
 	"github.com/omec-project/udm/util"
 	"github.com/omec-project/util/http2_util"
-	loggerUtil "github.com/omec-project/util/logger"
+	utilLogger "github.com/omec-project/util/logger"
 	"github.com/omec-project/util/path_util"
-	pathUtilLogger "github.com/omec-project/util/path_util/logger"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type UDM struct{}
@@ -75,7 +75,7 @@ var (
 	KeepAliveTimerMutex sync.Mutex
 )
 
-var initLog *logrus.Entry
+var initLog *zap.SugaredLogger
 
 func init() {
 	initLog = logger.InitLog
@@ -130,35 +130,18 @@ func (udm *UDM) setLogLevel() {
 
 	if factory.UdmConfig.Logger.UDM != nil {
 		if factory.UdmConfig.Logger.UDM.DebugLevel != "" {
-			if level, err := logrus.ParseLevel(factory.UdmConfig.Logger.UDM.DebugLevel); err != nil {
+			if level, err := zapcore.ParseLevel(factory.UdmConfig.Logger.UDM.DebugLevel); err != nil {
 				initLog.Warnf("UDM Log level [%s] is invalid, set to [info] level",
 					factory.UdmConfig.Logger.UDM.DebugLevel)
-				logger.SetLogLevel(logrus.InfoLevel)
+				logger.SetLogLevel(zap.InfoLevel)
 			} else {
 				initLog.Infof("UDM Log level is set to [%s] level", level)
 				logger.SetLogLevel(level)
 			}
 		} else {
 			initLog.Infoln("UDM Log level is default set to [info] level")
-			logger.SetLogLevel(logrus.InfoLevel)
+			logger.SetLogLevel(zap.InfoLevel)
 		}
-		logger.SetReportCaller(factory.UdmConfig.Logger.UDM.ReportCaller)
-	}
-
-	if factory.UdmConfig.Logger.PathUtil != nil {
-		if factory.UdmConfig.Logger.PathUtil.DebugLevel != "" {
-			if level, err := logrus.ParseLevel(factory.UdmConfig.Logger.PathUtil.DebugLevel); err != nil {
-				pathUtilLogger.PathLog.Warnf("PathUtil Log level [%s] is invalid, set to [info] level",
-					factory.UdmConfig.Logger.PathUtil.DebugLevel)
-				pathUtilLogger.SetLogLevel(logrus.InfoLevel)
-			} else {
-				pathUtilLogger.SetLogLevel(level)
-			}
-		} else {
-			pathUtilLogger.PathLog.Warnln("PathUtil Log level not set. Default set to [info] level")
-			pathUtilLogger.SetLogLevel(logrus.InfoLevel)
-		}
-		pathUtilLogger.SetReportCaller(factory.UdmConfig.Logger.PathUtil.ReportCaller)
 	}
 }
 
@@ -185,7 +168,7 @@ func (udm *UDM) Start() {
 
 	initLog.Infoln("Server started")
 
-	router := loggerUtil.NewGinWithLogrus(logger.GinLog)
+	router := utilLogger.NewGinWithZap(logger.GinLog)
 
 	eventexposure.AddService(router)
 	httpcallback.AddService(router)
@@ -250,9 +233,9 @@ func (udm *UDM) Start() {
 func (udm *UDM) Exec(c *cli.Context) error {
 	// UDM.Initialize(cfgPath, c)
 
-	initLog.Traceln("args:", c.String("udmcfg"))
+	initLog.Debugln("args:", c.String("udmcfg"))
 	args := udm.FilterCli(c)
-	initLog.Traceln("filter: ", args)
+	initLog.Debugln("filter:", args)
 	command := exec.Command("./udm", args...)
 
 	stdout, err := command.StdoutPipe()
@@ -264,7 +247,7 @@ func (udm *UDM) Exec(c *cli.Context) error {
 	go func() {
 		in := bufio.NewScanner(stdout)
 		for in.Scan() {
-			fmt.Println(in.Text())
+			initLog.Infoln(in.Text())
 		}
 		wg.Done()
 	}()
@@ -276,14 +259,14 @@ func (udm *UDM) Exec(c *cli.Context) error {
 	go func() {
 		in := bufio.NewScanner(stderr)
 		for in.Scan() {
-			fmt.Println(in.Text())
+			initLog.Infoln(in.Text())
 		}
 		wg.Done()
 	}()
 
 	go func() {
 		if err = command.Start(); err != nil {
-			fmt.Printf("UDM Start error: %v", err)
+			initLog.Errorf("UDM Start error: %v", err)
 		}
 		wg.Done()
 	}()
@@ -294,36 +277,36 @@ func (udm *UDM) Exec(c *cli.Context) error {
 }
 
 func (udm *UDM) Terminate() {
-	logger.InitLog.Infof("Terminating UDM...")
+	logger.InitLog.Infoln("terminating UDM...")
 	// deregister with NRF
 	problemDetails, err := consumer.SendDeregisterNFInstance()
 	if problemDetails != nil {
-		logger.InitLog.Errorf("Deregister NF instance Failed Problem[%+v]", problemDetails)
+		logger.InitLog.Errorf("deregister NF instance Failed Problem[%+v]", problemDetails)
 	} else if err != nil {
-		logger.InitLog.Errorf("Deregister NF instance Error[%+v]", err)
+		logger.InitLog.Errorf("deregister NF instance Error[%+v]", err)
 	} else {
-		logger.InitLog.Infof("Deregister from NRF successfully")
+		logger.InitLog.Infoln("deregister from NRF successfully")
 	}
-	logger.InitLog.Infof("UDM terminated")
+	logger.InitLog.Infoln("UDM terminated")
 }
 
 func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool {
 	var minConfig bool
 	self := context.UDM_Self()
 	for rsp := range commChannel {
-		logger.GrpcLog.Infoln("Received updateConfig in the udm app : ", rsp)
+		logger.GrpcLog.Infoln("received updateConfig in the udm app:", rsp)
 		for _, ns := range rsp.NetworkSlice {
-			logger.GrpcLog.Infoln("Network Slice Name ", ns.Name)
+			logger.GrpcLog.Infoln("network Slice Name", ns.Name)
 			if ns.Site != nil {
 				temp := factory.PlmnSupportItem{}
 				var found bool = false
-				logger.GrpcLog.Infoln("Network Slice has site name present ")
+				logger.GrpcLog.Infoln("network Slice has site name present ")
 				site := ns.Site
-				logger.GrpcLog.Infoln("Site name ", site.SiteName)
+				logger.GrpcLog.Infoln("site name", site.SiteName)
 				if site.Plmn != nil {
 					temp.PlmnId.Mcc = site.Plmn.Mcc
 					temp.PlmnId.Mnc = site.Plmn.Mnc
-					logger.GrpcLog.Infoln("Plmn mcc ", site.Plmn.Mcc)
+					logger.GrpcLog.Infoln("plmn mcc", site.Plmn.Mcc)
 					for _, item := range self.PlmnList {
 						if item.PlmnId.Mcc == temp.PlmnId.Mcc && item.PlmnId.Mnc == temp.PlmnId.Mnc {
 							found = true
@@ -332,10 +315,10 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 					}
 					if !found {
 						self.PlmnList = append(self.PlmnList, temp)
-						logger.GrpcLog.Infoln("Plmn added in the context", self.PlmnList)
+						logger.GrpcLog.Infoln("plmn added in the context", self.PlmnList)
 					}
 				} else {
-					logger.GrpcLog.Infoln("Plmn not present in the message ")
+					logger.GrpcLog.Infoln("plmn not present in the message")
 				}
 			}
 		}
@@ -344,17 +327,17 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 			if len(self.PlmnList) > 0 {
 				minConfig = true
 				ConfigPodTrigger <- true
-				logger.GrpcLog.Infoln("Send config trigger to main routine")
+				logger.GrpcLog.Infoln("send config trigger to main routine")
 			}
 		} else {
 			// all slices deleted
 			if len(self.PlmnList) == 0 {
 				minConfig = false
 				ConfigPodTrigger <- false
-				logger.GrpcLog.Infoln("Send config trigger to main routine")
+				logger.GrpcLog.Infoln("send config trigger to main routine")
 			} else {
 				ConfigPodTrigger <- true
-				logger.GrpcLog.Infoln("Send config trigger to main routine")
+				logger.GrpcLog.Infoln("send config trigger to main routine")
 			}
 		}
 	}
@@ -368,14 +351,14 @@ func (udm *UDM) StartKeepAliveTimer(nfProfile models.NfProfile) {
 	if nfProfile.HeartBeatTimer == 0 {
 		nfProfile.HeartBeatTimer = 60
 	}
-	logger.InitLog.Infof("Started KeepAlive Timer: %v sec", nfProfile.HeartBeatTimer)
+	logger.InitLog.Infof("started KeepAlive Timer: %v sec", nfProfile.HeartBeatTimer)
 	// AfterFunc starts timer and waits for KeepAliveTimer to elapse and then calls udm.UpdateNF function
 	KeepAliveTimer = time.AfterFunc(time.Duration(nfProfile.HeartBeatTimer)*time.Second, udm.UpdateNF)
 }
 
 func (udm *UDM) StopKeepAliveTimer() {
 	if KeepAliveTimer != nil {
-		logger.InitLog.Infof("Stopped KeepAlive Timer.")
+		logger.InitLog.Infoln("stopped KeepAlive Timer")
 		KeepAliveTimer.Stop()
 		KeepAliveTimer = nil
 	}
@@ -385,7 +368,7 @@ func (udm *UDM) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 	self := context.UDM_Self()
 	profile, err := consumer.BuildNFInstance(self)
 	if err != nil {
-		initLog.Error("Build UDM Profile Error: ", err)
+		initLog.Errorf("build UDM Profile Error:", err)
 		return profile, err
 	}
 	initLog.Infof("UDM Profile Registering to NRF: %v", profile)
@@ -399,7 +382,7 @@ func (udm *UDM) UpdateNF() {
 	KeepAliveTimerMutex.Lock()
 	defer KeepAliveTimerMutex.Unlock()
 	if KeepAliveTimer == nil {
-		initLog.Warnf("KeepAlive timer has been stopped.")
+		initLog.Warnf("keepAlive timer has been stopped")
 		return
 	}
 	// setting default value 30 sec
@@ -435,7 +418,7 @@ func (udm *UDM) UpdateNF() {
 		// use hearbeattimer value with received timer value from NRF
 		heartBeatTimer = nfProfile.HeartBeatTimer
 	}
-	logger.InitLog.Debugf("Restarted KeepAlive Timer: %v sec", heartBeatTimer)
+	logger.InitLog.Debugf("restarted KeepAlive Timer: %v sec", heartBeatTimer)
 	// restart timer with received HeartBeatTimer value
 	KeepAliveTimer = time.AfterFunc(time.Duration(heartBeatTimer)*time.Second, udm.UpdateNF)
 }
@@ -443,7 +426,7 @@ func (udm *UDM) UpdateNF() {
 func (udm *UDM) RegisterNF() {
 	self := context.UDM_Self()
 	for msg := range ConfigPodTrigger {
-		initLog.Infof("Minimum configuration from config pod available %v", msg)
+		initLog.Infof("minimum configuration from config pod available %v", msg)
 		profile, err := consumer.BuildNFInstance(self)
 		if err != nil {
 			logger.InitLog.Errorln(err.Error())
@@ -454,7 +437,7 @@ func (udm *UDM) RegisterNF() {
 				logger.InitLog.Errorln(err.Error())
 			} else {
 				udm.StartKeepAliveTimer(prof)
-				logger.CfgLog.Infof("Sent Register NF Instance with updated profile")
+				logger.CfgLog.Infoln("sent Register NF Instance with updated profile")
 			}
 		}
 	}
