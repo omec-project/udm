@@ -21,6 +21,7 @@ import (
 	"github.com/omec-project/openapi/models"
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
+	stats "github.com/omec-project/udm/metrics"
 	"github.com/omec-project/udm/util"
 	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/util/milenage"
@@ -85,15 +86,18 @@ func HandleGenerateAuthDataRequest(request *httpwrapper.Request) *httpwrapper.Re
 	supiOrSuci := request.Params["supiOrSuci"]
 	response, problemDetails := GenerateAuthDataProcedure(authInfoRequest, supiOrSuci)
 	if response != nil {
+		stats.IncrementUdmUeAuthenticationStats("create", "SUCCESS")
 		// status code is based on SPEC, and option headers
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
+		stats.IncrementUdmUeAuthenticationStats("create", "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
+	stats.IncrementUdmUeAuthenticationStats("create", "FAILURE")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
@@ -106,8 +110,10 @@ func HandleConfirmAuthDataRequest(request *httpwrapper.Request) *httpwrapper.Res
 	problemDetails := ConfirmAuthDataProcedure(authEvent, supi)
 
 	if problemDetails != nil {
+		stats.IncrementUdmUeAuthenticationStats("create", "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
+		stats.IncrementUdmUeAuthenticationStats("create", "SUCCESS")
 		return httpwrapper.NewResponse(http.StatusCreated, nil, nil)
 	}
 }
