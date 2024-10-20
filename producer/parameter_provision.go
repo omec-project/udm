@@ -17,17 +17,10 @@ import (
 )
 
 func HandleUpdateRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	// step 1: log
-	logger.PpLog.Infoln("Handle UpdateRequest")
-
-	// step 2: retrieve request
+	logger.PpLog.Infoln("handle UpdateRequest")
 	updateRequest := request.Body.(models.PpData)
 	gpsi := request.Params["gpsi"]
-
-	// step 3: handle the message
 	problemDetails := UpdateProcedure(updateRequest, gpsi)
-
-	// step 4: process the return value from step 3
 	if problemDetails != nil {
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {

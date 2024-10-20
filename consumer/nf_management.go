@@ -48,7 +48,6 @@ func BuildNFInstance(udmContext *udmContext.UDMContext) (profile models.NfProfil
 		return
 	}
 	profile.Ipv4Addresses = append(profile.Ipv4Addresses, udmContext.RegisterIPv4)
-
 	return
 }
 
@@ -63,8 +62,7 @@ var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.Nf
 	for {
 		prof, res, err = client.NFInstanceIDDocumentApi.RegisterNFInstance(context.TODO(), nfInstanceId, profile)
 		if err != nil || res == nil {
-			// TODO : add log
-			fmt.Println(fmt.Errorf("UDM register to NRF Error[%v]", err.Error()))
+			logger.ConsumerLog.Errorf("UDM register to NRF Error[%v]", err.Error())
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -92,7 +90,7 @@ var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.Nf
 }
 
 func SendDeregisterNFInstance() (problemDetails *models.ProblemDetails, err error) {
-	logger.ConsumerLog.Infof("Send Deregister NFInstance")
+	logger.ConsumerLog.Infoln("send Deregister NFInstance")
 
 	udmSelf := udmContext.UDM_Self()
 	// Set client and set url
@@ -124,7 +122,7 @@ func SendDeregisterNFInstance() (problemDetails *models.ProblemDetails, err erro
 }
 
 var SendUpdateNFInstance = func(patchItem []models.PatchItem) (nfProfile models.NfProfile, problemDetails *models.ProblemDetails, err error) {
-	logger.ConsumerLog.Debugf("Send Update NFInstance")
+	logger.ConsumerLog.Debugln("send Update NFInstance")
 
 	udmSelf := udmContext.UDM_Self()
 	configuration := Nnrf_NFManagement.NewConfiguration()
@@ -154,7 +152,7 @@ var SendUpdateNFInstance = func(patchItem []models.PatchItem) (nfProfile models.
 }
 
 func SendCreateSubscription(nrfUri string, nrfSubscriptionData models.NrfSubscriptionData) (nrfSubData models.NrfSubscriptionData, problemDetails *models.ProblemDetails, err error) {
-	logger.ConsumerLog.Debugf("Send Create Subscription")
+	logger.ConsumerLog.Debugln("send Create Subscription")
 
 	// Set client and set url
 	configuration := Nnrf_NFManagement.NewConfiguration()
@@ -184,7 +182,7 @@ func SendCreateSubscription(nrfUri string, nrfSubscriptionData models.NrfSubscri
 }
 
 func SendRemoveSubscription(subscriptionId string) (problemDetails *models.ProblemDetails, err error) {
-	logger.ConsumerLog.Infoln("Send Remove Subscription")
+	logger.ConsumerLog.Infoln("send Remove Subscription")
 
 	udmSelf := udmContext.UDM_Self()
 	// Set client and set url

@@ -40,15 +40,15 @@ func TestUpdate(t *testing.T) {
 
 		router.PATCH("/nudr-dr/v1/:gpsi/pp-data", func(c *gin.Context) {
 			gpsi := c.Param("gpsi")
-			fmt.Println("==========CreateEeSubscription - Subscribe==========")
-			fmt.Println("ueIdentity: ", gpsi)
+			t.Logf("==========CreateEeSubscription - Subscribe==========")
+			t.Logf("ueIdentity:", gpsi)
 			var testppData models.PpData
 			if err := c.ShouldBindJSON(&testppData); err != nil {
-				fmt.Println("fake udm server error: ", err.Error())
+				t.Logf("fake udm server error:", err.Error())
 				c.JSON(http.StatusInternalServerError, gin.H{})
 				return
 			}
-			fmt.Println("patchItems: ", testppData)
+			t.Logf("patchItems:", testppData)
 			c.JSON(http.StatusCreated, gin.H{})
 		})
 
@@ -73,9 +73,9 @@ func TestUpdate(t *testing.T) {
 	gpsi := "SDM1234"
 	resp, err := clientAPI.SubscriptionDataUpdateApi.Update(context.Background(), gpsi, ppData)
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Logf(err.Error())
 	} else {
-		fmt.Println("resp: ", resp)
+		t.Logf("resp:", resp)
 	}
 	*/
 }
