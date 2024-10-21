@@ -116,7 +116,7 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 		return err
 	} else {
 		go func() {
-			initLog.Infoln("Use helm chart config ")
+			initLog.Infoln("use helm chart config ")
 			ConfigPodTrigger <- true
 		}()
 	}
