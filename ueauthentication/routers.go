@@ -19,17 +19,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
-
 	"github.com/omec-project/udm/logger"
 	utilLogger "github.com/omec-project/util/logger"
 )
-
-var HttpLog *zap.SugaredLogger
-
-func init() {
-	HttpLog = logger.HttpLog
-}
 
 // Route is the information for every URI.
 type Route struct {

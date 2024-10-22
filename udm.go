@@ -11,26 +11,19 @@ import (
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/service"
 	"github.com/urfave/cli"
-	"go.uber.org/zap"
 )
 
 var UDM = &service.UDM{}
 
-var appLog *zap.SugaredLogger
-
-func init() {
-	appLog = logger.AppLog
-}
-
 func main() {
 	app := cli.NewApp()
 	app.Name = "udm"
-	appLog.Infoln(app.Name)
+	logger.AppLog.Infoln(app.Name)
 	app.Usage = "-free5gccfg common configuration file -udmcfg udm configuration file"
 	app.Action = action
 	app.Flags = UDM.GetCliCmd()
 	if err := app.Run(os.Args); err != nil {
-		appLog.Errorf("udm run error: %v", err)
+		logger.AppLog.Errorf("udm run error: %v", err)
 	}
 }
 
