@@ -40,6 +40,7 @@ import (
 	"github.com/urfave/cli"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/grpc/connectivity"
 )
 
 type UDM struct{}
@@ -105,7 +106,7 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 		logger.InitLog.Infoln("MANAGED_BY_CONFIG_POD is true")
 		client, err := grpcClient.ConnectToConfigServer(factory.UdmConfig.Configuration.WebuiUri)
 		if err != nil {
-			go udm.manageGrpcClient(client)
+			go manageGrpcClient(client, udm)
 		}
 		return err
 	} else {
@@ -118,10 +119,9 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 	return nil
 }
 
-//	manageGrpcClient checks the GRPC client status, connects the config pod GRPC server
-//
+// manageGrpcClient checks the GRPC client status, connects the config pod GRPC server
 // and subscribes the config changes then updates UDM configuration
-func (udm *UDM) manageGrpcClient(client grpcClient.ConfClient) {
+func manageGrpcClient(client grpcClient.ConfClient, udm *UDM) {
 	var stream protos.ConfigService_NetworkSliceSubscribeClient
 	var err error
 	var configChannel chan *protos.NetworkSliceResponse
@@ -130,17 +130,18 @@ func (udm *UDM) manageGrpcClient(client grpcClient.ConfClient) {
 			stream, err = client.CheckGrpcConnectivity()
 			if err != nil {
 				logger.InitLog.Errorf("%v", err)
-				if stream != nil {
-					time.Sleep(time.Second * 30)
-					continue
-				} else {
-					err = client.GetConfigClientConn().Close()
-					if err != nil {
-						logger.InitLog.Debugf("failing ConfigClient is not closed properly: %+v", err)
-					}
-					client = nil
-					continue
+			}
+			if stream == nil {
+				time.Sleep(time.Second * 30)
+				continue
+			}
+			if client.GetConfigClientConn().GetState() != connectivity.Ready {
+				err := client.GetConfigClientConn().Close()
+				if err != nil {
+					logger.InitLog.Debugf("failing ConfigClient is not closed properly: %+v", err)
 				}
+				client = nil
+				continue
 			}
 			if configChannel == nil {
 				configChannel = client.PublishOnConfigChange(true, stream)
