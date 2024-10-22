@@ -102,7 +102,7 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 	}
 
 	if os.Getenv("MANAGED_BY_CONFIG_POD") == "true" {
-		initLog.Infoln("MANAGED_BY_CONFIG_POD is true")
+		logger.InitLog.Infoln("MANAGED_BY_CONFIG_POD is true")
 		client, err := grpcClient.ConnectToConfigServer(factory.UdmConfig.Configuration.WebuiUri)
 		if err != nil {
 			go updateConfig(client, udm)
@@ -110,7 +110,7 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 		return err
 	} else {
 		go func() {
-			initLog.Infoln("use helm chart config ")
+			logger.InitLog.Infoln("use helm chart config ")
 			ConfigPodTrigger <- true
 		}()
 	}
@@ -128,14 +128,14 @@ func updateConfig(client grpcClient.ConfClient, udm *UDM) {
 		if client != nil {
 			stream, err = client.CheckGrpcConnectivity()
 			if err != nil {
-				initLog.Errorf("%v", err)
+				logger.InitLog.Errorf("%v", err)
 				if stream != nil {
 					time.Sleep(time.Second * 30)
 					continue
 				} else {
 					err = client.GetConfigClientConn().Close()
 					if err != nil {
-						initLog.Debugf("failing ConfigClient is not closed properly: %+v", err)
+						logger.InitLog.Debugf("failing ConfigClient is not closed properly: %+v", err)
 					}
 					client = nil
 					continue
@@ -148,7 +148,7 @@ func updateConfig(client grpcClient.ConfClient, udm *UDM) {
 		} else {
 			client, err = grpcClient.ConnectToConfigServer(factory.UdmConfig.Configuration.WebuiUri)
 			if err != nil {
-				initLog.Errorf("%+v", err)
+				logger.InitLog.Errorf("%+v", err)
 			}
 			continue
 		}
