@@ -105,7 +105,7 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 		logger.InitLog.Infoln("MANAGED_BY_CONFIG_POD is true")
 		client, err := grpcClient.ConnectToConfigServer(factory.UdmConfig.Configuration.WebuiUri)
 		if err != nil {
-			go updateConfig(client, udm)
+			go udm.manageGrpcClient(client)
 		}
 		return err
 	} else {
@@ -118,9 +118,10 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 	return nil
 }
 
-// updateConfig connects the config pod GRPC server and subscribes the config changes
-// then updates UDM configuration
-func updateConfig(client grpcClient.ConfClient, udm *UDM) {
+//	manageGrpcClient checks the GRPC client status, connects the config pod GRPC server
+//
+// and subscribes the config changes then updates UDM configuration
+func (udm *UDM) manageGrpcClient(client grpcClient.ConfClient) {
 	var stream protos.ConfigService_NetworkSliceSubscribeClient
 	var err error
 	var configChannel chan *protos.NetworkSliceResponse
