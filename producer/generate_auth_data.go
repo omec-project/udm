@@ -72,6 +72,7 @@ func aucSQN(opc, k, auts, rand []byte) ([]byte, []byte) {
 }
 
 func strictHex(s string, n int) string {
+    s = strings.TrimSpace(s)
 	l := len(s)
 	if l < n {
 		return fmt.Sprint(strings.Repeat("0", n-l) + s)
