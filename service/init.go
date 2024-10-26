@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/omec-project/config5g/proto/client"
+	grpcClient "github.com/omec-project/config5g/proto/client"
 	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
 	"github.com/omec-project/openapi/models"
 	nrfCache "github.com/omec-project/openapi/nrfcache"
@@ -101,19 +101,69 @@ func (udm *UDM) Initialize(c *cli.Context) error {
 		return err
 	}
 
-	roc := os.Getenv("MANAGED_BY_CONFIG_POD")
-	if roc == "true" {
+	if os.Getenv("MANAGED_BY_CONFIG_POD") == "true" {
 		logger.InitLog.Infoln("MANAGED_BY_CONFIG_POD is true")
-		commChannel := client.ConfigWatcher(factory.UdmConfig.Configuration.WebuiUri)
-		go udm.updateConfig(commChannel)
+		go manageGrpcClient(factory.UdmConfig.Configuration.WebuiUri, udm)
 	} else {
 		go func() {
-			logger.InitLog.Infoln("use helm chart config")
+			logger.InitLog.Infoln("use helm chart config ")
 			ConfigPodTrigger <- true
 		}()
 	}
 
 	return nil
+}
+
+// manageGrpcClient connects the config pod GRPC server and subscribes the config changes.
+// Then it updates UDM configuration.
+func manageGrpcClient(webuiUri string, udm *UDM) {
+	var configChannel chan *protos.NetworkSliceResponse
+	var client grpcClient.ConfClient
+	var stream protos.ConfigService_NetworkSliceSubscribeClient
+	var err error
+	count := 0
+	for {
+		if client != nil {
+			if client.CheckGrpcConnectivity() != "ready" {
+				time.Sleep(time.Second * 30)
+				count++
+				if count > 5 {
+					err = client.GetConfigClientConn().Close()
+					if err != nil {
+						logger.InitLog.Infof("failing ConfigClient is not closed properly: %+v", err)
+					}
+					client = nil
+					count = 0
+				}
+				logger.InitLog.Infoln("checking the connectivity readiness")
+				continue
+			}
+
+			if stream == nil {
+				stream, err = client.SubscribeToConfigServer()
+				if err != nil {
+					logger.InitLog.Infof("failing SubscribeToConfigServer: %+v", err)
+					continue
+				}
+			}
+
+			if configChannel == nil {
+				configChannel = client.PublishOnConfigChange(true, stream)
+				logger.InitLog.Infoln("PublishOnConfigChange is triggered")
+				go udm.updateConfig(configChannel)
+				logger.InitLog.Infoln("UDM updateConfig is triggered")
+			}
+		} else {
+			client, err = grpcClient.ConnectToConfigServer(webuiUri)
+			stream = nil
+			configChannel = nil
+			logger.InitLog.Infoln("connecting to config server")
+			if err != nil {
+				logger.InitLog.Errorf("%+v", err)
+			}
+			continue
+		}
+	}
 }
 
 func (udm *UDM) setLogLevel() {
