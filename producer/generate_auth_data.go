@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	SqnMAx    int64 = 0x7FFFFFFFFFF
+	SqnMAx    int64 = 0xFFFFFFFFFFFF
 	ind       int64 = 32
 	keyStrLen int   = 32
 	opStrLen  int   = 32
