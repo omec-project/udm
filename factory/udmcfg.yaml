@@ -13,9 +13,9 @@ configuration:
     registerIPv4: 1.1.1.1
     scheme: https
     tls:
-      key: free5gc/support/TLS/udm.key
-      log: free5gc/udmsslkey.log
-      pem: free5gc/support/TLS/udm.pem
+      log: /opt/sslkey.log
+      key: /var/run/certs/tls.key
+      pem: /var/run/certs/tls.pem
   serviceList:
     - nudm-sdm
     - nudm-uecm
