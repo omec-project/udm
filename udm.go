@@ -19,11 +19,12 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "udm"
 	logger.AppLog.Infoln(app.Name)
-	app.Usage = "-free5gccfg common configuration file -udmcfg udm configuration file"
+	app.Usage = "Unified Data Management"
+	app.UsageText = "udm -cfg <udm_config_file.conf>"
 	app.Action = action
 	app.Flags = UDM.GetCliCmd()
 	if err := app.Run(os.Args); err != nil {
-		logger.AppLog.Errorf("udm run error: %v", err)
+		logger.AppLog.Fatalf("UDM run error: %v", err)
 	}
 }
 

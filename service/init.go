@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -36,7 +37,6 @@ import (
 	"github.com/omec-project/udm/util"
 	"github.com/omec-project/util/http2_util"
 	utilLogger "github.com/omec-project/util/logger"
-	"github.com/omec-project/util/path_util"
 	"github.com/urfave/cli"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -53,7 +53,7 @@ func init() {
 type (
 	// Config information.
 	Config struct {
-		udmcfg string
+		cfg string
 	}
 )
 
@@ -61,12 +61,9 @@ var config Config
 
 var udmCLi = []cli.Flag{
 	cli.StringFlag{
-		Name:  "free5gccfg",
-		Usage: "common config file",
-	},
-	cli.StringFlag{
-		Name:  "udmcfg",
-		Usage: "config file",
+		Name:     "cfg",
+		Usage:    "udm config file",
+		Required: true,
 	},
 }
 
@@ -81,19 +78,20 @@ func (*UDM) GetCliCmd() (flags []cli.Flag) {
 
 func (udm *UDM) Initialize(c *cli.Context) error {
 	config = Config{
-		udmcfg: c.String("udmcfg"),
+		cfg: c.String("cfg"),
 	}
 
-	if config.udmcfg != "" {
-		if err := factory.InitConfigFactory(config.udmcfg); err != nil {
-			return err
-		}
-	} else {
-		DefaultUdmConfigPath := path_util.Free5gcPath("free5gc/config/udmcfg.yaml")
-		if err := factory.InitConfigFactory(DefaultUdmConfigPath); err != nil {
-			return err
-		}
+	absPath, err := filepath.Abs(config.cfg)
+	if err != nil {
+		logger.CfgLog.Errorln(err)
+		return err
 	}
+
+	if err := factory.InitConfigFactory(absPath); err != nil {
+		return err
+	}
+
+	factory.UdmConfig.CfgLocation = absPath
 
 	udm.setLogLevel()
 
@@ -224,15 +222,6 @@ func (udm *UDM) Start() {
 
 	go metrics.InitMetrics()
 
-	udmLogPath := path_util.Free5gcPath("omec-project/udmsslkey.log")
-	udmPemPath := path_util.Free5gcPath("free5gc/support/TLS/udm.pem")
-	udmKeyPath := path_util.Free5gcPath("free5gc/support/TLS/udm.key")
-	if sbi.Tls != nil {
-		udmLogPath = path_util.Free5gcPath(sbi.Tls.Log)
-		udmPemPath = sbi.Tls.Pem
-		udmKeyPath = sbi.Tls.Key
-	}
-
 	self := context.UDM_Self()
 	util.InitUDMContext(self)
 	context.UDM_Self().InitNFService(serviceName, config.Info.Version)
@@ -252,7 +241,8 @@ func (udm *UDM) Start() {
 		os.Exit(0)
 	}()
 
-	server, err := http2_util.NewServer(addr, udmLogPath, router)
+	sslLog := filepath.Dir(factory.UdmConfig.CfgLocation) + "/sslkey.log"
+	server, err := http2_util.NewServer(addr, sslLog, router)
 	if server == nil {
 		logger.InitLog.Errorf("initialize HTTP server failed: %+v", err)
 		return
@@ -266,7 +256,7 @@ func (udm *UDM) Start() {
 	if serverScheme == "http" {
 		err = server.ListenAndServe()
 	} else if serverScheme == "https" {
-		err = server.ListenAndServeTLS(udmPemPath, udmKeyPath)
+		err = server.ListenAndServeTLS(sbi.Tls.Pem, sbi.Tls.Key)
 	}
 
 	if err != nil {

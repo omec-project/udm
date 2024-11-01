@@ -23,6 +23,7 @@ type Config struct {
 	Info          *Info          `yaml:"info"`
 	Configuration *Configuration `yaml:"configuration"`
 	Logger        *logger.Logger `yaml:"logger"`
+	CfgLocation   string
 }
 
 type Info struct {
