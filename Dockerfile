@@ -26,7 +26,7 @@ RUN make all
 
 FROM alpine:3.20 AS udm
 
-LABEL maintainer="Aether SD-Core <dev@aetherproject.org>" \
+LABEL maintainer="Aether SD-Core <dev@list.aetherproject.org>" \
     description="ONF open source 5G Core Network" \
     version="Stage 3"
 
