@@ -37,5 +37,5 @@ RUN if [ "$DEBUG_TOOLS" = "true" ]; then \
         apk update && apk add --no-cache -U vim strace net-tools curl netcat-openbsd bind-tools; \
         fi
 
-# Copy executable and default certs
+# Copy executable
 COPY --from=builder /go/src/udm/bin/* /usr/local/bin/.
