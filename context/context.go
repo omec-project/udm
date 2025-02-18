@@ -58,6 +58,10 @@ type UDMContext struct {
 	SBIPort                        int
 	EnableNrfCaching               bool
 	NrfCacheEvictionInterval       time.Duration
+	EnableScaling                  bool
+	NfProfileList                  map[models.NfType]map[string]int
+	NfProfileListMutex             sync.Mutex
+	UeNfProfile                    sync.Map
 }
 
 type UdmUeContext struct {
