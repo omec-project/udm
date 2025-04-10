@@ -21,14 +21,13 @@ linters:
     - goconst
     - godox
     - gomodguard
+    - govet
     - misspell
     - noctx
     - predeclared
+    - staticcheck
     - unconvert
     - whitespace
-  disable:
-    - govet
-    - staticcheck
   settings:
     errcheck:
       check-type-assertions: false
@@ -62,6 +61,8 @@ linters:
         - XXX
     govet:
       enable-all: true
+      disable:
+        - fieldalignment
       settings:
         printf:
           funcs:
