@@ -792,20 +792,21 @@ func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
 		}
 	}()
 
-	if res.StatusCode == http.StatusCreated {
+	switch res.StatusCode {
+	case http.StatusCreated:
 		header = make(http.Header)
 		udm_context.UDM_Self().CreateSubstoNotifSharedData(sdmSubscriptionResp.SubscriptionId, &sdmSubscriptionResp)
 		reourceUri := udm_context.UDM_Self().GetSDMUri() + "//shared-data-subscriptions/" + sdmSubscriptionResp.SubscriptionId
 		header.Set("Location", reourceUri)
 		return header, &sdmSubscriptionResp, nil
-	} else if res.StatusCode == http.StatusNotFound {
+	case http.StatusNotFound:
 		problemDetails = &models.ProblemDetails{
 			Status: http.StatusNotFound,
 			Cause:  "DATA_NOT_FOUND",
 		}
 
 		return nil, nil, problemDetails
-	} else {
+	default:
 		problemDetails = &models.ProblemDetails{
 			Status: http.StatusNotImplemented,
 			Cause:  "UNSUPPORTED_RESOURCE_URI",
@@ -864,7 +865,8 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, supi string) (
 		}
 	}()
 
-	if res.StatusCode == http.StatusCreated {
+	switch res.StatusCode {
+	case http.StatusCreated:
 		header = make(http.Header)
 		udmUe, _ := udm_context.UDM_Self().UdmUeFindBySupi(supi)
 		if udmUe == nil {
@@ -873,13 +875,13 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, supi string) (
 		udmUe.CreateSubscriptiontoNotifChange(sdmSubscriptionResp.SubscriptionId, &sdmSubscriptionResp)
 		header.Set("Location", udmUe.GetLocationURI2(udm_context.LocationUriSdmSubscription, supi))
 		return header, &sdmSubscriptionResp, nil
-	} else if res.StatusCode == http.StatusNotFound {
+	case http.StatusNotFound:
 		problemDetails = &models.ProblemDetails{
 			Status: http.StatusNotFound,
 			Cause:  "DATA_NOT_FOUND",
 		}
 		return nil, nil, problemDetails
-	} else {
+	default:
 		problemDetails = &models.ProblemDetails{
 			Status: http.StatusNotImplemented,
 			Cause:  "UNSUPPORTED_RESOURCE_URI",

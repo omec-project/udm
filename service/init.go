@@ -255,10 +255,14 @@ func (udm *UDM) Start() {
 	}
 
 	serverScheme := factory.UdmConfig.Configuration.Sbi.Scheme
-	if serverScheme == "http" {
+	switch serverScheme {
+	case "http":
 		err = server.ListenAndServe()
-	} else if serverScheme == "https" {
+	case "https":
 		err = server.ListenAndServeTLS(sbi.Tls.Pem, sbi.Tls.Key)
+	default:
+		logger.InitLog.Fatalf("HTTP server setup failed: invalid server scheme %+v", serverScheme)
+		return
 	}
 
 	if err != nil {
@@ -335,7 +339,7 @@ func (udm *UDM) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool
 			logger.GrpcLog.Infoln("network Slice Name", ns.Name)
 			if ns.Site != nil {
 				temp := factory.PlmnSupportItem{}
-				var found bool = false
+				found := false
 				logger.GrpcLog.Infoln("network Slice has site name present ")
 				site := ns.Site
 				logger.GrpcLog.Infoln("site name", site.SiteName)
