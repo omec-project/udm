@@ -24,7 +24,7 @@ WORKDIR $GOPATH/src/udm
 COPY . .
 RUN make all
 
-FROM alpine:3.21 AS udm
+FROM alpine:3.22 AS udm
 
 LABEL maintainer="Aether SD-Core <dev@list.aetherproject.org>" \
     description="ONF open source 5G Core Network" \
