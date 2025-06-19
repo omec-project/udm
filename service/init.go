@@ -37,7 +37,7 @@ import (
 	"github.com/omec-project/udm/util"
 	"github.com/omec-project/util/http2_util"
 	utilLogger "github.com/omec-project/util/logger"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -60,7 +60,7 @@ type (
 var config Config
 
 var udmCLi = []cli.Flag{
-	cli.StringFlag{
+	&cli.StringFlag{
 		Name:     "cfg",
 		Usage:    "udm config file",
 		Required: true,
@@ -76,7 +76,7 @@ func (*UDM) GetCliCmd() (flags []cli.Flag) {
 	return udmCLi
 }
 
-func (udm *UDM) Initialize(c *cli.Context) error {
+func (udm *UDM) Initialize(c *cli.Command) error {
 	config = Config{
 		cfg: c.String("cfg"),
 	}
@@ -189,9 +189,9 @@ func (udm *UDM) setLogLevel() {
 	}
 }
 
-func (udm *UDM) FilterCli(c *cli.Context) (args []string) {
+func (udm *UDM) FilterCli(c *cli.Command) (args []string) {
 	for _, flag := range udm.GetCliCmd() {
-		name := flag.GetName()
+		name := flag.Names()[0]
 		value := fmt.Sprint(c.Generic(name))
 		if value == "" {
 			continue
@@ -270,7 +270,7 @@ func (udm *UDM) Start() {
 	}
 }
 
-func (udm *UDM) Exec(c *cli.Context) error {
+func (udm *UDM) Exec(c *cli.Command) error {
 	// UDM.Initialize(cfgPath, c)
 
 	logger.InitLog.Debugln("args:", c.String("udmcfg"))
