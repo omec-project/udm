@@ -5,30 +5,31 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/service"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 var UDM = &service.UDM{}
 
 func main() {
-	app := cli.NewApp()
+	app := &cli.Command{}
 	app.Name = "udm"
 	logger.AppLog.Infoln(app.Name)
 	app.Usage = "Unified Data Management"
 	app.UsageText = "udm -cfg <udm_config_file.conf>"
 	app.Action = action
 	app.Flags = UDM.GetCliCmd()
-	if err := app.Run(os.Args); err != nil {
+	if err := app.Run(context.Background(), os.Args); err != nil {
 		logger.AppLog.Fatalf("UDM run error: %v", err)
 	}
 }
 
-func action(c *cli.Context) error {
+func action(ctx context.Context, c *cli.Command) error {
 	if err := UDM.Initialize(c); err != nil {
 		logger.CfgLog.Errorf("%+v", err)
 		return fmt.Errorf("failed to initialize")
