@@ -9,13 +9,14 @@ package consumer
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nnrf_NFManagement"
 	"github.com/omec-project/openapi/models"
 	udmContext "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
-	"net/http"
-	"strings"
 )
 
 func getNfProfile(udmContext *udmContext.UDMContext, plmnConfig []models.PlmnId) (profile models.NfProfile, err error) {

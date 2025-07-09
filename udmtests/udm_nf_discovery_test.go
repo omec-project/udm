@@ -10,6 +10,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/antihax/optional"
 	"github.com/omec-project/openapi/Nnrf_NFDiscovery"
 	"github.com/omec-project/openapi/models"
@@ -19,11 +25,6 @@ import (
 	"github.com/omec-project/udm/producer"
 	"github.com/omec-project/udm/service"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"net/http"
-	"os"
-	"strings"
-	"testing"
 )
 
 var (
