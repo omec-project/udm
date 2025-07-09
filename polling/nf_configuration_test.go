@@ -202,7 +202,7 @@ func TestFetchPlmnConfig(t *testing.T) {
 		},
 		{
 			name:          "Unexpected Status Code 418",
-			statusCode:    418,
+			statusCode:    http.StatusTeapot,
 			contentType:   "application/json",
 			responseBody:  "",
 			expectedError: "unexpected status code: 418",
