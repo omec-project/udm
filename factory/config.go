@@ -11,7 +11,6 @@
 package factory
 
 import (
-	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/util/logger"
 )
 
@@ -38,16 +37,14 @@ const (
 )
 
 type Configuration struct {
-	UdmName                  string            `yaml:"udmName,omitempty"`
-	Sbi                      *Sbi              `yaml:"sbi,omitempty"`
-	ServiceList              []string          `yaml:"serviceList,omitempty"`
-	NrfUri                   string            `yaml:"nrfUri,omitempty"`
-	WebuiUri                 string            `yaml:"webuiUri"`
-	Keys                     *Keys             `yaml:"keys,omitempty"`
-	PlmnSupportList          []models.PlmnId   `yaml:"plmnSupportList,omitempty"`
-	PlmnList                 []PlmnSupportItem `yaml:"plmnList,omitempty"`
-	EnableNrfCaching         bool              `yaml:"enableNrfCaching"`
-	NrfCacheEvictionInterval int               `yaml:"nrfCacheEvictionInterval,omitempty"`
+	UdmName                  string   `yaml:"udmName,omitempty"`
+	Sbi                      *Sbi     `yaml:"sbi,omitempty"`
+	ServiceList              []string `yaml:"serviceList,omitempty"`
+	NrfUri                   string   `yaml:"nrfUri,omitempty"`
+	WebuiUri                 string   `yaml:"webuiUri"`
+	Keys                     *Keys    `yaml:"keys,omitempty"`
+	EnableNrfCaching         bool     `yaml:"enableNrfCaching"`
+	NrfCacheEvictionInterval int      `yaml:"nrfCacheEvictionInterval,omitempty"`
 }
 
 type Sbi struct {
@@ -70,10 +67,6 @@ type Keys struct {
 	UdmProfileAHNPublicKey  string `yaml:"udmProfileAHNPublicKey,omitempty"`
 	UdmProfileBHNPrivateKey string `yaml:"udmProfileBHNPrivateKey,omitempty"`
 	UdmProfileBHNPublicKey  string `yaml:"udmProfileBHNPublicKey,omitempty"`
-}
-
-type PlmnSupportItem struct {
-	PlmnId models.PlmnId `yaml:"plmnId"`
 }
 
 func (c *Config) GetVersion() string {
