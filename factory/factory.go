@@ -11,6 +11,7 @@ package factory
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 
 	"github.com/omec-project/udm/logger"
@@ -21,20 +22,22 @@ var UdmConfig Config
 
 // TODO: Support configuration update from REST api
 func InitConfigFactory(f string) error {
-	if content, err := os.ReadFile(f); err != nil {
+	content, err := os.ReadFile(f)
+	if err != nil {
 		return err
-	} else {
-		UdmConfig = Config{}
-
-		if yamlErr := yaml.Unmarshal(content, &UdmConfig); yamlErr != nil {
-			return yamlErr
-		}
-		if UdmConfig.Configuration.WebuiUri == "" {
-			UdmConfig.Configuration.WebuiUri = "webui:9876"
-		}
 	}
+	UdmConfig = Config{}
 
-	return nil
+	if err = yaml.Unmarshal(content, &UdmConfig); err != nil {
+		return err
+	}
+	if UdmConfig.Configuration.WebuiUri == "" {
+		UdmConfig.Configuration.WebuiUri = "http://webui:5001"
+		logger.CfgLog.Infof("webuiUri not set in configuration file. Using %v", UdmConfig.Configuration.WebuiUri)
+		return nil
+	}
+	err = validateWebuiUri(UdmConfig.Configuration.WebuiUri)
+	return err
 }
 
 func CheckConfigVersion() error {
@@ -47,5 +50,19 @@ func CheckConfigVersion() error {
 
 	logger.CfgLog.Infof("config version [%s]", currentVersion)
 
+	return nil
+}
+
+func validateWebuiUri(uri string) error {
+	parsedUrl, err := url.ParseRequestURI(uri)
+	if err != nil {
+		return err
+	}
+	if parsedUrl.Scheme != "http" && parsedUrl.Scheme != "https" {
+		return fmt.Errorf("unsupported scheme for webuiUri: %s", parsedUrl.Scheme)
+	}
+	if parsedUrl.Hostname() == "" {
+		return fmt.Errorf("missing host in webuiUri")
+	}
 	return nil
 }

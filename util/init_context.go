@@ -77,6 +77,5 @@ func InitUDMContext(udmContext *context.UDMContext) {
 			PublicKey:        configuration.Keys.UdmProfileBHNPublicKey,
 		},
 	}
-	udmContext.PlmnList = configuration.PlmnList
 	udmContext.InitNFService(servingNameList, config.Info.Version)
 }

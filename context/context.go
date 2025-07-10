@@ -17,7 +17,6 @@ import (
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/Nnrf_NFDiscovery"
 	"github.com/omec-project/openapi/models"
-	"github.com/omec-project/udm/factory"
 	"github.com/omec-project/util/idgenerator"
 	"github.com/omec-project/util/util_3gpp/suci"
 )
@@ -54,7 +53,6 @@ type UDMContext struct {
 	NfStatusSubscriptions          sync.Map                     // map[NfInstanceID]models.NrfSubscriptionData.SubscriptionId
 	SuciProfiles                   []suci.SuciProfile
 	EeSubscriptionIDGenerator      *idgenerator.IDGenerator
-	PlmnList                       []factory.PlmnSupportItem
 	SBIPort                        int
 	EnableNrfCaching               bool
 	NrfCacheEvictionInterval       time.Duration

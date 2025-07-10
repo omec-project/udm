@@ -15,7 +15,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/antihax/optional"
 	"github.com/omec-project/openapi/Nnrf_NFDiscovery"
@@ -43,49 +42,6 @@ func setupTest() {
 func TestCheckNRFCachingIsEnabled(t *testing.T) {
 	got := factory.UdmConfig.Configuration.EnableNrfCaching
 	assert.Equal(t, got, true, "NRF Caching is not enabled.")
-}
-
-func TestRegisterNF(t *testing.T) {
-	origRegisterNFInstance := consumer.SendRegisterNFInstance
-	origSearchNFInstances := consumer.SendSearchNFInstances
-	origUpdateNFInstance := consumer.SendUpdateNFInstance
-	defer func() {
-		consumer.SendRegisterNFInstance = origRegisterNFInstance
-		consumer.SendSearchNFInstances = origSearchNFInstances
-		consumer.SendUpdateNFInstance = origUpdateNFInstance
-	}()
-	t.Logf("test case TestRegisterNF")
-	var prof models.NfProfile
-	consumer.SendRegisterNFInstance = func(nrfUri string, nfInstanceId string, profile models.NfProfile) (models.NfProfile, string, string, error) {
-		udrProf := models.NfProfile{
-			UdrInfo: &models.UdrInfo{
-				SupportedDataSets: []models.DataSetId{
-					models.DataSetId_SUBSCRIPTION,
-				},
-			},
-			NfInstanceId: "84343-4343-43-434-343",
-			NfType:       "UDR",
-			NfStatus:     "REGISTERED",
-		}
-		udrProf.HeartBeatTimer = 1
-		t.Logf("test RegisterNFInstance called")
-		return udrProf, "", "", nil
-	}
-	consumer.SendSearchNFInstances = func(nrfUri string, targetNfType, requestNfType models.NfType, param *Nnrf_NFDiscovery.SearchNFInstancesParamOpts) (models.SearchResult, error) {
-		t.Logf("test SearchNFInstance called")
-		return models.SearchResult{}, nil
-	}
-	consumer.SendUpdateNFInstance = func(patchItem []models.PatchItem) (nfProfile models.NfProfile, problemDetails *models.ProblemDetails, err error) {
-		return prof, nil, nil
-	}
-	go UDMTest.RegisterNF()
-	service.ConfigPodTrigger <- true
-	time.Sleep(1 * time.Second)
-	assert.Equal(t, service.ConfigPodTrigger != nil, true)
-
-	service.ConfigPodTrigger <- false
-	time.Sleep(1 * time.Second)
-	assert.Equal(t, service.KeepAliveTimer == nil, true)
 }
 
 func TestGetUDRUri(t *testing.T) {
