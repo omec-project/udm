@@ -45,12 +45,6 @@ import (
 
 type UDM struct{}
 
-var ConfigPodTrigger chan bool
-
-func init() {
-	ConfigPodTrigger = make(chan bool)
-}
-
 type (
 	// Config information.
 	Config struct {
