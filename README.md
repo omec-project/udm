@@ -16,8 +16,8 @@ function can use the service.
 
 Compliance of the 5G Network functions can be found at [5G Compliance](https://docs.sd-core.opennetworking.org/main/overview/3gpp-compliance-5g.html)
 
-## UDM block diagram
-![UDM Block Diagram](/docs/images/README-UDM.png)
+## UDM flow diagram
+![UDM Flow Diagram](/docs/images/README-UDM.png)
 
 ## Dynamic Network configuration (via webconsole)
 
