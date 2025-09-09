@@ -15,7 +15,7 @@ import (
 	"os"
 
 	"github.com/omec-project/udm/logger"
-	"gopkg.in/yaml.v2"
+	"go.yaml.in/yaml/v4"
 )
 
 var UdmConfig Config
