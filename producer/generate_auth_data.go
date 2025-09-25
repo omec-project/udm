@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2025 Intel Corporation
 // Copyright 2019 free5GC.org
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -22,11 +23,11 @@ import (
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
 	stats "github.com/omec-project/udm/metrics"
+	"github.com/omec-project/udm/suci"
 	"github.com/omec-project/udm/util"
 	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/util/milenage"
 	"github.com/omec-project/util/ueauth"
-	"github.com/omec-project/util/util_3gpp/suci"
 )
 
 const (
