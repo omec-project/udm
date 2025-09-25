@@ -1,6 +1,7 @@
+// SPDX-FileCopyrightText: 2025 Intel Corporation
+// SPDX-FileCopyrightText: 2024 Canonical Ltd.
 // SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
 // Copyright 2019 free5GC.org
-// SPDX-FileCopyrightText: 2024 Canonical Ltd.
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -15,7 +16,7 @@ import (
 	"github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/factory"
 	"github.com/omec-project/udm/logger"
-	"github.com/omec-project/util/util_3gpp/suci"
+	"github.com/omec-project/udm/suci"
 )
 
 func InitUDMContext(udmContext *context.UDMContext) {
