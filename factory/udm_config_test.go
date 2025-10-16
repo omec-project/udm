@@ -8,28 +8,42 @@ package factory
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-// Webui URL is not set then default Webui URL value is returned
-func TestGetDefaultWebuiUrl(t *testing.T) {
-	if err := InitConfigFactory("udmcfg.yaml"); err != nil {
-		t.Errorf("error in InitConfigFactory: %v", err)
+func TestWebuiUrl(t *testing.T) {
+	tests := []struct {
+		name       string
+		configFile string
+		want       string
+	}{
+		{
+			name:       "default webui URL",
+			configFile: "udmcfg.yaml",
+			want:       "http://webui:5001",
+		},
+		{
+			name:       "custom webui URL",
+			configFile: "udmcfg_with_custom_webui_url.yaml",
+			want:       "https://myspecialwebui:9872",
+		},
 	}
-	got := UdmConfig.Configuration.WebuiUri
-	want := "http://webui:5001"
-	assert.Equal(t, got, want, "The webui URL is not correct.")
-}
 
-// Webui URL is set to a custom value then custom Webui URL is returned
-func TestGetCustomWebuiUrl(t *testing.T) {
-	if err := InitConfigFactory("udmcfg_with_custom_webui_url.yaml"); err != nil {
-		t.Errorf("error in InitConfigFactory: %v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save and restore original config
+			origUdmConfig := UdmConfig
+			t.Cleanup(func() { UdmConfig = origUdmConfig })
+
+			if err := InitConfigFactory(tt.configFile); err != nil {
+				t.Errorf("error in InitConfigFactory: %v", err)
+			}
+
+			got := UdmConfig.Configuration.WebuiUri
+			if got != tt.want {
+				t.Errorf("The webui URL is not correct. got = %q, want = %q", got, tt.want)
+			}
+		})
 	}
-	got := UdmConfig.Configuration.WebuiUri
-	want := "https://myspecialwebui:9872"
-	assert.Equal(t, got, want, "The webui URL is not correct.")
 }
 
 func TestValidateWebuiUri(t *testing.T) {
