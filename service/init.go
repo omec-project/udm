@@ -8,11 +8,9 @@
 package service
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"sync"
@@ -114,19 +112,6 @@ func (udm *UDM) setLogLevel() {
 	}
 }
 
-func (udm *UDM) FilterCli(c *cli.Command) (args []string) {
-	for _, flag := range udm.GetCliCmd() {
-		name := flag.Names()[0]
-		value := fmt.Sprint(c.Generic(name))
-		if value == "" {
-			continue
-		}
-
-		args = append(args, "--"+name, value)
-	}
-	return args
-}
-
 func (udm *UDM) Start() {
 	config := factory.UdmConfig
 	configuration := config.Configuration
@@ -205,50 +190,6 @@ func (udm *UDM) Start() {
 	if err != nil {
 		logger.InitLog.Fatalf("HTTP server setup failed: %+v", err)
 	}
-}
-
-func (udm *UDM) Exec(c *cli.Command) error {
-	logger.InitLog.Debugln("args:", c.String("udmcfg"))
-	args := udm.FilterCli(c)
-	logger.InitLog.Debugln("filter:", args)
-	command := exec.Command("./udm", args...)
-
-	stdout, err := command.StdoutPipe()
-	if err != nil {
-		logger.InitLog.Fatalln(err)
-	}
-	wg := sync.WaitGroup{}
-	wg.Add(3)
-	go func() {
-		in := bufio.NewScanner(stdout)
-		for in.Scan() {
-			logger.InitLog.Infoln(in.Text())
-		}
-		wg.Done()
-	}()
-
-	stderr, err := command.StderrPipe()
-	if err != nil {
-		logger.InitLog.Fatalln(err)
-	}
-	go func() {
-		in := bufio.NewScanner(stderr)
-		for in.Scan() {
-			logger.InitLog.Infoln(in.Text())
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if err = command.Start(); err != nil {
-			logger.InitLog.Errorf("UDM start error: %v", err)
-		}
-		wg.Done()
-	}()
-
-	wg.Wait()
-
-	return err
 }
 
 func (udm *UDM) Terminate(cancelServices context.CancelFunc, wg *sync.WaitGroup) {
