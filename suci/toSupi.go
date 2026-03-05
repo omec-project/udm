@@ -298,15 +298,13 @@ func profileB(input, supiType, privateKey string) (string, error) {
 		logger.Util3GPPLog.Errorln("ECDH derivation error")
 		return "", fmt.Errorf("ECDH derivation error")
 	}
-	decryptSharedKey := new(big.Int).SetBytes(sharedSecret)
-	// logger.Util3GPPLog.Debugf("deShared: %x", decryptSharedKey.Bytes())
 
 	decryptPublicKeyForKDF := decryptPublicKey
 	if uncompressed {
 		decryptPublicKeyForKDF = compressKey(decryptPublicKey, yUncompressed)
 	}
 
-	kdfKey := ansiX963KDF(decryptSharedKey.Bytes(), decryptPublicKeyForKDF, profileBEncKeyLen, profileBMacKeyLen,
+	kdfKey := ansiX963KDF(sharedSecret, decryptPublicKeyForKDF, profileBEncKeyLen, profileBMacKeyLen,
 		profileBHashLen)
 	// logger.Util3GPPLog.Debugf("kdfKey: %x", kdfKey)
 	decryptEncKey := kdfKey[:profileBEncKeyLen]
