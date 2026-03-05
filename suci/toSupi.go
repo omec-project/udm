@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	cryptoecdh "crypto/ecdh"
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -276,7 +277,28 @@ func profileB(input, supiType, privateKey string) (string, error) {
 	// logger.Util3GPPLog.Debugf("xUncom: %x yUncom: %x", xUncompressed, yUncompressed)
 
 	// x-coordinate is the shared key
-	decryptSharedKey, _ := elliptic.P256().ScalarMult(xUncompressed, yUncompressed, bHNPriv)
+	var pubKeyBytes [65]byte
+	pubKeyBytes[0] = 4
+	xUncompressed.FillBytes(pubKeyBytes[1:33])
+	yUncompressed.FillBytes(pubKeyBytes[33:65])
+
+	priv, err := cryptoecdh.P256().NewPrivateKey(bHNPriv)
+	if err != nil {
+		logger.Util3GPPLog.Errorln("new private key error")
+		return "", fmt.Errorf("new private key error")
+	}
+	pub, err := cryptoecdh.P256().NewPublicKey(pubKeyBytes[:])
+	if err != nil {
+		logger.Util3GPPLog.Errorln("new public key error")
+		return "", fmt.Errorf("new public key error")
+	}
+
+	sharedSecret, err := priv.ECDH(pub)
+	if err != nil {
+		logger.Util3GPPLog.Errorln("ECDH derivation error")
+		return "", fmt.Errorf("ECDH derivation error")
+	}
+	decryptSharedKey := new(big.Int).SetBytes(sharedSecret)
 	// logger.Util3GPPLog.Debugf("deShared: %x", decryptSharedKey.Bytes())
 
 	decryptPublicKeyForKDF := decryptPublicKey
