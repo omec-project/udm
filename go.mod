@@ -1,13 +1,13 @@
 module github.com/omec-project/udm
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/antihax/optional v1.0.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.6.0
-	github.com/omec-project/openapi v1.7.0
-	github.com/omec-project/util v1.7.0
+	github.com/omec-project/openapi v1.7.1
+	github.com/omec-project/util v1.7.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/urfave/cli/v3 v3.6.2
 	go.uber.org/zap v1.27.1
@@ -47,7 +47,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/arch v0.20.0 // indirect
-	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
