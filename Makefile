@@ -1,7 +1,9 @@
-# SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2026 Intel Corporation
-# Copyright 2019 free5GC.org
 # Copyright 2022 Intel Corporation
+# Copyright 2019 free5GC.org
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 #
 
 PROJECT_NAME             := udm
@@ -46,7 +48,6 @@ COVERAGE_DIR             := .coverage
 
 ## Go build configuration
 GO_FILES                 := $(shell find . -name "*.go" ! -name "*_test.go" 2>/dev/null)
-GO_FILES_ALL             := $(shell find . -name "*.go" 2>/dev/null)
 
 ## Tool versions (for reproducible builds)
 GOLANGCI_LINT_VERSION    ?= latest
