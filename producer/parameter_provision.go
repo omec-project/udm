@@ -11,8 +11,8 @@ import (
 
 	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/utils"
 	"github.com/omec-project/udm/logger"
-	"github.com/omec-project/udm/util"
 	"github.com/omec-project/util/httpwrapper"
 )
 
@@ -22,7 +22,7 @@ func HandleUpdateRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	gpsi := request.Params["gpsi"]
 	problemDetails := UpdateProcedure(updateRequest, gpsi)
 	if problemDetails != nil {
-		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	} else {
 		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
@@ -31,15 +31,16 @@ func HandleUpdateRequest(request *httpwrapper.Request) *httpwrapper.Response {
 func UpdateProcedure(updateRequest models.PpData, gpsi string) (problemDetails *models.ProblemDetails) {
 	clientAPI, err := createUDMClientToUDR(gpsi)
 	if err != nil {
-		return util.ProblemDetailsSystemFailure(err.Error())
+		return utils.ProblemDetailsSystemFailure(err.Error())
 	}
-	res, err := clientAPI.ProvisionedParameterDataDocumentApi.ModifyPpData(context.Background(), gpsi, nil)
+	apiModifyPpDataRequest := clientAPI.ProvisionedParameterDataDocumentAPI.ModifyPpData(context.Background(), gpsi)
+	_, res, err := clientAPI.ProvisionedParameterDataDocumentAPI.ModifyPpDataExecute(apiModifyPpDataRequest)
 	if err != nil {
-		problemDetails = &models.ProblemDetails{
-			Status: int32(res.StatusCode),
-			Cause:  err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause,
-			Detail: err.Error(),
-		}
+		cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(int32(res.StatusCode))
+		problemDetails.SetCause(*cause)
+		problemDetails.SetDetail(err.Error())
 		return problemDetails
 	}
 	defer func() {

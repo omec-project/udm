@@ -33,7 +33,7 @@ const (
 )
 
 func init() {
-	UDM_Self().NfService = make(map[models.ServiceName]models.NfService)
+	UDM_Self().NfService = make(map[models.ServiceName]models.NFService)
 	UDM_Self().EeSubscriptionIDGenerator = idgenerator.NewGenerator(1, math.MaxInt32)
 }
 
@@ -44,14 +44,14 @@ type UDMContext struct {
 	RegisterIPv4                   string // IP register to NRF
 	BindingIPv4                    string
 	UriScheme                      models.UriScheme
-	NfService                      map[models.ServiceName]models.NfService
+	NfService                      map[models.ServiceName]models.NFService
 	NFDiscoveryClient              *Nnrf_NFDiscovery.APIClient
 	UdmUePool                      sync.Map // map[supi]*UdmUeContext
 	NrfUri                         string
 	GpsiSupiList                   models.IdentityData
-	SharedSubsDataMap              map[string]models.SharedData // sharedDataIds as key
-	SubscriptionOfSharedDataChange sync.Map                     // subscriptionID as key
-	NfStatusSubscriptions          sync.Map                     // map[NfInstanceID]models.NrfSubscriptionData.SubscriptionId
+	SharedSubsDataMap              map[string]models.SharedDataUdm // sharedDataIds as key
+	SubscriptionOfSharedDataChange sync.Map                        // subscriptionID as key
+	NfStatusSubscriptions          sync.Map                        // map[NfInstanceID]models.NrfSubscriptionData.SubscriptionId
 	SuciProfiles                   []suci.SuciProfile
 	EeSubscriptionIDGenerator      *idgenerator.IDGenerator
 	SBIPort                        int
@@ -82,6 +82,8 @@ type UdmUeContext struct {
 	amSubsDataLock                    sync.Mutex
 	smfSelSubsDataLock                sync.Mutex
 	SmSubsDataLock                    sync.RWMutex
+	subscribeToNotifChangeLock        sync.Mutex
+	eeSubscriptionsLock               sync.RWMutex
 }
 
 func (ue *UdmUeContext) init() {
@@ -109,16 +111,17 @@ func (context *UDMContext) ManageSmData(smDatafromUDR []models.SessionManagement
 	var snssaikey string // Required snssai to obtain all DNN configurations
 
 	for idx, smSubscriptionData := range smDatafromUDR {
-		singleNssaiStr := openapi.MarshToJsonString(smSubscriptionData.SingleNssai)[0]
+		singleNssai := smSubscriptionData.GetSingleNssai()
+		singleNssaiStr := fmt.Sprintf("%d-%s", singleNssai.GetSst(), singleNssai.GetSd())
 		smDataMap[singleNssaiStr] = smSubscriptionData
 		// sNssaiList = append(sNssaiList, singleNssaiStr)
-		AllDnns[idx] = smSubscriptionData.DnnConfigurations
+		AllDnns[idx] = *smSubscriptionData.DnnConfigurations
 		if strings.Contains(singleNssaiStr, snssaiFromReq) {
 			snssaikey = singleNssaiStr
 		}
 
-		if _, ok := smSubscriptionData.DnnConfigurations[dnnFromReq]; ok {
-			AllDnnConfigsbyDnn = append(AllDnnConfigsbyDnn, smSubscriptionData.DnnConfigurations[dnnFromReq])
+		if dnnCfg, ok := (*smSubscriptionData.DnnConfigurations)[dnnFromReq]; ok {
+			AllDnnConfigsbyDnn = append(AllDnnConfigsbyDnn, dnnCfg)
 		}
 	}
 
@@ -126,15 +129,15 @@ func (context *UDMContext) ManageSmData(smDatafromUDR []models.SessionManagement
 }
 
 // HandleGetSharedData related functions
-func MappingSharedData(sharedDatafromUDR []models.SharedData) (mp map[string]models.SharedData) {
-	sharedSubsDataMap := make(map[string]models.SharedData)
-	for i := 0; i < len(sharedDatafromUDR); i++ {
-		sharedSubsDataMap[sharedDatafromUDR[i].SharedDataId] = sharedDatafromUDR[i]
+func MappingSharedData(sharedDatafromUDR []models.SharedDataUdm) (mp map[string]models.SharedDataUdm) {
+	sharedSubsDataMap := make(map[string]models.SharedDataUdm)
+	for _, sharedData := range sharedDatafromUDR {
+		sharedSubsDataMap[sharedData.SharedDataId] = sharedData
 	}
 	return sharedSubsDataMap
 }
 
-func ObtainRequiredSharedData(Sharedids []string, response []models.SharedData) (sharedDatas []models.SharedData) {
+func ObtainRequiredSharedData(Sharedids []string, response []models.SharedDataUdm) (sharedDatas []models.SharedDataUdm) {
 	sharedSubsDataMap := MappingSharedData(response)
 	Allkeys := make([]string, len(sharedSubsDataMap))
 	MatchedKeys := make([]string, len(Sharedids))
@@ -152,7 +155,7 @@ func ObtainRequiredSharedData(Sharedids []string, response []models.SharedData) 
 		counter += 1
 	}
 
-	shared_Data := make([]models.SharedData, len(MatchedKeys))
+	shared_Data := make([]models.SharedDataUdm, len(MatchedKeys))
 	if len(MatchedKeys) != 1 {
 		for i := 0; i < len(MatchedKeys); i++ {
 			shared_Data[i] = sharedSubsDataMap[MatchedKeys[i]]
@@ -166,7 +169,7 @@ func ObtainRequiredSharedData(Sharedids []string, response []models.SharedData) 
 // Returns the  SUPI from the SUPI list (SUPI list contains either a SUPI or a NAI)
 func GetCorrespondingSupi(list models.IdentityData) (id string) {
 	var identifier string
-	for i := 0; i < len(list.SupiList); i++ {
+	for i := 0; i < len(list.GetSupiList()); i++ {
 		if strings.Contains(list.SupiList[i], "imsi") {
 			identifier = list.SupiList[i]
 		}
@@ -194,9 +197,34 @@ func (context *UDMContext) CreateTraceDataforUe(supi string, body models.TraceDa
 
 // functions related to sdmSubscription (subscribe to notification of data change)
 func (udmUeContext *UdmUeContext) CreateSubscriptiontoNotifChange(subscriptionID string, body *models.SdmSubscription) {
+	udmUeContext.subscribeToNotifChangeLock.Lock()
+	defer udmUeContext.subscribeToNotifChangeLock.Unlock()
+
 	if _, exist := udmUeContext.SubscribeToNotifChange[subscriptionID]; !exist {
 		udmUeContext.SubscribeToNotifChange[subscriptionID] = body
 	}
+}
+
+func (udmUeContext *UdmUeContext) StoreEeSubscription(subscriptionID string, body *models.EeSubscription) {
+	udmUeContext.eeSubscriptionsLock.Lock()
+	defer udmUeContext.eeSubscriptionsLock.Unlock()
+
+	udmUeContext.EeSubscriptions[subscriptionID] = body
+}
+
+func (udmUeContext *UdmUeContext) DeleteEeSubscription(subscriptionID string) {
+	udmUeContext.eeSubscriptionsLock.Lock()
+	defer udmUeContext.eeSubscriptionsLock.Unlock()
+
+	delete(udmUeContext.EeSubscriptions, subscriptionID)
+}
+
+func (udmUeContext *UdmUeContext) HasEeSubscription(subscriptionID string) bool {
+	udmUeContext.eeSubscriptionsLock.RLock()
+	defer udmUeContext.eeSubscriptionsLock.RUnlock()
+
+	_, ok := udmUeContext.EeSubscriptions[subscriptionID]
+	return ok
 }
 
 // TODO: this function has wrong UE pool key with subscriptionID
@@ -368,7 +396,7 @@ func (ue *UdmUeContext) GetLocationURI2(types int, supi string) string {
 	case LocationUriSharedDataSubscription:
 		// return UDM_Self().GetIPv4Uri() + "/nudm-sdm/v1/shared-data-subscriptions/" + nf.SubscriptionID
 	case LocationUriSdmSubscription:
-		return UDM_Self().GetIPv4Uri() + "/nudm-sdm/v1/" + supi + "/sdm-subscriptions/"
+		return UDM_Self().GetIPv4Uri() + "/nudm-sdm/v2/" + supi + "/sdm-subscriptions/"
 	}
 	return ""
 }
@@ -378,16 +406,7 @@ func (ue *UdmUeContext) SameAsStoredGUAMI3gpp(inGuami models.Guami) bool {
 		return false
 	}
 	ug := ue.Amf3GppAccessRegistration.Guami
-	if ug != nil {
-		if (ug.PlmnId == nil) == (inGuami.PlmnId == nil) {
-			if ug.PlmnId != nil && ug.PlmnId.Mcc == inGuami.PlmnId.Mcc && ug.PlmnId.Mnc == inGuami.PlmnId.Mnc {
-				if ug.AmfId == inGuami.AmfId {
-					return true
-				}
-			}
-		}
-	}
-	return false
+	return ug == inGuami
 }
 
 func (ue *UdmUeContext) SameAsStoredGUAMINon3gpp(inGuami models.Guami) bool {
@@ -395,16 +414,7 @@ func (ue *UdmUeContext) SameAsStoredGUAMINon3gpp(inGuami models.Guami) bool {
 		return false
 	}
 	ug := ue.AmfNon3GppAccessRegistration.Guami
-	if ug != nil {
-		if (ug.PlmnId == nil) == (inGuami.PlmnId == nil) {
-			if ug.PlmnId != nil && ug.PlmnId.Mcc == inGuami.PlmnId.Mcc && ug.PlmnId.Mnc == inGuami.PlmnId.Mnc {
-				if ug.AmfId == inGuami.AmfId {
-					return true
-				}
-			}
-		}
-	}
-	return false
+	return ug == inGuami
 }
 
 func (context *UDMContext) GetIPv4Uri() string {
@@ -413,7 +423,7 @@ func (context *UDMContext) GetIPv4Uri() string {
 
 // GetSDMUri ... get subscriber data management service uri
 func (context *UDMContext) GetSDMUri() string {
-	return context.GetIPv4Uri() + "/nudm-sdm/v1"
+	return context.GetIPv4Uri() + "/nudm-sdm/v2"
 }
 
 func (context *UDMContext) InitNFService(serviceName []string, version string) {
@@ -421,25 +431,23 @@ func (context *UDMContext) InitNFService(serviceName []string, version string) {
 	versionUri := "v" + tmpVersion[0]
 	for index, nameString := range serviceName {
 		name := models.ServiceName(nameString)
-		context.NfService[name] = models.NfService{
+		ipEndPoint := models.NewIpEndPoint()
+		ipEndPoint.SetIpv4Address(context.RegisterIPv4)
+		ipEndPoint.SetTransport(models.TRANSPORTPROTOCOL_TCP)
+		ipEndPoint.SetPort(int32(context.SBIPort))
+		context.NfService[name] = models.NFService{
 			ServiceInstanceId: strconv.Itoa(index),
 			ServiceName:       name,
-			Versions: &[]models.NfServiceVersion{
+			Versions: []models.NFServiceVersion{
 				{
 					ApiFullVersion:  version,
 					ApiVersionInUri: versionUri,
 				},
 			},
 			Scheme:          context.UriScheme,
-			NfServiceStatus: models.NfServiceStatus_REGISTERED,
-			ApiPrefix:       context.GetIPv4Uri(),
-			IpEndPoints: &[]models.IpEndPoint{
-				{
-					Ipv4Address: context.RegisterIPv4,
-					Transport:   models.TransportProtocol_TCP,
-					Port:        int32(context.SBIPort),
-				},
-			},
+			NfServiceStatus: models.NFSERVICESTATUS_REGISTERED,
+			ApiPrefix:       openapi.PtrString(context.GetIPv4Uri()),
+			IpEndPoints:     []models.IpEndPoint{*ipEndPoint},
 		}
 	}
 }
