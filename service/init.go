@@ -17,8 +17,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/omec-project/openapi/models"
-	nrfCache "github.com/omec-project/openapi/nrfcache"
+	"github.com/omec-project/openapi/v2/models"
+	nrfCache "github.com/omec-project/openapi/v2/nrfcache"
 	"github.com/omec-project/udm/consumer"
 	udmContext "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/eventexposure"

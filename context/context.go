@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omec-project/openapi"
-	"github.com/omec-project/openapi/Nnrf_NFDiscovery"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/Nnrf_NFDiscovery"
+	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/udm/suci"
 	"github.com/omec-project/util/idgenerator"
 )

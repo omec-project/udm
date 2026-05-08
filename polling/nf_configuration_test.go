@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2/models"
 )
 
 func TestStartPollingService_Success(t *testing.T) {

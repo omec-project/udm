@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/omec-project/openapi"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/models"
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/util/httpwrapper"
@@ -144,20 +144,20 @@ func DeleteEeSubscriptionProcedure(ueIdentity string, subscriptionID string) {
 		fallthrough
 	case strings.HasPrefix(ueIdentity, "extid-"):
 		if ue, ok := udmSelf.UdmUeFindByGpsi(ueIdentity); ok {
-				ue.DeleteEeSubscription(subscriptionID)
+			ue.DeleteEeSubscription(subscriptionID)
 		}
 	case strings.HasPrefix(ueIdentity, "extgroupid-"):
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.ExternalGroupID == ueIdentity {
-					ue.DeleteEeSubscription(subscriptionID)
+				ue.DeleteEeSubscription(subscriptionID)
 			}
 			return true
 		})
 	case ueIdentity == anyUE:
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
-				ue.DeleteEeSubscription(subscriptionID)
+			ue.DeleteEeSubscription(subscriptionID)
 			return true
 		})
 	}

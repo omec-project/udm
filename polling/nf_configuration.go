@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/udm/logger"
 )
 
