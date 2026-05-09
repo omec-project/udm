@@ -105,7 +105,7 @@ func (context *UDMContext) ManageSmData(smDatafromUDR []models.SessionManagement
 	smDataMap := make(map[string]models.SessionManagementSubscriptionData)
 	sNssaiList := make([]string, len(smDatafromUDR))
 	// to obtain all DNN configurations identified by "dnn" for all network slices where such DNN is available
-	AllDnnConfigsbyDnn := make([]models.DnnConfiguration, len(sNssaiList))
+	AllDnnConfigsbyDnn := make([]models.DnnConfiguration, 0, len(sNssaiList))
 	// to obtain all DNN configurations for all network slice(s)
 	AllDnns := make([]map[string]models.DnnConfiguration, len(smDatafromUDR))
 	var snssaikey string // Required snssai to obtain all DNN configurations
@@ -115,12 +115,16 @@ func (context *UDMContext) ManageSmData(smDatafromUDR []models.SessionManagement
 		singleNssaiStr := fmt.Sprintf("%d-%s", singleNssai.GetSst(), singleNssai.GetSd())
 		smDataMap[singleNssaiStr] = smSubscriptionData
 		// sNssaiList = append(sNssaiList, singleNssaiStr)
-		AllDnns[idx] = *smSubscriptionData.DnnConfigurations
+		dnnConfigurations := make(map[string]models.DnnConfiguration)
+		if smSubscriptionData.DnnConfigurations != nil {
+			dnnConfigurations = *smSubscriptionData.DnnConfigurations
+		}
+		AllDnns[idx] = dnnConfigurations
 		if strings.Contains(singleNssaiStr, snssaiFromReq) {
 			snssaikey = singleNssaiStr
 		}
 
-		if dnnCfg, ok := (*smSubscriptionData.DnnConfigurations)[dnnFromReq]; ok {
+		if dnnCfg, ok := dnnConfigurations[dnnFromReq]; ok {
 			AllDnnConfigsbyDnn = append(AllDnnConfigsbyDnn, dnnCfg)
 		}
 	}

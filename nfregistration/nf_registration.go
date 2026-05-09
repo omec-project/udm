@@ -52,7 +52,7 @@ func StartNfRegistrationService(ctx context.Context, plmnConfigChan <-chan []mod
 			if len(newPlmnConfig) == 0 {
 				logger.NrfRegistrationLog.Debugln("PLMN config is empty. UDM will deregister")
 				DeregisterNF()
-				return
+				continue
 			}
 			logger.NrfRegistrationLog.Debugln("PLMN config is not empty. UDM will update registration")
 			registerCtx, registerCancel = context.WithCancel(context.Background())

@@ -18,7 +18,7 @@ import (
 
 func HandleUpdateRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.PpLog.Infoln("handle UpdateRequest")
-	updateRequest := request.Body.(models.PpData)
+	updateRequest := request.Body.([]models.PatchItem)
 	gpsi := request.Params["gpsi"]
 	problemDetails := UpdateProcedure(updateRequest, gpsi)
 	if problemDetails != nil {
@@ -28,25 +28,41 @@ func HandleUpdateRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	}
 }
 
-func UpdateProcedure(updateRequest models.PpData, gpsi string) (problemDetails *models.ProblemDetails) {
+func UpdateProcedure(updateRequest []models.PatchItem, gpsi string) (problemDetails *models.ProblemDetails) {
 	clientAPI, err := createUDMClientToUDR(gpsi)
 	if err != nil {
 		return utils.ProblemDetailsSystemFailure(err.Error())
 	}
 	apiModifyPpDataRequest := clientAPI.ProvisionedParameterDataDocumentAPI.ModifyPpData(context.Background(), gpsi)
+	apiModifyPpDataRequest = apiModifyPpDataRequest.PatchItem(updateRequest)
 	_, res, err := clientAPI.ProvisionedParameterDataDocumentAPI.ModifyPpDataExecute(apiModifyPpDataRequest)
 	if err != nil {
-		cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
 		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(int32(res.StatusCode))
-		problemDetails.SetCause(*cause)
+		if res != nil {
+			problemDetails.SetStatus(int32(res.StatusCode))
+		} else {
+			problemDetails.SetStatus(http.StatusInternalServerError)
+		}
+		udrProblemDetails := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
+		if cause := udrProblemDetails.Cause; cause != nil {
+			problemDetails.SetCause(*cause)
+		}
 		problemDetails.SetDetail(err.Error())
+		if res != nil {
+			defer func() {
+				if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
+					logger.PpLog.Errorf("ModifyPpData response body cannot close: %+v", rspCloseErr)
+				}
+			}()
+		}
 		return problemDetails
 	}
-	defer func() {
-		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
-			logger.PpLog.Errorf("ModifyPpData response body cannot close: %+v", rspCloseErr)
-		}
-	}()
+	if res != nil {
+		defer func() {
+			if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
+				logger.PpLog.Errorf("ModifyPpData response body cannot close: %+v", rspCloseErr)
+			}
+		}()
+	}
 	return nil
 }

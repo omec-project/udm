@@ -1,5 +1,5 @@
+// Copyright (c) 2026 Intel Corporation
 // SPDX-FileCopyrightText: 2025 Canonical Ltd.
-//
 // SPDX-License-Identifier: Apache-2.0
 //
 /*
@@ -110,6 +110,51 @@ func TestNfRegistrationService_WhenConfigChanged_ThenRegisterNFSuccessAndStartTi
 	}
 	if !reflect.DeepEqual(registrations, newConfig) {
 		t.Errorf("Expected %+v config, received %+v", newConfig, registrations)
+	}
+}
+
+func TestNfRegistrationService_WhenEmptyConfig_ThenContinuesListeningForUpdates(t *testing.T) {
+	originalDeregisterNF := consumer.SendDeregisterNFInstance
+	originalRegisterNF := registerNF
+	defer func() {
+		consumer.SendDeregisterNFInstance = originalDeregisterNF
+		registerNF = originalRegisterNF
+		if keepAliveTimer != nil {
+			keepAliveTimer.Stop()
+			keepAliveTimer = nil
+		}
+	}()
+
+	deregisterCalls := 0
+	consumer.SendDeregisterNFInstance = func() error {
+		deregisterCalls++
+		return nil
+	}
+
+	registered := make(chan []models.PlmnId, 1)
+	registerNF = func(registerCtx context.Context, newPlmnConfig []models.PlmnId) {
+		registered <- newPlmnConfig
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	ch := make(chan []models.PlmnId, 2)
+	go StartNfRegistrationService(ctx, ch)
+
+	ch <- []models.PlmnId{}
+	ch <- []models.PlmnId{{Mcc: "001", Mnc: "01"}}
+
+	select {
+	case got := <-registered:
+		if !reflect.DeepEqual(got, []models.PlmnId{{Mcc: "001", Mnc: "01"}}) {
+			t.Fatalf("unexpected registration config: %+v", got)
+		}
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("expected registration service to continue after empty config")
+	}
+
+	if deregisterCalls != 1 {
+		t.Fatalf("expected one deregistration call, got %d", deregisterCalls)
 	}
 }
 

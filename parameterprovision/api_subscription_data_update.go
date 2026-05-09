@@ -28,7 +28,7 @@ import (
 
 // Update - provision parameters
 func HTTPUpdate(c *gin.Context) {
-	var ppDataReq models.PpData
+	var patchItems []models.PatchItem
 
 	// step 1: retrieve http request body
 	requestBody, err := c.GetRawData()
@@ -40,7 +40,7 @@ func HTTPUpdate(c *gin.Context) {
 	}
 
 	// step 2: convert requestBody to openapi models
-	err = openapi.Decode(&ppDataReq, requestBody, "application/json")
+	err = openapi.Decode(&patchItems, requestBody, "application/json")
 	if err != nil {
 		problemDetail := "[Request Body] " + err.Error()
 		rsp := utils.ProblemDetailsMalformedRequestSyntax(problemDetail)
@@ -49,8 +49,8 @@ func HTTPUpdate(c *gin.Context) {
 		return
 	}
 
-	req := httpwrapper.NewRequest(c.Request, ppDataReq)
-	req.Params["gspi"] = c.Params.ByName("gpsi")
+	req := httpwrapper.NewRequest(c.Request, patchItems)
+	req.Params["gpsi"] = c.Params.ByName("gpsi")
 
 	rsp := producer.HandleUpdateRequest(req)
 

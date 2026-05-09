@@ -63,9 +63,15 @@ var SendNfDiscoveryToNrf = func(ctx context.Context, nrfUri string, targetNfType
 	if res != nil {
 		defer func() {
 			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
-				err = fmt.Errorf("SearchNFInstances' response body cannot close: %+w", bodyCloseErr)
+				err = fmt.Errorf("SearchNFInstances' response body cannot close: %w", bodyCloseErr)
 			}
 		}()
+	}
+	if err != nil {
+		return result, err
+	}
+	if result == nil {
+		return nil, fmt.Errorf("SearchNFInstances returned no result")
 	}
 
 	udmSelf := udmContext.UDM_Self()
@@ -89,8 +95,9 @@ var SendNfDiscoveryToNrf = func(ctx context.Context, nrfUri string, targetNfType
 				logger.ConsumerLog.Errorf("SendCreateSubscription to NRF, Problem[%+v]", problemDetails)
 			} else if err != nil {
 				logger.ConsumerLog.Errorf("SendCreateSubscription Error[%+v]", err)
+			} else if nrfSubData != nil {
+				udmSelf.NfStatusSubscriptions.Store(nfProfile.GetNfInstanceId(), nrfSubData.GetSubscriptionId())
 			}
-			udmSelf.NfStatusSubscriptions.Store(nfProfile.GetNfInstanceId(), nrfSubData.GetSubscriptionId())
 		}
 	}
 

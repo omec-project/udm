@@ -41,14 +41,22 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 			if httpResponse == nil {
 				problemDetails.SetStatus(http.StatusForbidden)
 			} else {
+				if httpResponse.Body != nil {
+					if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
+						logger.HttpLog.Errorf("OnDataChangeNotification response body cannot close: %+v", rspCloseErr)
+					}
+				}
 				problemDetails.SetStatus(int32(httpResponse.StatusCode))
 			}
+			continue
 		}
-		defer func() {
-			if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
-				logger.HttpLog.Errorf("OnDataChangeNotification response body cannot close: %+v", rspCloseErr)
+		defer func(response *http.Response) {
+			if response != nil && response.Body != nil {
+				if rspCloseErr := response.Body.Close(); rspCloseErr != nil {
+					logger.HttpLog.Errorf("OnDataChangeNotification response body cannot close: %+v", rspCloseErr)
+				}
 			}
-		}()
+		}(httpResponse)
 	}
 
 	return problemDetails
@@ -78,12 +86,19 @@ func SendOnDeregistrationNotification3gpp(ueId string, onDeregistrationNotificat
 			problemDetails.SetStatus(http.StatusInternalServerError)
 			return problemDetails
 		}
+		if httpResponse.Body != nil {
+			if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
+				logger.HttpLog.Errorf("DeregistrationNotify response body cannot close: %+v", rspCloseErr)
+			}
+		}
 		problemDetails.SetStatus(int32(httpResponse.StatusCode))
 		return problemDetails
 	}
 	defer func() {
-		if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
-			logger.HttpLog.Errorf("DeregistrationNotify response body cannot close: %+v", rspCloseErr)
+		if httpResponse != nil && httpResponse.Body != nil {
+			if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
+				logger.HttpLog.Errorf("DeregistrationNotify response body cannot close: %+v", rspCloseErr)
+			}
 		}
 	}()
 
@@ -114,12 +129,19 @@ func SendOnDeregistrationNotificationNon3gpp(ueId string, onDeregistrationNotifi
 			problemDetails.SetStatus(http.StatusInternalServerError)
 			return problemDetails
 		}
+		if httpResponse.Body != nil {
+			if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
+				logger.HttpLog.Errorf("DeregistrationNotify response body cannot close: %+v", rspCloseErr)
+			}
+		}
 		problemDetails.SetStatus(int32(httpResponse.StatusCode))
 		return problemDetails
 	}
 	defer func() {
-		if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
-			logger.HttpLog.Errorf("DeregistrationNotify response body cannot close: %+v", rspCloseErr)
+		if httpResponse != nil && httpResponse.Body != nil {
+			if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
+				logger.HttpLog.Errorf("DeregistrationNotify response body cannot close: %+v", rspCloseErr)
+			}
 		}
 	}()
 
