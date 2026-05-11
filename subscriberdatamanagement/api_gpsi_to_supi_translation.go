@@ -35,7 +35,7 @@ import (
 func HTTPGetSupiOrGpsi(c *gin.Context) {
 	logger.SdmLog.Infoln("Handle Get /:ueId/id-translation-result")
 	req := httpwrapper.NewRequest(c.Request, nil)
-	req.Params["gpsi"] = c.Params.ByName("gpsi")
+	req.Params["gpsi"] = c.Params.ByName("ueId")
 	req.Query.Set("SupportedFeatures", c.Query("supported-features"))
 
 	rsp := producer.HandleGetIdTranslationResultRequest(req)

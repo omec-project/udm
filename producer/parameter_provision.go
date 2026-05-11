@@ -43,9 +43,12 @@ func UpdateProcedure(updateRequest []models.PatchItem, gpsi string) (problemDeta
 		} else {
 			problemDetails.SetStatus(http.StatusInternalServerError)
 		}
-		udrProblemDetails := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
-		if cause := udrProblemDetails.Cause; cause != nil {
-			problemDetails.SetCause(*cause)
+		if openapiErr, ok := err.(openapi.GenericOpenAPIError); ok {
+			if udrProblemDetails, ok := openapiErr.Model().(models.ProblemDetails); ok {
+				if cause := udrProblemDetails.Cause; cause != nil {
+					problemDetails.SetCause(*cause)
+				}
+			}
 		}
 		problemDetails.SetDetail(err.Error())
 		if res != nil {

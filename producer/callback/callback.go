@@ -17,7 +17,14 @@ import (
 )
 
 func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi string) *models.ProblemDetails {
-	ue, _ := udm_context.UDM_Self().UdmUeFindBySupi(supi)
+	ue, ok := udm_context.UDM_Self().UdmUeFindBySupi(supi)
+	if !ok || ue == nil {
+		problemDetails := models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusNotFound)
+		problemDetails.SetCause("CONTEXT_NOT_FOUND")
+		problemDetails.SetDetail("UDM UE context not found")
+		return problemDetails
+	}
 
 	var problemDetails *models.ProblemDetails
 	for _, subscriptionDataSubscription := range ue.UdmSubsToNotify {
@@ -50,13 +57,11 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 			}
 			continue
 		}
-		defer func(response *http.Response) {
-			if response != nil && response.Body != nil {
-				if rspCloseErr := response.Body.Close(); rspCloseErr != nil {
-					logger.HttpLog.Errorf("OnDataChangeNotification response body cannot close: %+v", rspCloseErr)
-				}
+		if httpResponse != nil && httpResponse.Body != nil {
+			if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
+				logger.HttpLog.Errorf("OnDataChangeNotification response body cannot close: %+v", rspCloseErr)
 			}
-		}(httpResponse)
+		}
 	}
 
 	return problemDetails

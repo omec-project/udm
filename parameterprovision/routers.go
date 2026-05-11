@@ -43,6 +43,8 @@ func AddService(engine *gin.Engine) *gin.RouterGroup {
 		switch route.Method {
 		case "GET":
 			group.GET(route.Pattern, route.HandlerFunc)
+		case "OPTIONS":
+			group.OPTIONS(route.Pattern, route.HandlerFunc)
 		case "POST":
 			group.POST(route.Pattern, route.HandlerFunc)
 		case "PUT":

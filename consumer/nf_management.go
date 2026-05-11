@@ -21,7 +21,7 @@ import (
 
 func getNfProfile(udmContext *udmContext.UDMContext, plmnConfig []models.PlmnId) (profile *models.NFProfile, err error) {
 	if udmContext == nil {
-		return nil, fmt.Errorf("udm context has not been intialized. NF profile cannot be built")
+		return nil, fmt.Errorf("udm context has not been initialized. NF profile cannot be built")
 	}
 
 	services := []models.NFService{}
