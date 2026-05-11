@@ -79,13 +79,14 @@ var SendNfDiscoveryToNrf = func(ctx context.Context, nrfUri string, targetNfType
 	var nrfSubData *models.SubscriptionData
 	var problemDetails *models.ProblemDetails
 	for _, nfProfile := range result.NfInstances {
+		nfInstanceID := nfProfile.GetNfInstanceId()
 		// checking whether the UDM subscribed to this target nfinstanceid or not
-		if _, ok := udmSelf.NfStatusSubscriptions.Load(nfProfile.NfInstanceId); !ok {
+		if _, ok := udmSelf.NfStatusSubscriptions.Load(nfInstanceID); !ok {
 			nrfSubscriptionData := models.SubscriptionData{
 				NfStatusNotificationUri: fmt.Sprintf("%s/nudm-callback/v1/nf-status-notify", udmSelf.GetIPv4Uri()),
 				SubscrCond: &models.SubscrCond{
 					NfInstanceIdCond: &models.NfInstanceIdCond{
-						NfInstanceId: openapi.PtrString(nfProfile.GetNfInstanceId()),
+						NfInstanceId: openapi.PtrString(nfInstanceID),
 					},
 				},
 				ReqNfType: &requestNfType,
@@ -96,7 +97,7 @@ var SendNfDiscoveryToNrf = func(ctx context.Context, nrfUri string, targetNfType
 			} else if err != nil {
 				logger.ConsumerLog.Errorf("SendCreateSubscription Error[%+v]", err)
 			} else if nrfSubData != nil {
-				udmSelf.NfStatusSubscriptions.Store(nfProfile.GetNfInstanceId(), nrfSubData.GetSubscriptionId())
+				udmSelf.NfStatusSubscriptions.Store(nfInstanceID, nrfSubData.GetSubscriptionId())
 			}
 		}
 	}
