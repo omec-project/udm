@@ -39,6 +39,10 @@ func HTTPSmfDeregistration(c *gin.Context) {
 	req.Params["pduSessionId"] = c.Params.ByName("pduSessionId")
 
 	rsp := producer.HandleDeregistrationSmfRegistrations(req)
+	if rsp.Status == http.StatusNoContent {
+		c.Status(rsp.Status)
+		return
+	}
 
 	responseBody, err := openapi.SetBody(rsp.Body, "application/json")
 	if err != nil {

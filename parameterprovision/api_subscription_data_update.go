@@ -53,6 +53,10 @@ func HTTPUpdate(c *gin.Context) {
 	req.Params["gpsi"] = c.Params.ByName("gpsi")
 
 	rsp := producer.HandleUpdateRequest(req)
+	if rsp.Status == http.StatusNoContent {
+		c.Status(rsp.Status)
+		return
+	}
 
 	responseBody, err := openapi.SetBody(rsp.Body, "application/json")
 	if err != nil {

@@ -59,6 +59,10 @@ func HTTPUpdateNon3GppRegistration(c *gin.Context) {
 	req.Params["ueId"] = c.Param("ueId")
 
 	rsp := producer.HandleUpdateAmfNon3gppAccessRequest(req)
+	if rsp.Status == http.StatusNoContent {
+		c.Status(rsp.Status)
+		return
+	}
 
 	responseBody, err := openapi.SetBody(rsp.Body, "application/json")
 	if err != nil {

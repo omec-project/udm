@@ -43,6 +43,10 @@ func HTTPUnsubscribe(c *gin.Context) {
 	for key, val := range rsp.Header { // header response is optional
 		c.Header(key, val[0])
 	}
+	if rsp.Status == http.StatusNoContent {
+		c.Status(rsp.Status)
+		return
+	}
 	responseBody, err := openapi.SetBody(rsp.Body, "application/json")
 	if err != nil {
 		logger.SdmLog.Errorln(err)
