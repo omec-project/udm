@@ -67,7 +67,7 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 	return problemDetails
 }
 
-func SendOnDeregistrationNotification3gpp(ueId string, onDeregistrationNotificationUrl string,
+func SendOnDeregistrationNotification3gpp(onDeregistrationNotificationUrl string,
 	deregistData models.DeregistrationData,
 ) *models.ProblemDetails {
 	configuration := Nudm_UECM.NewConfiguration()
@@ -110,7 +110,7 @@ func SendOnDeregistrationNotification3gpp(ueId string, onDeregistrationNotificat
 	return nil
 }
 
-func SendOnDeregistrationNotificationNon3gpp(ueId string, onDeregistrationNotificationUrl string,
+func SendOnDeregistrationNotificationNon3gpp(onDeregistrationNotificationUrl string,
 	deregistData models.DeregistrationData,
 ) *models.ProblemDetails {
 	configuration := Nudm_UECM.NewConfiguration()

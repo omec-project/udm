@@ -9,6 +9,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
+	"unsafe"
 
 	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/Nnrf_NFDiscovery"
@@ -43,6 +45,22 @@ var SendSearchNFInstances = func(nrfUri string, targetNfType, requestNfType mode
 	}
 }
 
+func withSearchNFInstancesRequestContext(
+	param Nnrf_NFDiscovery.ApiSearchNFInstancesRequest,
+	ctx context.Context,
+) Nnrf_NFDiscovery.ApiSearchNFInstancesRequest {
+	if ctx == nil {
+		return param
+	}
+	value := reflect.ValueOf(&param).Elem()
+	ctxField := value.FieldByName("ctx")
+	if !ctxField.IsValid() || !ctxField.CanAddr() {
+		return param
+	}
+	reflect.NewAt(ctxField.Type(), unsafe.Pointer(ctxField.UnsafeAddr())).Elem().Set(reflect.ValueOf(ctx))
+	return param
+}
+
 var SendNfDiscoveryToNrf = func(ctx context.Context, nrfUri string, targetNfType, requestNfType models.NFType,
 	param Nnrf_NFDiscovery.ApiSearchNFInstancesRequest,
 ) (*models.SearchResult, error) {
@@ -54,6 +72,7 @@ var SendNfDiscoveryToNrf = func(ctx context.Context, nrfUri string, targetNfType
 	}
 	client := Nnrf_NFDiscovery.NewAPIClient(configuration)
 
+	param = withSearchNFInstancesRequestContext(param, ctx)
 	param = param.TargetNfType(targetNfType)
 	param = param.RequesterNfType(requestNfType)
 	result, res, err := StoreApiSearchNFInstances(client.NFInstancesStoreAPI.(*Nnrf_NFDiscovery.NFInstancesStoreAPIService), param)
@@ -124,7 +143,7 @@ func SendNFInstancesUDR(id string, types int) string {
 	if err != nil {
 		logger.Handlelog.Error(err.Error())
 	}
-	if result == nil || len(result.NfInstances) == 0 {
+	if self.EnableNrfCaching && (result == nil || len(result.NfInstances) == 0) {
 		directResult, directErr := SendNfDiscoveryToNrf(context.Background(), self.NrfUri, targetNfType, requestNfType, localVarOptionals)
 		if directErr != nil {
 			logger.Handlelog.Error(directErr.Error())

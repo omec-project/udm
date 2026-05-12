@@ -235,7 +235,7 @@ func RegistrationAmf3gppAccessProcedure(registerRequest models.Amf3GppAccessRegi
 			DeregReason: models.DEREGISTRATIONREASON_SUBSCRIPTION_WITHDRAWN,
 			AccessType:  models.ACCESSTYPE__3_GPP_ACCESS.Ptr(),
 		}
-		callback.SendOnDeregistrationNotification3gpp(ueID, oldAmf3GppAccessRegContext.DeregCallbackUri,
+		callback.SendOnDeregistrationNotification3gpp(oldAmf3GppAccessRegContext.DeregCallbackUri,
 			deregistData) // Deregistration Notify Triggered
 
 		return nil, nil, nil
@@ -307,7 +307,7 @@ func RegisterAmfNon3gppAccessProcedure(registerRequest models.AmfNon3GppAccessRe
 			DeregReason: models.DEREGISTRATIONREASON_SUBSCRIPTION_WITHDRAWN,
 			AccessType:  models.ACCESSTYPE_NON_3_GPP_ACCESS.Ptr(),
 		}
-		callback.SendOnDeregistrationNotificationNon3gpp(ueID, oldAmfNon3GppAccessRegContext.DeregCallbackUri,
+		callback.SendOnDeregistrationNotificationNon3gpp(oldAmfNon3GppAccessRegContext.DeregCallbackUri,
 			deregistData) // Deregistration Notify Triggered
 
 		return nil, nil, nil
