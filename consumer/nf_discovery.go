@@ -142,20 +142,20 @@ func SendNFInstancesUDR(id string, types int) string {
 	self := udmContext.UDM_Self()
 	targetNfType := models.NFTYPE_UDR
 	requestNfType := models.NFTYPE_UDM
-	configure := SearchNFInstancesRequestConfigurer(nil)
-	_ = id
-	_ = types
-	_ = Nnrf_NFDiscovery.ApiSearchNFInstancesRequest{
-		// 	DataSet: optional.NewInterface(models.DataSetId_SUBSCRIPTION),
-	}
-	// switch types {
-	// case NFDiscoveryToUDRParamSupi:
-	// 	localVarOptionals.Supi = optional.NewString(id)
-	// case NFDiscoveryToUDRParamExtGroupId:
-	// 	localVarOptionals.ExternalGroupIdentity = optional.NewString(id)
-	// case NFDiscoveryToUDRParamGpsi:
-	// 	localVarOptionals.Gpsi = optional.NewString(id)
-	// }
+	configure := SearchNFInstancesRequestConfigurer(func(
+		request Nnrf_NFDiscovery.ApiSearchNFInstancesRequest,
+	) Nnrf_NFDiscovery.ApiSearchNFInstancesRequest {
+		switch types {
+		case NFDiscoveryToUDRParamSupi:
+			return request.Supi(id)
+		case NFDiscoveryToUDRParamExtGroupId:
+			return request.ExternalGroupIdentity(id)
+		case NFDiscoveryToUDRParamGpsi:
+			return request.Gpsi(id)
+		default:
+			return request
+		}
+	})
 	result, err := SendSearchNFInstances(self.NrfUri, targetNfType, requestNfType, configure)
 	if err != nil {
 		logger.Handlelog.Error(err.Error())
