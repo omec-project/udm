@@ -34,8 +34,9 @@ import (
 // Get /:ueId/registrations/smf-registrations
 // retrieve the SMF registration information
 func HTTPGetSmfRegistration(c *gin.Context) {
-	logger.UecmLog.Warnln("Handle Get /:ueId/registrations/smf-registrations is not implemented")
-	c.String(http.StatusNotImplemented, "501 not implemented")
+	detail := "Handle Get /:ueId/registrations/smf-registrations is not implemented"
+	logger.UecmLog.Warnln(detail)
+	writeNotImplementedProblem(c, detail)
 }
 
 // Put /:ueId/registrations/smf-registrations/:pduSessionId
