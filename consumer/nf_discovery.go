@@ -9,8 +9,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"reflect"
-	"unsafe"
 
 	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/Nnrf_NFDiscovery"
@@ -34,31 +32,36 @@ var (
 	StoreApiSearchNFInstances = (*Nnrf_NFDiscovery.NFInstancesStoreAPIService).SearchNFInstancesExecute
 )
 
+type SearchNFInstancesRequestConfigurer func(
+	Nnrf_NFDiscovery.ApiSearchNFInstancesRequest,
+) Nnrf_NFDiscovery.ApiSearchNFInstancesRequest
+
+func buildSearchNFInstancesRequest(
+	ctx context.Context,
+	client *Nnrf_NFDiscovery.APIClient,
+	targetNfType, requestNfType models.NFType,
+	configure SearchNFInstancesRequestConfigurer,
+) Nnrf_NFDiscovery.ApiSearchNFInstancesRequest {
+	request := client.NFInstancesStoreAPI.SearchNFInstances(ctx)
+	request = request.TargetNfType(targetNfType)
+	request = request.RequesterNfType(requestNfType)
+	if configure != nil {
+		request = configure(request)
+	}
+	return request
+}
+
 var SendSearchNFInstances = func(nrfUri string, targetNfType, requestNfType models.NFType,
-	param Nnrf_NFDiscovery.ApiSearchNFInstancesRequest,
+	configure SearchNFInstancesRequestConfigurer,
 ) (*models.SearchResult, error) {
 	ctx := context.Background()
+	client := Nnrf_NFDiscovery.NewAPIClient(Nnrf_NFDiscovery.NewConfiguration())
+	param := buildSearchNFInstancesRequest(ctx, client, targetNfType, requestNfType, configure)
 	if udmContext.UDM_Self().EnableNrfCaching {
 		return NRFCacheSearchNFInstances(ctx, nrfUri, targetNfType, requestNfType, param)
 	} else {
 		return SendNfDiscoveryToNrf(ctx, nrfUri, targetNfType, requestNfType, param)
 	}
-}
-
-func withSearchNFInstancesRequestContext(
-	param Nnrf_NFDiscovery.ApiSearchNFInstancesRequest,
-	ctx context.Context,
-) Nnrf_NFDiscovery.ApiSearchNFInstancesRequest {
-	if ctx == nil {
-		return param
-	}
-	value := reflect.ValueOf(&param).Elem()
-	ctxField := value.FieldByName("ctx")
-	if !ctxField.IsValid() || !ctxField.CanAddr() {
-		return param
-	}
-	reflect.NewAt(ctxField.Type(), unsafe.Pointer(ctxField.UnsafeAddr())).Elem().Set(reflect.ValueOf(ctx))
-	return param
 }
 
 var SendNfDiscoveryToNrf = func(ctx context.Context, nrfUri string, targetNfType, requestNfType models.NFType,
@@ -72,9 +75,20 @@ var SendNfDiscoveryToNrf = func(ctx context.Context, nrfUri string, targetNfType
 	}
 	client := Nnrf_NFDiscovery.NewAPIClient(configuration)
 
-	param = withSearchNFInstancesRequestContext(param, ctx)
+	if param.ApiService == nil {
+		param = client.NFInstancesStoreAPI.SearchNFInstances(ctx)
+	}
 	param = param.TargetNfType(targetNfType)
 	param = param.RequesterNfType(requestNfType)
+	return executeNfDiscoveryRequest(client, requestNfType, nrfUri, param)
+}
+
+func executeNfDiscoveryRequest(
+	client *Nnrf_NFDiscovery.APIClient,
+	requestNfType models.NFType,
+	nrfUri string,
+	param Nnrf_NFDiscovery.ApiSearchNFInstancesRequest,
+) (*models.SearchResult, error) {
 	result, res, err := StoreApiSearchNFInstances(client.NFInstancesStoreAPI.(*Nnrf_NFDiscovery.NFInstancesStoreAPIService), param)
 	if res != nil && res.StatusCode == http.StatusTemporaryRedirect {
 		err = fmt.Errorf("temporary redirect for non NRF consumer")
@@ -82,7 +96,7 @@ var SendNfDiscoveryToNrf = func(ctx context.Context, nrfUri string, targetNfType
 	if res != nil {
 		defer func() {
 			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
-				err = fmt.Errorf("SearchNFInstances' response body cannot close: %w", bodyCloseErr)
+				logger.ConsumerLog.Errorf("SearchNFInstances response body cannot close: %+v", bodyCloseErr)
 			}
 		}()
 	}
@@ -128,7 +142,10 @@ func SendNFInstancesUDR(id string, types int) string {
 	self := udmContext.UDM_Self()
 	targetNfType := models.NFTYPE_UDR
 	requestNfType := models.NFTYPE_UDM
-	localVarOptionals := Nnrf_NFDiscovery.ApiSearchNFInstancesRequest{
+	configure := SearchNFInstancesRequestConfigurer(nil)
+	_ = id
+	_ = types
+	_ = Nnrf_NFDiscovery.ApiSearchNFInstancesRequest{
 		// 	DataSet: optional.NewInterface(models.DataSetId_SUBSCRIPTION),
 	}
 	// switch types {
@@ -139,12 +156,14 @@ func SendNFInstancesUDR(id string, types int) string {
 	// case NFDiscoveryToUDRParamGpsi:
 	// 	localVarOptionals.Gpsi = optional.NewString(id)
 	// }
-	result, err := SendSearchNFInstances(self.NrfUri, targetNfType, requestNfType, localVarOptionals)
+	result, err := SendSearchNFInstances(self.NrfUri, targetNfType, requestNfType, configure)
 	if err != nil {
 		logger.Handlelog.Error(err.Error())
 	}
 	if self.EnableNrfCaching && (result == nil || len(result.NfInstances) == 0) {
-		directResult, directErr := SendNfDiscoveryToNrf(context.Background(), self.NrfUri, targetNfType, requestNfType, localVarOptionals)
+		client := Nnrf_NFDiscovery.NewAPIClient(Nnrf_NFDiscovery.NewConfiguration())
+		param := buildSearchNFInstancesRequest(context.Background(), client, targetNfType, requestNfType, configure)
+		directResult, directErr := SendNfDiscoveryToNrf(context.Background(), self.NrfUri, targetNfType, requestNfType, param)
 		if directErr != nil {
 			logger.Handlelog.Error(directErr.Error())
 		}
