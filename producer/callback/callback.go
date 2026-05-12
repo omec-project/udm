@@ -46,7 +46,7 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 			problemDetails.SetDetail(err.Error())
 			logger.HttpLog.Error(err.Error())
 			if httpResponse == nil {
-				problemDetails.SetStatus(http.StatusForbidden)
+				problemDetails.SetStatus(http.StatusBadGateway)
 			} else {
 				if httpResponse.Body != nil {
 					if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
