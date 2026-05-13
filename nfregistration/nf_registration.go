@@ -105,7 +105,7 @@ func heartbeatNF(plmnConfig []models.PlmnId) {
 	patchItem := []models.PatchItem{
 		{
 			Op:    models.PATCHOPERATION_REPLACE,
-			Path:  "/nfstatus",
+			Path:  "/nfStatus",
 			Value: models.NFSTATUS_REGISTERED,
 		},
 	}
