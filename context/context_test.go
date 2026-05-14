@@ -46,3 +46,41 @@ func TestManageSmData_DoesNotPrependZeroValueDnnConfigs(t *testing.T) {
 		t.Fatalf("expected one matching DNN config, got %d", len(dnnsByDnn))
 	}
 }
+
+func TestSameAsStoredGUAMI3gppMatchesEqualNidValues(t *testing.T) {
+	ue := &UdmUeContext{
+		Amf3GppAccessRegistration: &models.Amf3GppAccessRegistration{
+			Guami: models.Guami{
+				PlmnId: models.PlmnIdNid{Mcc: "001", Mnc: "01", Nid: openapi.PtrString("ABCDEFABCDEF")},
+				AmfId:  "123456",
+			},
+		},
+	}
+	inGuami := models.Guami{
+		PlmnId: models.PlmnIdNid{Mcc: "001", Mnc: "01", Nid: openapi.PtrString("ABCDEFABCDEF")},
+		AmfId:  "123456",
+	}
+
+	if !ue.SameAsStoredGUAMI3gpp(inGuami) {
+		t.Fatal("expected GUAMI comparison to match equal values even when Nid pointers differ")
+	}
+}
+
+func TestSameAsStoredGUAMINon3gppMatchesEqualNidValues(t *testing.T) {
+	ue := &UdmUeContext{
+		AmfNon3GppAccessRegistration: &models.AmfNon3GppAccessRegistration{
+			Guami: models.Guami{
+				PlmnId: models.PlmnIdNid{Mcc: "001", Mnc: "01", Nid: openapi.PtrString("ABCDEFABCDEF")},
+				AmfId:  "654321",
+			},
+		},
+	}
+	inGuami := models.Guami{
+		PlmnId: models.PlmnIdNid{Mcc: "001", Mnc: "01", Nid: openapi.PtrString("ABCDEFABCDEF")},
+		AmfId:  "654321",
+	}
+
+	if !ue.SameAsStoredGUAMINon3gpp(inGuami) {
+		t.Fatal("expected non-3GPP GUAMI comparison to match equal values even when Nid pointers differ")
+	}
+}

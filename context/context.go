@@ -410,7 +410,7 @@ func (ue *UdmUeContext) SameAsStoredGUAMI3gpp(inGuami models.Guami) bool {
 		return false
 	}
 	ug := ue.Amf3GppAccessRegistration.Guami
-	return ug == inGuami
+	return guamiEqual(ug, inGuami)
 }
 
 func (ue *UdmUeContext) SameAsStoredGUAMINon3gpp(inGuami models.Guami) bool {
@@ -418,7 +418,15 @@ func (ue *UdmUeContext) SameAsStoredGUAMINon3gpp(inGuami models.Guami) bool {
 		return false
 	}
 	ug := ue.AmfNon3GppAccessRegistration.Guami
-	return ug == inGuami
+	return guamiEqual(ug, inGuami)
+}
+
+func guamiEqual(left, right models.Guami) bool {
+	return left.GetAmfId() == right.GetAmfId() && plmnIdNidEqual(left.GetPlmnId(), right.GetPlmnId())
+}
+
+func plmnIdNidEqual(left, right models.PlmnIdNid) bool {
+	return left.GetMcc() == right.GetMcc() && left.GetMnc() == right.GetMnc() && left.GetNid() == right.GetNid()
 }
 
 func (context *UDMContext) GetIPv4Uri() string {

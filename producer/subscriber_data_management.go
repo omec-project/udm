@@ -267,7 +267,12 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	if res4.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
 
-		smData, _, _, _ := udm_context.UDM_Self().ManageSmData(sessionManagementSubscriptionData.ExtendedSmSubsData.IndividualSmSubsData, "", "")
+		individualSmSubsData, smProblemDetails := individualSmSubsDataFromResponse(sessionManagementSubscriptionData)
+		if smProblemDetails != nil {
+			return nil, smProblemDetails
+		}
+
+		smData, _, _, _ := udm_context.UDM_Self().ManageSmData(individualSmSubsData, "", "")
 		udmUe.SetSMSubsData(smData)
 		subscriptionDataSets.SmData = sessionManagementSubscriptionData
 	} else {
@@ -496,18 +501,9 @@ func getSmDataProcedure(supi, plmnID, dnn, snssai, supportedFeatures string) (
 
 	if res.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
-		var individualSmSubsData []models.SessionManagementSubscriptionData
-		switch {
-		case sessionManagementSubscriptionDataResp.ArrayOfSessionManagementSubscriptionData != nil:
-			individualSmSubsData = *sessionManagementSubscriptionDataResp.ArrayOfSessionManagementSubscriptionData
-		case sessionManagementSubscriptionDataResp.ExtendedSmSubsData != nil:
-			individualSmSubsData = sessionManagementSubscriptionDataResp.ExtendedSmSubsData.IndividualSmSubsData
-		default:
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusNotFound)
-			problemDetails.SetCause("DATA_NOT_FOUND")
-			problemDetails.SetDetail("session management subscription data is empty")
-			return nil, problemDetails
+		individualSmSubsData, smProblemDetails := individualSmSubsDataFromResponse(sessionManagementSubscriptionDataResp)
+		if smProblemDetails != nil {
+			return nil, smProblemDetails
 		}
 
 		smData, snssaikey, AllDnnConfigsbyDnn, AllDnns := udm_context.UDM_Self().ManageSmData(
@@ -859,7 +855,7 @@ func unsubscribeProcedure(supi string, subscriptionID string) *models.ProblemDet
 		return utils.ProblemDetailsSystemFailure(err.Error())
 	}
 
-	apiRemovesdmSubscriptionsRequest := clientAPI.SDMSubscriptionDocumentAPI.RemovesdmSubscriptions(context.Background(), "====", subscriptionID)
+	apiRemovesdmSubscriptionsRequest := clientAPI.SDMSubscriptionDocumentAPI.RemovesdmSubscriptions(context.Background(), supi, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.RemovesdmSubscriptionsExecute(apiRemovesdmSubscriptionsRequest)
 	if err != nil {
 		return problemDetailsFromClientError(res, err)
@@ -933,6 +929,31 @@ func modifyProcedure(sdmSubsModification *models.SdmSubsModification, supi strin
 		problemDetails = models.NewProblemDetails()
 		problemDetails.SetStatus(http.StatusNotFound)
 		problemDetails.SetCause("USER_NOT_FOUND")
+		return nil, problemDetails
+	}
+}
+
+func individualSmSubsDataFromResponse(sessionManagementSubscriptionData *models.SmSubsData) (
+	[]models.SessionManagementSubscriptionData, *models.ProblemDetails,
+) {
+	if sessionManagementSubscriptionData == nil {
+		problemDetails := models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusNotFound)
+		problemDetails.SetCause("DATA_NOT_FOUND")
+		problemDetails.SetDetail("session management subscription data is empty")
+		return nil, problemDetails
+	}
+
+	switch {
+	case sessionManagementSubscriptionData.ArrayOfSessionManagementSubscriptionData != nil:
+		return *sessionManagementSubscriptionData.ArrayOfSessionManagementSubscriptionData, nil
+	case sessionManagementSubscriptionData.ExtendedSmSubsData != nil:
+		return sessionManagementSubscriptionData.ExtendedSmSubsData.GetIndividualSmSubsData(), nil
+	default:
+		problemDetails := models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusNotFound)
+		problemDetails.SetCause("DATA_NOT_FOUND")
+		problemDetails.SetDetail("session management subscription data is empty")
 		return nil, problemDetails
 	}
 }
