@@ -1,7 +1,6 @@
+// Copyright (c) 2026 Intel Corporation
 // Copyright 2019 free5GC.org
-//
 // SPDX-License-Identifier: Apache-2.0
-//
 
 /*
  * Nudm_UECM
@@ -18,40 +17,34 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/omec-project/openapi"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/producer"
 	"github.com/omec-project/util/httpwrapper"
 )
 
-// UpdateAmf3gppAccess - Update a parameter in the AMF registration for 3GPP access
-func HTTPUpdateAmf3gppAccess(c *gin.Context) {
+// Patch /:ueId/registrations/amf-3gpp-access
+// Update a parameter in the AMF registration for 3GPP access
+func HTTPUpdate3GppRegistration(c *gin.Context) {
+	logger.UecmLog.Infoln("Handle Patch /:ueId/registrations/amf-3gpp-access")
 	var amf3GppAccessRegistrationModification models.Amf3GppAccessRegistrationModification
 
 	// step 1: retrieve http request body
 	requestBody, err := c.GetRawData()
 	if err != nil {
-		problemDetail := models.ProblemDetails{
-			Title:  "System failure",
-			Status: http.StatusInternalServerError,
-			Detail: err.Error(),
-			Cause:  "SYSTEM_FAILURE",
-		}
+		problemDetail := utils.ProblemDetailsSystemFailure(err.Error())
 		logger.UecmLog.Errorf("Get Request Body error: %+v", err)
 		c.JSON(http.StatusInternalServerError, problemDetail)
 		return
 	}
 
 	// step 2: convert requestBody to openapi models
-	err = openapi.Deserialize(&amf3GppAccessRegistrationModification, requestBody, "application/json")
+	err = openapi.Decode(&amf3GppAccessRegistrationModification, requestBody, "application/json")
 	if err != nil {
 		problemDetail := "[Request Body] " + err.Error()
-		rsp := models.ProblemDetails{
-			Title:  "Malformed request syntax",
-			Status: http.StatusBadRequest,
-			Detail: problemDetail,
-		}
+		rsp := utils.ProblemDetailsMalformedRequestSyntax(problemDetail)
 		logger.UecmLog.Errorln(problemDetail)
 		c.JSON(http.StatusBadRequest, rsp)
 		return
@@ -61,17 +54,17 @@ func HTTPUpdateAmf3gppAccess(c *gin.Context) {
 	req.Params["ueId"] = c.Param("ueId")
 
 	rsp := producer.HandleUpdateAmf3gppAccessRequest(req)
+	if rsp.Status == http.StatusNoContent {
+		c.Status(rsp.Status)
+		return
+	}
 
-	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
+	responseBody, err := openapi.SetBody(rsp.Body, "application/json")
 	if err != nil {
 		logger.UecmLog.Errorln(err)
-		problemDetails := models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Cause:  "SYSTEM_FAILURE",
-			Detail: err.Error(),
-		}
+		problemDetails := utils.ProblemDetailsSystemFailure(err.Error())
 		c.JSON(http.StatusInternalServerError, problemDetails)
 	} else {
-		c.Data(rsp.Status, "application/json", responseBody)
+		c.Data(rsp.Status, "application/json", responseBody.Bytes())
 	}
 }

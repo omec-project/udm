@@ -18,8 +18,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/omec-project/openapi"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/producer"
 	"github.com/omec-project/util/httpwrapper"
@@ -27,51 +28,42 @@ import (
 
 // Update - provision parameters
 func HTTPUpdate(c *gin.Context) {
-	var ppDataReq models.PpData
+	var patchItems []models.PatchItem
 
 	// step 1: retrieve http request body
 	requestBody, err := c.GetRawData()
 	if err != nil {
-		problemDetail := models.ProblemDetails{
-			Title:  "System failure",
-			Status: http.StatusInternalServerError,
-			Detail: err.Error(),
-			Cause:  "SYSTEM_FAILURE",
-		}
+		problemDetail := utils.ProblemDetailsSystemFailure(err.Error())
 		logger.PpLog.Errorf("Get Request Body error: %+v", err)
 		c.JSON(http.StatusInternalServerError, problemDetail)
 		return
 	}
 
 	// step 2: convert requestBody to openapi models
-	err = openapi.Deserialize(&ppDataReq, requestBody, "application/json")
+	err = openapi.Decode(&patchItems, requestBody, "application/json")
 	if err != nil {
 		problemDetail := "[Request Body] " + err.Error()
-		rsp := models.ProblemDetails{
-			Title:  "Malformed request syntax",
-			Status: http.StatusBadRequest,
-			Detail: problemDetail,
-		}
+		rsp := utils.ProblemDetailsMalformedRequestSyntax(problemDetail)
 		logger.PpLog.Errorln(problemDetail)
 		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
 
-	req := httpwrapper.NewRequest(c.Request, ppDataReq)
-	req.Params["gspi"] = c.Params.ByName("gpsi")
+	req := httpwrapper.NewRequest(c.Request, patchItems)
+	req.Params["gpsi"] = c.Params.ByName("gpsi")
 
 	rsp := producer.HandleUpdateRequest(req)
+	if rsp.Status == http.StatusNoContent {
+		c.Status(rsp.Status)
+		return
+	}
 
-	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
+	responseBody, err := openapi.SetBody(rsp.Body, "application/json")
 	if err != nil {
 		logger.PpLog.Errorln(err)
-		problemDetails := models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Cause:  "SYSTEM_FAILURE",
-			Detail: err.Error(),
-		}
+		problemDetails := utils.ProblemDetailsSystemFailure(err.Error())
 		c.JSON(http.StatusInternalServerError, problemDetails)
 	} else {
-		c.Data(rsp.Status, "application/json", responseBody)
+		c.Data(rsp.Status, "application/json", responseBody.Bytes())
 	}
 }

@@ -16,15 +16,13 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/antihax/optional"
-	"github.com/omec-project/openapi"
-	"github.com/omec-project/openapi/Nudr_DataRepository"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
 	stats "github.com/omec-project/udm/metrics"
 	"github.com/omec-project/udm/suci"
-	"github.com/omec-project/udm/util"
 	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/util/milenage"
 	"github.com/omec-project/util/ueauth"
@@ -92,12 +90,9 @@ func HandleGenerateAuthDataRequest(request *httpwrapper.Request) *httpwrapper.Re
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
 		stats.IncrementUdmUeAuthenticationStats("create", "FAILURE")
-		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	problemDetails = &models.ProblemDetails{
-		Status: http.StatusForbidden,
-		Cause:  "UNSPECIFIED",
-	}
+	problemDetails = utils.ProblemDetailsUnspecified()
 	stats.IncrementUdmUeAuthenticationStats("create", "FAILURE")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
@@ -112,7 +107,7 @@ func HandleConfirmAuthDataRequest(request *httpwrapper.Request) *httpwrapper.Res
 
 	if problemDetails != nil {
 		stats.IncrementUdmUeAuthenticationStats("create", "FAILURE")
-		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	} else {
 		stats.IncrementUdmUeAuthenticationStats("create", "SUCCESS")
 		return httpwrapper.NewResponse(http.StatusCreated, nil, nil)
@@ -120,23 +115,20 @@ func HandleConfirmAuthDataRequest(request *httpwrapper.Request) *httpwrapper.Res
 }
 
 func ConfirmAuthDataProcedure(authEvent models.AuthEvent, supi string) (problemDetails *models.ProblemDetails) {
-	var createAuthParam Nudr_DataRepository.CreateAuthenticationStatusParamOpts
-	optInterface := optional.NewInterface(authEvent)
-	createAuthParam.AuthEvent = optInterface
-
 	client, err := createUDMClientToUDR(supi)
 	if err != nil {
-		return util.ProblemDetailsSystemFailure(err.Error())
+		return utils.ProblemDetailsSystemFailure(err.Error())
 	}
-	resp, err := client.AuthenticationStatusDocumentApi.CreateAuthenticationStatus(
-		context.Background(), supi, &createAuthParam)
+	apiCreateAuthenticationStatusRequest := client.AuthenticationStatusDocumentAPI.CreateAuthenticationStatus(
+		context.Background(), supi)
+	apiCreateAuthenticationStatusRequest = apiCreateAuthenticationStatusRequest.AuthEvent(authEvent)
+	resp, err := client.AuthenticationStatusDocumentAPI.CreateAuthenticationStatusExecute(apiCreateAuthenticationStatusRequest)
 	if err != nil {
-		problemDetails = &models.ProblemDetails{
-			Status: int32(resp.StatusCode),
-			Cause:  err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause,
-			Detail: err.Error(),
-		}
-
+		cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(int32(resp.StatusCode))
+		problemDetails.SetCause(*cause)
+		problemDetails.SetDetail(err.Error())
 		logger.UeauLog.Errorln("[ConfirmAuth]", err.Error())
 		return problemDetails
 	}
@@ -157,12 +149,10 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	response = &models.AuthenticationInfoResult{}
 	supi, err := suci.ToSupi(supiOrSuci, udm_context.UDM_Self().SuciProfiles)
 	if err != nil {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  authenticationRejected,
-			Detail: err.Error(),
-		}
-
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetCause(authenticationRejected)
+		problemDetails.SetDetail(err.Error())
 		logger.UeauLog.Errorln("suciToSupi error:", err.Error())
 		return nil, problemDetails
 	}
@@ -171,17 +161,20 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 
 	client, err := createUDMClientToUDR(supi)
 	if err != nil {
-		return nil, util.ProblemDetailsSystemFailure(err.Error())
+		return nil, utils.ProblemDetailsSystemFailure(err.Error())
 	}
-	authSubs, res, err := client.AuthenticationDataDocumentApi.QueryAuthSubsData(context.Background(), supi, nil)
+	apiQueryAuthSubsDataRequest := client.AuthenticationDataDocumentAPI.QueryAuthSubsData(context.Background(), supi)
+	authSubs, res, err := client.AuthenticationDataDocumentAPI.QueryAuthSubsDataExecute(apiQueryAuthSubsDataRequest)
 	if err != nil {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  authenticationRejected,
-			Detail: err.Error(),
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetCause(authenticationRejected)
+		problemDetails.SetDetail(err.Error())
+		if res != nil {
+			logger.UeauLog.Errorf("return from UDR QueryAuthSubsData error: status=%s err=%v", res.Status, err)
+		} else {
+			logger.UeauLog.Errorf("return from UDR QueryAuthSubsData error: err=%v", err)
 		}
-
-		logger.UeauLog.Errorln("return from UDR QueryAuthSubsData error")
 		return nil, problemDetails
 	}
 	defer func() {
@@ -198,14 +191,14 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 
 	hasK, hasOP, hasOPC := false, false, false
 
-	var kStr, opStr, opcStr string
+	var kStr, opcStr string
 
 	k, op, opc := make([]byte, 16), make([]byte, 16), make([]byte, 16)
 
 	logger.UeauLog.Debugln("K", k)
 
-	if authSubs.PermanentKey != nil {
-		kStr = authSubs.PermanentKey.PermanentKeyValue
+	if authSubs.EncPermanentKey != nil {
+		kStr = authSubs.GetEncPermanentKey()
 		if len(kStr) == keyStrLen {
 			k, err = hex.DecodeString(kStr)
 			if err != nil {
@@ -214,52 +207,22 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 				hasK = true
 			}
 		} else {
-			problemDetails = &models.ProblemDetails{
-				Status: http.StatusForbidden,
-				Cause:  authenticationRejected,
-			}
-
+			problemDetails = models.NewProblemDetails()
+			problemDetails.SetStatus(http.StatusForbidden)
+			problemDetails.SetCause(authenticationRejected)
 			logger.UeauLog.Errorln("kStr length is", len(kStr))
 			return nil, problemDetails
 		}
 	} else {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  authenticationRejected,
-		}
-
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetCause(authenticationRejected)
 		logger.UeauLog.Errorln("Nil PermanentKey")
 		return nil, problemDetails
 	}
 
-	if authSubs.Milenage != nil {
-		if authSubs.Milenage.Op != nil {
-			opStr = authSubs.Milenage.Op.OpValue
-			if len(opStr) == opStrLen {
-				op, err = hex.DecodeString(opStr)
-				if err != nil {
-					logger.UeauLog.Errorln("err", err)
-				} else {
-					hasOP = true
-				}
-			} else {
-				logger.UeauLog.Errorln("opStr length is", len(opStr))
-			}
-		} else {
-			logger.UeauLog.Infoln("Nil Op")
-		}
-	} else {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  authenticationRejected,
-		}
-
-		logger.UeauLog.Infoln("Nil Milenage")
-		return nil, problemDetails
-	}
-
-	if authSubs.Opc != nil && authSubs.Opc.OpcValue != "" {
-		opcStr = authSubs.Opc.OpcValue
+	if authSubs.EncOpcKey != nil && authSubs.GetEncOpcKey() != "" {
+		opcStr = authSubs.GetEncOpcKey()
 		if len(opcStr) == opcStrLen {
 			opc, err = hex.DecodeString(opcStr)
 			if err != nil {
@@ -275,11 +238,13 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	}
 
 	if !hasOPC && !hasOP {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  authenticationRejected,
-		}
-
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetCause(authenticationRejected)
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetCause(authenticationRejected)
+		problemDetails.SetDetail(err.Error())
 		return nil, problemDetails
 	}
 
@@ -290,26 +255,22 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 				logger.UeauLog.Errorln("milenage GenerateOPC err", err)
 			}
 		} else {
-			problemDetails = &models.ProblemDetails{
-				Status: http.StatusForbidden,
-				Cause:  authenticationRejected,
-			}
-
+			problemDetails = models.NewProblemDetails()
+			problemDetails.SetStatus(http.StatusForbidden)
+			problemDetails.SetCause(authenticationRejected)
 			logger.UeauLog.Errorln("unable to derive OPC")
 			return nil, problemDetails
 		}
 	}
 
-	sqnStr := strictHex(authSubs.SequenceNumber, 12)
+	sqnStr := strictHex(authSubs.SequenceNumber.GetSqn(), 12)
 	logger.UeauLog.Debugln("sqnStr", sqnStr)
 	sqn, err := hex.DecodeString(sqnStr)
 	if err != nil {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  authenticationRejected,
-			Detail: err.Error(),
-		}
-
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetCause(authenticationRejected)
+		problemDetails.SetDetail(err.Error())
 		logger.UeauLog.Errorln("err", err)
 		return nil, problemDetails
 	}
@@ -319,24 +280,20 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	RAND := make([]byte, 16)
 	_, err = rand.Read(RAND)
 	if err != nil {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  authenticationRejected,
-			Detail: err.Error(),
-		}
-
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetCause(authenticationRejected)
+		problemDetails.SetDetail(err.Error())
 		logger.UeauLog.Errorln("err", err)
 		return nil, problemDetails
 	}
 
 	AMF, err := hex.DecodeString("8000")
 	if err != nil {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  authenticationRejected,
-			Detail: err.Error(),
-		}
-
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetCause(authenticationRejected)
+		problemDetails.SetDetail(err.Error())
 		logger.UeauLog.Errorln("err", err)
 		return nil, problemDetails
 	}
@@ -345,24 +302,20 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	if authInfoRequest.ResynchronizationInfo != nil {
 		Auts, deCodeErr := hex.DecodeString(authInfoRequest.ResynchronizationInfo.Auts)
 		if deCodeErr != nil {
-			problemDetails = &models.ProblemDetails{
-				Status: http.StatusForbidden,
-				Cause:  authenticationRejected,
-				Detail: deCodeErr.Error(),
-			}
-
+			problemDetails = models.NewProblemDetails()
+			problemDetails.SetStatus(http.StatusForbidden)
+			problemDetails.SetCause(authenticationRejected)
+			problemDetails.SetDetail(deCodeErr.Error())
 			logger.UeauLog.Errorln("err", deCodeErr)
 			return nil, problemDetails
 		}
 
 		randHex, deCodeErr := hex.DecodeString(authInfoRequest.ResynchronizationInfo.Rand)
 		if deCodeErr != nil {
-			problemDetails = &models.ProblemDetails{
-				Status: http.StatusForbidden,
-				Cause:  authenticationRejected,
-				Detail: deCodeErr.Error(),
-			}
-
+			problemDetails = models.NewProblemDetails()
+			problemDetails.SetStatus(http.StatusForbidden)
+			problemDetails.SetCause(authenticationRejected)
+			problemDetails.SetDetail(deCodeErr.Error())
 			logger.UeauLog.Errorln("err", deCodeErr)
 			return nil, problemDetails
 		}
@@ -371,12 +324,10 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		if reflect.DeepEqual(macS, Auts[6:]) {
 			_, err = rand.Read(RAND)
 			if err != nil {
-				problemDetails = &models.ProblemDetails{
-					Status: http.StatusForbidden,
-					Cause:  authenticationRejected,
-					Detail: err.Error(),
-				}
-
+				problemDetails = models.NewProblemDetails()
+				problemDetails.SetStatus(http.StatusForbidden)
+				problemDetails.SetCause(authenticationRejected)
+				problemDetails.SetDetail(err.Error())
 				logger.UeauLog.Errorln("err", err)
 				return nil, problemDetails
 			}
@@ -399,10 +350,9 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 			logger.UeauLog.Errorln("MACS", macS)
 			logger.UeauLog.Errorln("Auts[6:]", Auts[6:])
 			logger.UeauLog.Errorln("Sqn", SQNms)
-			problemDetails = &models.ProblemDetails{
-				Status: http.StatusForbidden,
-				Cause:  "modification is rejected",
-			}
+			problemDetails = models.NewProblemDetails()
+			problemDetails.SetStatus(http.StatusForbidden)
+			problemDetails.SetCause("modification is rejected")
 			return nil, problemDetails
 		}
 	}
@@ -411,12 +361,10 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	bigSQN := big.NewInt(0)
 	sqn, err = hex.DecodeString(sqnStr)
 	if err != nil {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  authenticationRejected,
-			Detail: err.Error(),
-		}
-
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetCause(authenticationRejected)
+		problemDetails.SetDetail(err.Error())
 		logger.UeauLog.Errorln("err", err)
 		return nil, problemDetails
 	}
@@ -430,22 +378,22 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	SQNheStr = strictHex(SQNheStr, 12)
 	patchItemArray := []models.PatchItem{
 		{
-			Op:    models.PatchOperation_REPLACE,
-			Path:  "/sequenceNumber",
+			Op:    models.PATCHOPERATION_REPLACE,
+			Path:  "/sequenceNumber/sqn",
 			Value: SQNheStr,
 		},
 	}
 
 	var rsp *http.Response
-	rsp, err = client.AuthenticationDataDocumentApi.ModifyAuthentication(
-		context.Background(), supi, patchItemArray)
+	apiModifyAuthenticationSubscriptionRequest := client.AuthenticationSubscriptionDocumentAPI.ModifyAuthenticationSubscription(
+		context.Background(), supi)
+	apiModifyAuthenticationSubscriptionRequest = apiModifyAuthenticationSubscriptionRequest.PatchItem(patchItemArray)
+	_, rsp, err = client.AuthenticationSubscriptionDocumentAPI.ModifyAuthenticationSubscriptionExecute(apiModifyAuthenticationSubscriptionRequest)
 	if err != nil {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  "modification is rejected ",
-			Detail: err.Error(),
-		}
-
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetCause("modification is rejected")
+		problemDetails.SetDetail(err.Error())
 		logger.UeauLog.Errorln("update sqn error", err)
 		return nil, problemDetails
 	}
@@ -483,8 +431,9 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	logger.UeauLog.Infof("AUTN = %x", AUTN)
 
 	var av models.AuthenticationVector
-	if authSubs.AuthenticationMethod == models.AuthMethod__5_G_AKA {
-		response.AuthType = models.AuthType__5_G_AKA
+	if authSubs.AuthenticationMethod == models.AUTHMETHOD__5_G_AKA {
+		response.AuthType = models.AUTHTYPE__5_G_AKA
+		av.Av5GHeAka = models.NewAv5GHeAka(models.AVTYPE__5_G_HE_AKA, "", "", "", "")
 
 		// derive XRES*
 		key := append(CK, IK...)
@@ -510,12 +459,13 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		}
 
 		// Fill in rand, xresStar, autn, kausf
-		av.Rand = hex.EncodeToString(RAND)
-		av.XresStar = hex.EncodeToString(xresStar)
-		av.Autn = hex.EncodeToString(AUTN)
-		av.Kausf = hex.EncodeToString(kdfValForKausf)
+		av.Av5GHeAka.Rand = hex.EncodeToString(RAND)
+		av.Av5GHeAka.XresStar = hex.EncodeToString(xresStar)
+		av.Av5GHeAka.Autn = hex.EncodeToString(AUTN)
+		av.Av5GHeAka.Kausf = hex.EncodeToString(kdfValForKausf)
 	} else { // EAP-AKA'
-		response.AuthType = models.AuthType_EAP_AKA_PRIME
+		response.AuthType = models.AUTHTYPE_EAP_AKA_PRIME
+		av.AvEapAkaPrime = models.NewAvEapAkaPrime(models.AVTYPE_EAP_AKA_PRIME, "", "", "", "", "")
 
 		// derive CK' and IK'
 		key := append(CK, IK...)
@@ -535,14 +485,14 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		ikPrime := kdfVal[len(kdfVal)/2:]
 
 		// Fill in rand, xres, autn, ckPrime, ikPrime
-		av.Rand = hex.EncodeToString(RAND)
-		av.Xres = hex.EncodeToString(RES)
-		av.Autn = hex.EncodeToString(AUTN)
-		av.CkPrime = hex.EncodeToString(ckPrime)
-		av.IkPrime = hex.EncodeToString(ikPrime)
+		av.AvEapAkaPrime.Rand = hex.EncodeToString(RAND)
+		av.AvEapAkaPrime.Xres = hex.EncodeToString(RES)
+		av.AvEapAkaPrime.Autn = hex.EncodeToString(AUTN)
+		av.AvEapAkaPrime.CkPrime = hex.EncodeToString(ckPrime)
+		av.AvEapAkaPrime.IkPrime = hex.EncodeToString(ikPrime)
 	}
 
-	response.AuthenticationVector = &av
-	response.Supi = supi
+	response.SetAuthenticationVector(av)
+	response.SetSupi(supi)
 	return response, nil
 }

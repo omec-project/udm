@@ -9,43 +9,63 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/omec-project/openapi"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 	"github.com/omec-project/udm/logger"
-	"github.com/omec-project/udm/util"
 	"github.com/omec-project/util/httpwrapper"
 )
 
 func HandleUpdateRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.PpLog.Infoln("handle UpdateRequest")
-	updateRequest := request.Body.(models.PpData)
+	updateRequest := request.Body.([]models.PatchItem)
 	gpsi := request.Params["gpsi"]
 	problemDetails := UpdateProcedure(updateRequest, gpsi)
 	if problemDetails != nil {
-		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	} else {
 		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
 }
 
-func UpdateProcedure(updateRequest models.PpData, gpsi string) (problemDetails *models.ProblemDetails) {
+func UpdateProcedure(updateRequest []models.PatchItem, gpsi string) (problemDetails *models.ProblemDetails) {
 	clientAPI, err := createUDMClientToUDR(gpsi)
 	if err != nil {
-		return util.ProblemDetailsSystemFailure(err.Error())
+		return utils.ProblemDetailsSystemFailure(err.Error())
 	}
-	res, err := clientAPI.ProvisionedParameterDataDocumentApi.ModifyPpData(context.Background(), gpsi, nil)
+	apiModifyPpDataRequest := clientAPI.ProvisionedParameterDataDocumentAPI.ModifyPpData(context.Background(), gpsi)
+	apiModifyPpDataRequest = apiModifyPpDataRequest.PatchItem(updateRequest)
+	_, res, err := clientAPI.ProvisionedParameterDataDocumentAPI.ModifyPpDataExecute(apiModifyPpDataRequest)
 	if err != nil {
-		problemDetails = &models.ProblemDetails{
-			Status: int32(res.StatusCode),
-			Cause:  err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause,
-			Detail: err.Error(),
+		problemDetails = models.NewProblemDetails()
+		if res != nil {
+			problemDetails.SetStatus(int32(res.StatusCode))
+		} else {
+			problemDetails.SetStatus(http.StatusInternalServerError)
+		}
+		if openapiErr, ok := err.(openapi.GenericOpenAPIError); ok {
+			if udrProblemDetails, ok := openapiErr.Model().(models.ProblemDetails); ok {
+				if cause := udrProblemDetails.Cause; cause != nil {
+					problemDetails.SetCause(*cause)
+				}
+			}
+		}
+		problemDetails.SetDetail(err.Error())
+		if res != nil {
+			defer func() {
+				if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
+					logger.PpLog.Errorf("ModifyPpData response body cannot close: %+v", rspCloseErr)
+				}
+			}()
 		}
 		return problemDetails
 	}
-	defer func() {
-		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
-			logger.PpLog.Errorf("ModifyPpData response body cannot close: %+v", rspCloseErr)
-		}
-	}()
+	if res != nil {
+		defer func() {
+			if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
+				logger.PpLog.Errorf("ModifyPpData response body cannot close: %+v", rspCloseErr)
+			}
+		}()
+	}
 	return nil
 }
