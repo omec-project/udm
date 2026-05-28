@@ -17,16 +17,54 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/omec-project/openapi/v2/models"
 )
 
+func startTestPollingService(ctx context.Context, webuiURI string, plmnConfigChan chan<- []models.PlmnId) (context.CancelFunc, <-chan struct{}) {
+	testCtx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		StartPollingService(testCtx, webuiURI, plmnConfigChan)
+	}()
+	return cancel, done
+}
+
+func waitForPollingServiceStop(t *testing.T, cancel context.CancelFunc, done <-chan struct{}) {
+	t.Helper()
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for polling service to stop")
+	}
+}
+
+func waitForPollingCondition(t *testing.T, timeout time.Duration, condition func() bool, failureMessage string) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if condition() {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !condition() {
+		t.Fatal(failureMessage)
+	}
+}
+
 func TestStartPollingService_Success(t *testing.T) {
-	ctx := t.Context()
 	originalFetchPlmnConfig := fetchPlmnConfig
+	plmnChan := make(chan []models.PlmnId, 1)
+	var cancel context.CancelFunc
+	var done <-chan struct{}
 	defer func() {
+		waitForPollingServiceStop(t, cancel, done)
 		fetchPlmnConfig = originalFetchPlmnConfig
 	}()
 
@@ -34,44 +72,48 @@ func TestStartPollingService_Success(t *testing.T) {
 	fetchPlmnConfig = func(poller *nfConfigPoller, pollingEndpoint string) ([]models.PlmnId, error) {
 		return expectedConfig, nil
 	}
-	pollingChan := make(chan []models.PlmnId, 1)
-
-	go StartPollingService(ctx, "http://dummy", pollingChan)
-	time.Sleep(initialPollingInterval)
+	cancel, done = startTestPollingService(t.Context(), "http://dummy", plmnChan)
 
 	select {
-	case result := <-pollingChan:
+	case result := <-plmnChan:
 		if !reflect.DeepEqual(result, expectedConfig) {
 			t.Errorf("Expected %+v, got %+v", expectedConfig, result)
 		}
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(initialPollingInterval + 200*time.Millisecond):
 		t.Errorf("Timeout waiting for PLMN config")
 	}
+
+	waitForPollingServiceStop(t, cancel, done)
+	cancel = func() {}
 }
 
 func TestStartPollingService_RetryAfterFailure(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
 	originalFetchPlmnConfig := fetchPlmnConfig
+	plmnChan := make(chan []models.PlmnId, 1)
+	var cancel context.CancelFunc
+	var done <-chan struct{}
 	defer func() {
+		waitForPollingServiceStop(t, cancel, done)
 		fetchPlmnConfig = originalFetchPlmnConfig
 	}()
 
-	callCount := 0
+	var callCount atomic.Int32
 	fetchPlmnConfig = func(poller *nfConfigPoller, pollingEndpoint string) ([]models.PlmnId, error) {
-		callCount++
+		callCount.Add(1)
 		return nil, errors.New("mock failure")
 	}
-	plmnChan := make(chan []models.PlmnId, 1)
-	go StartPollingService(ctx, "http://dummy", plmnChan)
+	cancel, done = startTestPollingService(context.Background(), "http://dummy", plmnChan)
 
-	time.Sleep(4 * initialPollingInterval)
-	cancel()
-	<-ctx.Done()
+	waitForPollingCondition(t, 4*initialPollingInterval+time.Second, func() bool {
+		return callCount.Load() >= 2
+	}, "expected to retry after failure")
+	waitForPollingServiceStop(t, cancel, done)
+	cancel = func() {}
 
-	if callCount < 2 {
+	if callCount.Load() < 2 {
 		t.Error("Expected to retry after failure")
 	}
-	t.Logf("Tried %v times", callCount)
+	t.Logf("Tried %v times", callCount.Load())
 }
 
 func TestHandlePolledPlmnConfig_ConfigChanged_ConfigurationIsUpdatedAndSendToChannel(t *testing.T) {
