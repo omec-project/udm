@@ -42,6 +42,9 @@ func waitForCondition(t *testing.T, timeout time.Duration, condition func() bool
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
+	if condition() {
+		return
+	}
 	t.Fatal(errMessage)
 }
 

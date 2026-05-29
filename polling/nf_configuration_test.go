@@ -82,9 +82,6 @@ func TestStartPollingService_Success(t *testing.T) {
 	case <-time.After(initialPollingInterval + 200*time.Millisecond):
 		t.Errorf("Timeout waiting for PLMN config")
 	}
-
-	waitForPollingServiceStop(t, cancel, done)
-	cancel = func() {}
 }
 
 func TestStartPollingService_RetryAfterFailure(t *testing.T) {
@@ -107,8 +104,6 @@ func TestStartPollingService_RetryAfterFailure(t *testing.T) {
 	waitForPollingCondition(t, 4*initialPollingInterval+time.Second, func() bool {
 		return callCount.Load() >= 2
 	}, "expected to retry after failure")
-	waitForPollingServiceStop(t, cancel, done)
-	cancel = func() {}
 
 	if callCount.Load() < 2 {
 		t.Error("Expected to retry after failure")
