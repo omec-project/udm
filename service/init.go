@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	openapiLogger "github.com/omec-project/openapi/v2/logger"
 	"github.com/omec-project/openapi/v2/models"
 	nrfCache "github.com/omec-project/openapi/v2/nrfcache"
 	"github.com/omec-project/udm/consumer"
@@ -37,8 +38,6 @@ import (
 	"github.com/omec-project/util/http2_util"
 	utilLogger "github.com/omec-project/util/logger"
 	"github.com/urfave/cli/v3"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type UDM struct{}
@@ -90,26 +89,15 @@ func (udm *UDM) Initialize(c *cli.Command) error {
 }
 
 func (udm *UDM) setLogLevel() {
-	if factory.UdmConfig.Logger == nil {
+	cfgLogger := factory.UdmConfig.Logger
+	if cfgLogger == nil {
 		logger.InitLog.Warnln("UDM config without log level setting")
 		return
 	}
 
-	if factory.UdmConfig.Logger.UDM != nil {
-		if factory.UdmConfig.Logger.UDM.DebugLevel != "" {
-			if level, err := zapcore.ParseLevel(factory.UdmConfig.Logger.UDM.DebugLevel); err != nil {
-				logger.InitLog.Warnf("UDM Log level [%s] is invalid, set to [info] level",
-					factory.UdmConfig.Logger.UDM.DebugLevel)
-				logger.SetLogLevel(zap.InfoLevel)
-			} else {
-				logger.InitLog.Infof("UDM Log level is set to [%s] level", level)
-				logger.SetLogLevel(level)
-			}
-		} else {
-			logger.InitLog.Infoln("UDM Log level is default set to [info] level")
-			logger.SetLogLevel(zap.InfoLevel)
-		}
-	}
+	utilLogger.ApplyLogSetting("SMF", cfgLogger.SMF, logger.InitLog, logger.SetLogLevel)
+	utilLogger.ApplyLogSetting("OpenApi", cfgLogger.OpenApi, openapiLogger.OpenapiLog, openapiLogger.SetLogLevel)
+	utilLogger.ApplyLogSetting("Util", cfgLogger.Util, utilLogger.UtilLog, utilLogger.SetLogLevel)
 }
 
 func (udm *UDM) Start() {
