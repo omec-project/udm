@@ -95,7 +95,7 @@ func (udm *UDM) setLogLevel() {
 		return
 	}
 
-	utilLogger.ApplyLogSetting("SMF", cfgLogger.SMF, logger.InitLog, logger.SetLogLevel)
+	utilLogger.ApplyLogSetting("UDM", cfgLogger.UDM, logger.InitLog, logger.SetLogLevel)
 	utilLogger.ApplyLogSetting("OpenApi", cfgLogger.OpenApi, openapiLogger.OpenapiLog, openapiLogger.SetLogLevel)
 	utilLogger.ApplyLogSetting("Util", cfgLogger.Util, utilLogger.UtilLog, utilLogger.SetLogLevel)
 }
