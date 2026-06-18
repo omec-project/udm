@@ -35,6 +35,8 @@ func closeResponseBody(res *http.Response, operation string) {
 
 func problemDetailsFromClientError(res *http.Response, err error) *models.ProblemDetails {
 	problemDetails := utils.ProblemDetailsFromOpenAPIError(res, err)
+	closeResponseBody(res, "client error")
+
 	if problemDetails == nil {
 		return nil
 	}

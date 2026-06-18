@@ -123,6 +123,23 @@ func TestProblemDetailsFromClientErrorPreservesOpenAPIProblemDetails(t *testing.
 	}
 }
 
+func TestProblemDetailsFromClientErrorClosesResponseBody(t *testing.T) {
+	body := &trackingReadCloser{}
+
+	problemDetails := problemDetailsFromClientError(&http.Response{
+		StatusCode: http.StatusBadGateway,
+		Status:     "502 Bad Gateway",
+		Body:       body,
+	}, errors.New(eofDetail))
+
+	if problemDetails == nil {
+		t.Fatal("expected problem details")
+	}
+	if !body.closed {
+		t.Fatal("expected response body to be closed")
+	}
+}
+
 func TestIndividualSmSubsDataFromResponseRejectsNilResponse(t *testing.T) {
 	_, problemDetails := individualSmSubsDataFromResponse(nil)
 
