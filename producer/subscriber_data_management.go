@@ -654,8 +654,8 @@ func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
 func HandleSubscribeRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.SdmLog.Infoln("handle Subscribe")
 	sdmSubscription := request.Body.(models.SdmSubscription)
-	supi := request.Params["supi"]
-	header, response, problemDetails := subscribeProcedure(&sdmSubscription, supi)
+	ueId := request.Params["ueId"]
+	header, response, problemDetails := subscribeProcedure(&sdmSubscription, ueId)
 	if response != nil {
 		stats.IncrementUdmSubscriberDataManagementStats("create", "sdm-subscriptions", "SUCCESS")
 		// status code is based on SPEC, and option headers
@@ -669,16 +669,16 @@ func HandleSubscribeRequest(request *httpwrapper.Request) *httpwrapper.Response 
 	}
 }
 
-func subscribeProcedure(sdmSubscription *models.SdmSubscription, supi string) (
+func subscribeProcedure(sdmSubscription *models.SdmSubscription, ueId string) (
 	header http.Header, response *models.SdmSubscription, problemDetails *models.ProblemDetails,
 ) {
-	clientAPI, err := createUDMClientToUDR(supi)
+	clientAPI, err := createUDMClientToUDR(ueId)
 	if err != nil {
 		return nil, nil, utils.ProblemDetailsSystemFailure(err.Error())
 	}
 
 	apiCreateSdmSubscriptionsRequest := clientAPI.SDMSubscriptionsCollectionAPI.CreateSdmSubscriptions(
-		context.Background(), supi)
+		context.Background(), ueId)
 	apiCreateSdmSubscriptionsRequest = apiCreateSdmSubscriptionsRequest.SdmSubscription(*sdmSubscription)
 	sdmSubscriptionResp, res, err := clientAPI.SDMSubscriptionsCollectionAPI.CreateSdmSubscriptionsExecute(apiCreateSdmSubscriptionsRequest)
 	if err != nil {
@@ -689,12 +689,12 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, supi string) (
 	switch res.StatusCode {
 	case http.StatusCreated:
 		header = make(http.Header)
-		udmUe, _ := udm_context.UDM_Self().UdmUeFindBySupi(supi)
+		udmUe, _ := udm_context.UDM_Self().UdmUeFindBySupi(ueId)
 		if udmUe == nil {
-			udmUe = udm_context.UDM_Self().NewUdmUe(supi)
+			udmUe = udm_context.UDM_Self().NewUdmUe(ueId)
 		}
 		udmUe.CreateSubscriptiontoNotifChange(sdmSubscriptionResp.GetSubscriptionId(), sdmSubscriptionResp)
-		header.Set("Location", udmUe.GetLocationURI2(udm_context.LocationUriSdmSubscription, supi))
+		header.Set("Location", udmUe.GetLocationURI2(udm_context.LocationUriSdmSubscription, ueId))
 		return header, sdmSubscriptionResp, nil
 	case http.StatusNotFound:
 		return nil, nil, utils.ProblemDetailsDataNotFound()
@@ -739,9 +739,9 @@ func unsubscribeForSharedDataProcedure(subscriptionID string) *models.ProblemDet
 
 func HandleUnsubscribeRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.SdmLog.Infoln("handle Unsubscribe")
-	supi := request.Params["supi"]
+	ueId := request.Params["ueId"]
 	subscriptionID := request.Params["subscriptionId"]
-	problemDetails := unsubscribeProcedure(supi, subscriptionID)
+	problemDetails := unsubscribeProcedure(ueId, subscriptionID)
 	if problemDetails != nil {
 		stats.IncrementUdmSubscriberDataManagementStats("delete", "sdm-subscriptions", "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
@@ -750,13 +750,13 @@ func HandleUnsubscribeRequest(request *httpwrapper.Request) *httpwrapper.Respons
 	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
-func unsubscribeProcedure(supi string, subscriptionID string) *models.ProblemDetails {
-	clientAPI, err := createUDMClientToUDR(supi)
+func unsubscribeProcedure(ueId string, subscriptionID string) *models.ProblemDetails {
+	clientAPI, err := createUDMClientToUDR(ueId)
 	if err != nil {
 		return utils.ProblemDetailsSystemFailure(err.Error())
 	}
 
-	apiRemovesdmSubscriptionsRequest := clientAPI.SDMSubscriptionDocumentAPI.RemovesdmSubscriptions(context.Background(), supi, subscriptionID)
+	apiRemovesdmSubscriptionsRequest := clientAPI.SDMSubscriptionDocumentAPI.RemovesdmSubscriptions(context.Background(), ueId, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.RemovesdmSubscriptionsExecute(apiRemovesdmSubscriptionsRequest)
 	if err != nil {
 		return problemDetailsFromClientError(logger.SdmLog, res, err)
@@ -773,9 +773,9 @@ func unsubscribeProcedure(supi string, subscriptionID string) *models.ProblemDet
 func HandleModifyRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.SdmLog.Infoln("handle Modify")
 	sdmSubsModification := request.Body.(models.SdmSubsModification)
-	supi := request.Params["supi"]
+	ueId := request.Params["ueId"]
 	subscriptionID := request.Params["subscriptionId"]
-	response, problemDetails := modifyProcedure(&sdmSubsModification, supi, subscriptionID)
+	response, problemDetails := modifyProcedure(&sdmSubsModification, ueId, subscriptionID)
 	if response != nil {
 		stats.IncrementUdmSubscriberDataManagementStats("update", "sdm-subscriptions", "SUCCESS")
 		// status code is based on SPEC, and option headers
@@ -789,17 +789,17 @@ func HandleModifyRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
-func modifyProcedure(sdmSubsModification *models.SdmSubsModification, supi string, subscriptionID string) (
+func modifyProcedure(sdmSubsModification *models.SdmSubsModification, ueId string, subscriptionID string) (
 	response *models.SdmSubscription, problemDetails *models.ProblemDetails,
 ) {
-	clientAPI, err := createUDMClientToUDR(supi)
+	clientAPI, err := createUDMClientToUDR(ueId)
 	if err != nil {
 		return nil, utils.ProblemDetailsSystemFailure(err.Error())
 	}
 
 	sdmSubscription := models.NewSdmSubscriptionWithDefaults()
 	apiUpdatesdmsubscriptionsRequest := clientAPI.SDMSubscriptionDocumentAPI.Updatesdmsubscriptions(
-		context.Background(), supi, subscriptionID)
+		context.Background(), ueId, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.UpdatesdmsubscriptionsExecute(apiUpdatesdmsubscriptionsRequest)
 	if err != nil {
 		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
@@ -841,9 +841,8 @@ func individualSmSubsDataFromResponse(sessionManagementSubscriptionData *models.
 func HandleModifyForSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.SdmLog.Infoln("handle ModifyForSharedData")
 	sdmSubsModification := request.Body.(models.SdmSubsModification)
-	supi := request.Params["supi"]
 	subscriptionID := request.Params["subscriptionId"]
-	response, problemDetails := modifyForSharedDataProcedure(&sdmSubsModification, supi, subscriptionID)
+	response, problemDetails := modifyForSharedDataProcedure(sdmSubsModification, subscriptionID)
 	if response != nil {
 		stats.IncrementUdmSubscriberDataManagementStats("update", "shared-data-subscriptions", "SUCCESS")
 		// status code is based on SPEC, and option headers
@@ -857,31 +856,25 @@ func HandleModifyForSharedDataRequest(request *httpwrapper.Request) *httpwrapper
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
-func modifyForSharedDataProcedure(sdmSubsModification *models.SdmSubsModification, supi string,
+func modifyForSharedDataProcedure(sdmSubsModification models.SdmSubsModification,
 	subscriptionID string,
 ) (response *models.SdmSubscription, problemDetails *models.ProblemDetails) {
-	clientAPI, err := createUDMClientToUDR(supi)
-	if err != nil {
-		return nil, utils.ProblemDetailsSystemFailure(err.Error())
-	}
+	cfg := Nudm_SDM.NewConfiguration()
+	udmClientAPI := Nudm_SDM.NewAPIClient(cfg)
 
-	sdmSubscription := models.NewSdmSubscriptionWithDefaults()
-	apiUpdatesdmsubscriptionsRequest := clientAPI.SDMSubscriptionDocumentAPI.Updatesdmsubscriptions(
-		context.Background(), supi, subscriptionID)
-	res, err := clientAPI.SDMSubscriptionDocumentAPI.UpdatesdmsubscriptionsExecute(apiUpdatesdmsubscriptionsRequest)
+	apiModifySharedDataSubsRequest := udmClientAPI.SubscriptionModificationAPI.ModifySharedDataSubs(
+		context.Background(), subscriptionID)
+	apiModifySharedDataSubsRequest = apiModifySharedDataSubsRequest.SdmSubsModification(sdmSubsModification)
+	modifyResp, res, err := udmClientAPI.SubscriptionModificationAPI.ModifySharedDataSubsExecute(apiModifySharedDataSubsRequest)
 	if err != nil {
 		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer func() {
-		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
-			logger.SdmLog.Errorf("Updatesdmsubscriptions response body cannot close: %+v", rspCloseErr)
-		}
-	}()
+	defer closeResponseBody(logger.SdmLog, res, "ModifySharedDataSubs")
 
 	if res.StatusCode == http.StatusOK {
-		return sdmSubscription, nil
+		return modifyResp.SdmSubscription, nil
 	} else {
-		return nil, utils.ProblemDetailsUserNotFound()
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 }
 

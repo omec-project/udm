@@ -57,7 +57,7 @@ func HTTPSubscribe(c *gin.Context) {
 	}
 
 	req := httpwrapper.NewRequest(c.Request, sdmSubscriptionReq)
-	req.Params["supi"] = c.Params.ByName("supi")
+	req.Params["ueId"] = c.Params.ByName("ueId")
 
 	rsp := producer.HandleSubscribeRequest(req)
 

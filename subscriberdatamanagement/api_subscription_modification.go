@@ -56,7 +56,7 @@ func HTTPModify(c *gin.Context) {
 	}
 
 	req := httpwrapper.NewRequest(c.Request, sdmSubsModificationReq)
-	req.Params["supi"] = c.Params.ByName("supi")
+	req.Params["ueId"] = c.Params.ByName("ueId")
 	req.Params["subscriptionId"] = c.Params.ByName("subscriptionId")
 
 	rsp := producer.HandleModifyRequest(req)
@@ -95,7 +95,6 @@ func HTTPModifySharedDataSubs(c *gin.Context) {
 	}
 
 	req := httpwrapper.NewRequest(c.Request, sharedDataSubscriptions)
-	req.Params["supi"] = c.Params.ByName("supi")
 	req.Params["subscriptionId"] = c.Params.ByName("subscriptionId")
 
 	rsp := producer.HandleModifyForSharedDataRequest(req)
