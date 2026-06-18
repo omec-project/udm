@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/Nudm_SDM"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
@@ -802,18 +801,7 @@ func modifyProcedure(sdmSubsModification *models.SdmSubsModification, supi strin
 		context.Background(), supi, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.UpdatesdmsubscriptionsExecute(apiUpdatesdmsubscriptionsRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Warnln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Warnln(err)
-		} else {
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -881,18 +869,7 @@ func modifyForSharedDataProcedure(sdmSubsModification *models.SdmSubsModificatio
 		context.Background(), supi, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.UpdatesdmsubscriptionsExecute(apiUpdatesdmsubscriptionsRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Warnln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Warnln(err)
-		} else {
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -940,18 +917,7 @@ func getTraceDataProcedure(supi string, plmnID string) (
 		context.Background(), supi, plmnID)
 	traceDataRes, res, err := clientAPI.TraceDataDocumentAPI.QueryTraceDataExecute(apiQueryTraceDataRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Warnln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Warnln(err)
-		} else {
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -1010,19 +976,7 @@ func getUeContextInSmfDataProcedure(supi string, supportedFeatures string) (
 	apiQuerySmfRegListRequest = apiQuerySmfRegListRequest.SupportedFeatures(supportedFeatures)
 	pdusess, res, err := clientAPI.SMFRegistrationsCollectionAPI.QuerySmfRegListExecute(apiQuerySmfRegListRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Infoln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Infoln(err)
-		} else {
-			logger.SdmLog.Infoln(err)
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {

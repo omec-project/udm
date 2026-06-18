@@ -109,7 +109,6 @@ func GetAmf3gppAccessProcedure(ueID string, supportedFeatures string) (
 	amf3GppAccessRegistration, resp, err := clientAPI.AMF3GPPAccessRegistrationDocumentAPI.
 		QueryAmfContext3gppExecute(apiQueryAmfContext3gppRequest)
 	if err != nil {
-		closeResponseBody(resp, "QueryAmfContext3gpp")
 		return nil, problemDetailsFromClientError(resp, err)
 	}
 	defer func() {
@@ -153,7 +152,6 @@ func GetAmfNon3gppAccessProcedure(supportedFeatures, ueID string) (response *mod
 	amfNon3GppAccessRegistration, resp, err := clientAPI.AMFNon3GPPAccessRegistrationDocumentAPI.
 		QueryAmfContextNon3gppExecute(apiQueryAmfContextNon3gppRequest)
 	if err != nil {
-		closeResponseBody(resp, "QueryAmfContextNon3gpp")
 		return nil, problemDetailsFromClientError(resp, err)
 	}
 	defer func() {
@@ -207,7 +205,6 @@ func RegistrationAmf3gppAccessProcedure(registerRequest models.Amf3GppAccessRegi
 	_, resp, err := clientAPI.AMF3GPPAccessRegistrationDocumentAPI.CreateAmfContext3gppExecute(apiCreateAmfContext3gppRequest)
 	if err != nil {
 		logger.UecmLog.Errorln("CreateAmfContext3gpp error:", err)
-		closeResponseBody(resp, "CreateAmfContext3gpp")
 		return nil, nil, problemDetailsFromClientError(resp, err)
 	}
 	defer func() {
@@ -275,7 +272,6 @@ func RegisterAmfNon3gppAccessProcedure(registerRequest models.AmfNon3GppAccessRe
 	apiCreateAmfContextNon3gppRequest = apiCreateAmfContextNon3gppRequest.AmfNon3GppAccessRegistration(registerRequest)
 	_, resp, err := clientAPI.AMFNon3GPPAccessRegistrationDocumentAPI.CreateAmfContextNon3gppExecute(apiCreateAmfContextNon3gppRequest)
 	if err != nil {
-		closeResponseBody(resp, "CreateAmfContextNon3gpp")
 		return nil, nil, problemDetailsFromClientError(resp, err)
 	}
 	defer func() {
@@ -392,7 +388,6 @@ func UpdateAmf3gppAccessProcedure(request models.Amf3GppAccessRegistrationModifi
 	apiAmfContext3gppRequest = apiAmfContext3gppRequest.PatchItem(patchItemReqArray)
 	_, resp, err := clientAPI.AMF3GPPAccessRegistrationDocumentAPI.AmfContext3gppExecute(apiAmfContext3gppRequest)
 	if err != nil {
-		closeResponseBody(resp, "AmfContext3gpp")
 		return problemDetailsFromClientError(resp, err)
 	}
 	defer func() {
@@ -493,7 +488,6 @@ func UpdateAmfNon3gppAccessProcedure(request models.AmfNon3GppAccessRegistration
 	apiAmfContextNon3gppRequest = apiAmfContextNon3gppRequest.PatchItem(patchItemReqArray)
 	_, resp, err := clientAPI.AMFNon3GPPAccessRegistrationDocumentAPI.AmfContextNon3gppExecute(apiAmfContextNon3gppRequest)
 	if err != nil {
-		closeResponseBody(resp, "AmfContextNon3gpp")
 		return problemDetailsFromClientError(resp, err)
 	}
 	defer func() {
@@ -535,7 +529,6 @@ func DeregistrationSmfRegistrationsProcedure(ueID string, pduSessionID int32) (p
 	apiDeleteSmfRegistrationRequest := clientAPI.SMFRegistrationDocumentAPI.DeleteSmfRegistration(context.Background(), ueID, pduSessionID)
 	resp, err := clientAPI.SMFRegistrationDocumentAPI.DeleteSmfRegistrationExecute(apiDeleteSmfRegistrationRequest)
 	if err != nil {
-		closeResponseBody(resp, "DeleteSmfRegistration")
 		return problemDetailsFromClientError(resp, err)
 	}
 	defer func() {
@@ -594,7 +587,6 @@ func RegistrationSmfRegistrationsProcedure(request *models.SmfRegistration, ueID
 	apiCreateOrUpdateSmfRegistrationRequest = apiCreateOrUpdateSmfRegistrationRequest.SmfRegistration(*request)
 	_, resp, err := clientAPI.SMFRegistrationDocumentAPI.CreateOrUpdateSmfRegistrationExecute(apiCreateOrUpdateSmfRegistrationRequest)
 	if err != nil {
-		closeResponseBody(resp, "CreateOrUpdateSmfRegistration")
 		return nil, nil, problemDetailsFromClientError(resp, err)
 	}
 	defer func() {
