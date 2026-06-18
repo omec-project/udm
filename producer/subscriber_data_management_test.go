@@ -11,7 +11,6 @@ import (
 
 	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
-	"github.com/omec-project/openapi/v2/utils"
 )
 
 const (
@@ -68,7 +67,7 @@ func TestIndividualSmSubsDataFromResponseRejectsEmptyResponse(t *testing.T) {
 }
 
 func TestProblemDetailsFromClientErrorHandlesTransportError(t *testing.T) {
-	problemDetails := utils.ProblemDetailsFromOpenAPIError(nil, errors.New(eofDetail))
+	problemDetails := problemDetailsFromClientError(nil, errors.New(eofDetail))
 
 	if problemDetails.GetStatus() != http.StatusInternalServerError {
 		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, problemDetails.GetStatus())
@@ -82,7 +81,7 @@ func TestProblemDetailsFromClientErrorHandlesTransportError(t *testing.T) {
 }
 
 func TestProblemDetailsFromClientErrorReturnsNilForNilError(t *testing.T) {
-	problemDetails := utils.ProblemDetailsFromOpenAPIError(nil, nil)
+	problemDetails := problemDetailsFromClientError(nil, nil)
 
 	if problemDetails != nil {
 		t.Fatalf("expected nil problem details, got %#v", problemDetails)
@@ -90,7 +89,7 @@ func TestProblemDetailsFromClientErrorReturnsNilForNilError(t *testing.T) {
 }
 
 func TestProblemDetailsFromClientErrorUsesHTTPStatusWhenResponseIsAvailable(t *testing.T) {
-	problemDetails := utils.ProblemDetailsFromOpenAPIError(&http.Response{StatusCode: http.StatusBadGateway, Status: "502 Bad Gateway"}, errors.New(eofDetail))
+	problemDetails := problemDetailsFromClientError(&http.Response{StatusCode: http.StatusBadGateway, Status: "502 Bad Gateway"}, errors.New(eofDetail))
 
 	if problemDetails.GetStatus() != http.StatusBadGateway {
 		t.Fatalf("expected status %d, got %d", http.StatusBadGateway, problemDetails.GetStatus())
@@ -108,7 +107,7 @@ func TestProblemDetailsFromClientErrorPreservesOpenAPIProblemDetails(t *testing.
 	status := int32(http.StatusNotFound)
 	problem := models.ProblemDetails{Cause: &cause, Status: &status}
 
-	problemDetails := utils.ProblemDetailsFromOpenAPIError(&http.Response{StatusCode: http.StatusNotFound, Status: "404 Not Found"}, openapi.GenericOpenAPIError{
+	problemDetails := problemDetailsFromClientError(&http.Response{StatusCode: http.StatusNotFound, Status: "404 Not Found"}, openapi.GenericOpenAPIError{
 		RawError: "404 Not Found",
 		RawModel: problem,
 	})
