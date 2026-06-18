@@ -395,12 +395,12 @@ func (ue *UdmUeContext) GetLocationURI(types int) string {
 	return ""
 }
 
-func (ue *UdmUeContext) GetLocationURI2(types int, supi string) string {
+func (ue *UdmUeContext) GetLocationURI2(types int, ueId string) string {
 	switch types {
 	case LocationUriSharedDataSubscription:
 		// return UDM_Self().GetIPv4Uri() + "/nudm-sdm/v1/shared-data-subscriptions/" + nf.SubscriptionID
 	case LocationUriSdmSubscription:
-		return UDM_Self().GetIPv4Uri() + "/nudm-sdm/v2/" + supi + "/sdm-subscriptions/"
+		return UDM_Self().GetIPv4Uri() + "/nudm-sdm/v2/" + ueId + "/sdm-subscriptions/"
 	}
 	return ""
 }
