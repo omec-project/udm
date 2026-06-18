@@ -113,7 +113,7 @@ func GetAmf3gppAccessProcedure(ueID string, supportedFeatures string) (
 	}
 	defer func() {
 		if rspCloseErr := resp.Body.Close(); rspCloseErr != nil {
-			logger.SdmLog.Errorf("QueryAmfContext3gpp response body cannot close: %+v", rspCloseErr)
+			logger.UecmLog.Errorf("QueryAmfContext3gpp response body cannot close: %+v", rspCloseErr)
 		}
 	}()
 
@@ -156,7 +156,7 @@ func GetAmfNon3gppAccessProcedure(supportedFeatures, ueID string) (response *mod
 	}
 	defer func() {
 		if rspCloseErr := resp.Body.Close(); rspCloseErr != nil {
-			logger.SdmLog.Errorf("QueryAmfContext3gpp response body cannot close: %+v", rspCloseErr)
+			logger.UecmLog.Errorf("QueryAmfContextNon3gpp response body cannot close: %+v", rspCloseErr)
 		}
 	}()
 
@@ -276,7 +276,7 @@ func RegisterAmfNon3gppAccessProcedure(registerRequest models.AmfNon3GppAccessRe
 	}
 	defer func() {
 		if rspCloseErr := resp.Body.Close(); rspCloseErr != nil {
-			logger.UecmLog.Errorf("CreateAmfContext3gpp response body cannot close: %+v", rspCloseErr)
+			logger.UecmLog.Errorf("CreateAmfContextNon3gpp response body cannot close: %+v", rspCloseErr)
 		}
 	}()
 
@@ -533,7 +533,7 @@ func DeregistrationSmfRegistrationsProcedure(ueID string, pduSessionID int32) (p
 	}
 	defer func() {
 		if rspCloseErr := resp.Body.Close(); rspCloseErr != nil {
-			logger.UecmLog.Errorf("DeleteSmfContext response body cannot close: %+v", rspCloseErr)
+			logger.UecmLog.Errorf("DeleteSmfRegistration response body cannot close: %+v", rspCloseErr)
 		}
 	}()
 
@@ -591,7 +591,7 @@ func RegistrationSmfRegistrationsProcedure(request *models.SmfRegistration, ueID
 	}
 	defer func() {
 		if rspCloseErr := resp.Body.Close(); rspCloseErr != nil {
-			logger.UecmLog.Errorf("CreateSmfContextNon3gpp response body cannot close: %+v", rspCloseErr)
+			logger.UecmLog.Errorf("CreateOrUpdateSmfRegistration response body cannot close: %+v", rspCloseErr)
 		}
 	}()
 
