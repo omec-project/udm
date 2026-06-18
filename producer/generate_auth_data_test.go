@@ -19,7 +19,7 @@ func TestProblemDetailsFromOpenAPIErrorHandlesTransportError(t *testing.T) {
 	if problemDetails.GetStatus() != http.StatusInternalServerError {
 		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, problemDetails.GetStatus())
 	}
-	if problemDetails.GetCause() != "SYSTEM_FAILURE" {
+	if problemDetails.GetCause() != utils.CauseSystemFailure {
 		t.Fatalf("expected cause SYSTEM_FAILURE, got %q", problemDetails.GetCause())
 	}
 	if problemDetails.GetDetail() != "EOF" {
@@ -29,8 +29,9 @@ func TestProblemDetailsFromOpenAPIErrorHandlesTransportError(t *testing.T) {
 
 func TestProblemDetailsFromOpenAPIErrorPreservesOpenAPIProblemDetails(t *testing.T) {
 	cause := "AUTHENTICATION_REJECTED"
-	status := int32(http.StatusForbidden)
-	problem := models.ProblemDetails{Cause: &cause, Status: &status}
+	problem := models.NewProblemDetails()
+	problem.SetCause(cause)
+	problem.SetStatus(int32(http.StatusForbidden))
 
 	problemDetails := utils.ProblemDetailsFromOpenAPIError(&http.Response{StatusCode: http.StatusForbidden, Status: "forbidden"}, openapi.GenericOpenAPIError{
 		RawError: "forbidden",

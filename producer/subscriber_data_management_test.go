@@ -11,12 +11,11 @@ import (
 
 	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 )
 
 const (
-	eofDetail          = "EOF"
-	dataNotFoundCause  = "DATA_NOT_FOUND"
-	systemFailureCause = "SYSTEM_FAILURE"
+	eofDetail = "EOF"
 )
 
 type trackingReadCloser struct {
@@ -61,7 +60,7 @@ func TestIndividualSmSubsDataFromResponseHandlesExtendedVariant(t *testing.T) {
 
 func TestIndividualSmSubsDataFromResponseRejectsEmptyResponse(t *testing.T) {
 	_, problemDetails := individualSmSubsDataFromResponse(&models.SmSubsData{})
-	if problemDetails == nil || problemDetails.GetCause() != dataNotFoundCause {
+	if problemDetails == nil || problemDetails.GetCause() != utils.CauseDataNotFound {
 		t.Fatalf("expected DATA_NOT_FOUND problem details, got %#v", problemDetails)
 	}
 }
@@ -72,7 +71,7 @@ func TestProblemDetailsFromClientErrorHandlesTransportError(t *testing.T) {
 	if problemDetails.GetStatus() != http.StatusInternalServerError {
 		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, problemDetails.GetStatus())
 	}
-	if problemDetails.GetCause() != systemFailureCause {
+	if problemDetails.GetCause() != utils.CauseSystemFailure {
 		t.Fatalf("expected cause SYSTEM_FAILURE, got %q", problemDetails.GetCause())
 	}
 	if problemDetails.GetDetail() != eofDetail {
@@ -94,7 +93,7 @@ func TestProblemDetailsFromClientErrorUsesHTTPStatusWhenResponseIsAvailable(t *t
 	if problemDetails.GetStatus() != http.StatusBadGateway {
 		t.Fatalf("expected status %d, got %d", http.StatusBadGateway, problemDetails.GetStatus())
 	}
-	if problemDetails.GetCause() != systemFailureCause {
+	if problemDetails.GetCause() != utils.CauseSystemFailure {
 		t.Fatalf("expected cause SYSTEM_FAILURE, got %q", problemDetails.GetCause())
 	}
 	if problemDetails.GetDetail() != eofDetail {
@@ -103,7 +102,7 @@ func TestProblemDetailsFromClientErrorUsesHTTPStatusWhenResponseIsAvailable(t *t
 }
 
 func TestProblemDetailsFromClientErrorPreservesOpenAPIProblemDetails(t *testing.T) {
-	cause := dataNotFoundCause
+	cause := utils.CauseDataNotFound
 	status := int32(http.StatusNotFound)
 	problem := models.ProblemDetails{Cause: &cause, Status: &status}
 
@@ -149,7 +148,7 @@ func TestIndividualSmSubsDataFromResponseRejectsNilResponse(t *testing.T) {
 	if problemDetails.GetStatus() != http.StatusNotFound {
 		t.Fatalf("expected status %d, got %d", http.StatusNotFound, problemDetails.GetStatus())
 	}
-	if problemDetails.GetCause() != dataNotFoundCause {
+	if problemDetails.GetCause() != utils.CauseDataNotFound {
 		t.Fatalf("expected DATA_NOT_FOUND cause, got %q", problemDetails.GetCause())
 	}
 	if problemDetails.GetDetail() != "session management subscription data is empty" {
