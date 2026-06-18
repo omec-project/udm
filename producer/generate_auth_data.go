@@ -16,7 +16,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
 	udm_context "github.com/omec-project/udm/context"
@@ -124,11 +123,8 @@ func ConfirmAuthDataProcedure(authEvent models.AuthEvent, supi string) (problemD
 	apiCreateAuthenticationStatusRequest = apiCreateAuthenticationStatusRequest.AuthEvent(authEvent)
 	resp, err := client.AuthenticationStatusDocumentAPI.CreateAuthenticationStatusExecute(apiCreateAuthenticationStatusRequest)
 	if err != nil {
-		cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(int32(resp.StatusCode))
-		problemDetails.SetCause(*cause)
-		problemDetails.SetDetail(err.Error())
+		problemDetails = utils.ProblemDetailsFromOpenAPIError(resp, err)
+		closeResponseBody(logger.UeauLog, resp, "CreateAuthenticationStatus")
 		logger.UeauLog.Errorln("[ConfirmAuth]", err.Error())
 		return problemDetails
 	}
@@ -137,7 +133,6 @@ func ConfirmAuthDataProcedure(authEvent models.AuthEvent, supi string) (problemD
 			logger.UeauLog.Errorf("CreateAuthenticationStatus response body cannot close: %+v", rspCloseErr)
 		}
 	}()
-
 	return nil
 }
 

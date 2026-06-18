@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/Nudm_SDM"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
@@ -21,33 +20,33 @@ import (
 	"github.com/omec-project/udm/logger"
 	stats "github.com/omec-project/udm/metrics"
 	"github.com/omec-project/util/httpwrapper"
+	"go.uber.org/zap"
 )
 
-func closeResponseBody(res *http.Response, operation string) {
+func closeResponseBody(log *zap.SugaredLogger, res *http.Response, operation string) {
 	if res == nil || res.Body == nil {
 		return
 	}
 
 	if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
-		logger.SdmLog.Errorf("%s response body cannot close: %+v", operation, rspCloseErr)
+		log.Errorf("%s response body cannot close: %+v", operation, rspCloseErr)
 	}
 }
 
-func problemDetailsFromClientError(res *http.Response, err error) *models.ProblemDetails {
-	if err == nil {
+func problemDetailsFromClientError(log *zap.SugaredLogger, res *http.Response, err error) *models.ProblemDetails {
+	problemDetails := utils.ProblemDetailsFromOpenAPIError(res, err)
+	closeResponseBody(log, res, "client error")
+
+	if problemDetails == nil {
 		return nil
 	}
 
 	if res == nil || err.Error() != res.Status {
-		logger.SdmLog.Errorln(err.Error())
-		return utils.ProblemDetailsSystemFailure(err.Error())
+		log.Errorln(err.Error())
+		return problemDetails
 	}
 
-	cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-	problemDetails := models.NewProblemDetails()
-	problemDetails.SetStatus(int32(res.StatusCode))
-	problemDetails.SetCause(*cause)
-	problemDetails.SetDetail(err.Error())
+	log.Warnln(err)
 	return problemDetails
 }
 
@@ -84,19 +83,16 @@ func getAmDataProcedure(supi string, plmnID string, supportedFeatures string) (
 	accessAndMobilitySubscriptionDataResp, res, err := clientAPI.AccessAndMobilitySubscriptionDataDocumentAPI.
 		QueryAmDataExecute(apiQueryAmDataRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "QueryAmData")
+	defer closeResponseBody(logger.SdmLog, res, "QueryAmData")
 
 	if res.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
 		udmUe.SetAMSubsriptionData(accessAndMobilitySubscriptionDataResp)
 		return accessAndMobilitySubscriptionDataResp, nil
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 }
 
@@ -130,9 +126,9 @@ func getIdTranslationResultProcedure(gpsi string) (response *models.IdTranslatio
 		context.Background(), gpsi)
 	idTranslationResultResp, res, err := clientAPI.QueryIdentityDataBySUPIOrGPSIDocumentAPI.GetIdentityDataExecute(apiGetIdentityDataRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "GetIdentityData")
+	defer closeResponseBody(logger.SdmLog, res, "GetIdentityData")
 
 	if res.StatusCode == http.StatusOK {
 		if idTranslationResultResp.SupiList != nil {
@@ -142,16 +138,10 @@ func getIdTranslationResultProcedure(gpsi string) (response *models.IdTranslatio
 
 			return idTranslationResult, nil
 		} else {
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusNotFound)
-			problemDetails.SetCause("USER_NOT_FOUND")
-			return nil, problemDetails
+			return nil, utils.ProblemDetailsUserNotFound()
 		}
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 }
 
@@ -197,18 +187,15 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	apiQueryAmDataRequest = apiQueryAmDataRequest.SupportedFeatures(supportedFeatures)
 	amData, res1, err1 := clientAPI.AccessAndMobilitySubscriptionDataDocumentAPI.QueryAmDataExecute(apiQueryAmDataRequest)
 	if err1 != nil {
-		return nil, problemDetailsFromClientError(res1, err1)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res1, err1)
 	}
-	defer closeResponseBody(res1, "QueryAmData")
+	defer closeResponseBody(logger.SdmLog, res1, "QueryAmData")
 	if res1.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
 		udmUe.SetAMSubsriptionData(amData)
 		subscriptionDataSets.AmData = amData
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 
 	var smfSelSubsbody models.SmfSelectionSubscriptionData
@@ -218,18 +205,15 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	apiQuerySmfSelectDataRequest = apiQuerySmfSelectDataRequest.SupportedFeatures(supportedFeatures)
 	smfSelData, res2, err2 := clientAPI.SMFSelectionSubscriptionDataDocumentAPI.QuerySmfSelectDataExecute(apiQuerySmfSelectDataRequest)
 	if err2 != nil {
-		return nil, problemDetailsFromClientError(res2, err2)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res2, err2)
 	}
-	defer closeResponseBody(res2, "QuerySmfSelectData")
+	defer closeResponseBody(logger.SdmLog, res2, "QuerySmfSelectData")
 	if res2.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
 		udmUe.SetSmfSelectionSubsData(smfSelData)
 		subscriptionDataSets.SmfSelData = smfSelData
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 
 	var TraceDatabody models.TraceData
@@ -238,9 +222,9 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 		context.Background(), supi, plmnID)
 	traceData, res3, err3 := clientAPI.TraceDataDocumentAPI.QueryTraceDataExecute(apiQueryTraceDataRequest)
 	if err3 != nil {
-		return nil, problemDetailsFromClientError(res3, err3)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res3, err3)
 	}
-	defer closeResponseBody(res3, "QueryTraceData")
+	defer closeResponseBody(logger.SdmLog, res3, "QueryTraceData")
 	if res3.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
 		udmUe.TraceData = traceData.TraceData
@@ -249,10 +233,7 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 		udmUe.TraceDataResponse.SharedTraceDataId = traceData.String
 		subscriptionDataSets.TraceData = *nullableTraceData
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 
 	apiQuerySmDataRequest := clientAPI.SessionManagementSubscriptionDataAPI.
@@ -261,9 +242,9 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	sessionManagementSubscriptionData, res4, err4 := clientAPI.SessionManagementSubscriptionDataAPI.
 		QuerySmDataExecute(apiQuerySmDataRequest)
 	if err4 != nil {
-		return nil, problemDetailsFromClientError(res4, err4)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res4, err4)
 	}
-	defer closeResponseBody(res4, "QuerySmData")
+	defer closeResponseBody(logger.SdmLog, res4, "QuerySmData")
 	if res4.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
 
@@ -276,10 +257,7 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 		udmUe.SetSMSubsData(smData)
 		subscriptionDataSets.SmData = sessionManagementSubscriptionData
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 
 	var UeContextInSmfbody models.UeContextInSmfData
@@ -289,9 +267,9 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	apiQuerySmfRegListRequest = apiQuerySmfRegListRequest.SupportedFeatures(supportedFeatures)
 	pdusess, res, err := clientAPI.SMFRegistrationsCollectionAPI.QuerySmfRegListExecute(apiQuerySmfRegListRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "QuerySmfRegList")
+	defer closeResponseBody(logger.SdmLog, res, "QuerySmfRegList")
 
 	for _, element := range pdusess {
 		var pduSession models.PduSession
@@ -322,10 +300,7 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 		subscriptionDataSets.UecSmfData = &ueContextInSmfDataResp
 		return subscriptionDataSets, nil
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 }
 
@@ -360,19 +335,7 @@ func getSharedDataProcedure(sharedDataIds []string, supportedFeatures string) (
 	apiGetSharedDataRequest = apiGetSharedDataRequest.SupportedFeatures(supportedFeatures)
 	sharedDataResp, res, err := clientAPI.RetrievalOfSharedDataAPI.GetSharedDataExecute(apiGetSharedDataRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Warnln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Warnln(err)
-		} else {
-			logger.SdmLog.Warnln(err)
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -385,10 +348,7 @@ func getSharedDataProcedure(sharedDataIds []string, supportedFeatures string) (
 		sharedData := udm_context.ObtainRequiredSharedData(sharedDataIds, sharedDataResp)
 		return sharedData, nil
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 }
 
@@ -479,19 +439,7 @@ func getSmDataProcedure(supi, plmnID, dnn, snssai, supportedFeatures string) (
 		}
 	}
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Warnln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Warnln(err)
-		} else {
-			logger.SdmLog.Warnln(err)
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -535,10 +483,7 @@ func getSmDataProcedure(supi, plmnID, dnn, snssai, supportedFeatures string) (
 			return udmUe.SessionManagementSubsData, nil
 		}
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 }
 
@@ -576,21 +521,7 @@ func getNssaiProcedure(supi string, plmnID string, supportedFeatures string) (
 	accessAndMobilitySubscriptionDataResp, res, err := clientAPI.AccessAndMobilitySubscriptionDataDocumentAPI.
 		QueryAmDataExecute(apiQueryAmDataRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Warnln(err)
-			return nil, utils.ProblemDetailsSystemFailure(err.Error())
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Warnln(err)
-			return nil, utils.ProblemDetailsSystemFailure(err.Error())
-		} else {
-			logger.SdmLog.Warnln(err)
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails := models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	if res != nil {
 		defer func() {
@@ -601,9 +532,7 @@ func getNssaiProcedure(supi string, plmnID string, supportedFeatures string) (
 	}
 
 	if accessAndMobilitySubscriptionDataResp == nil || !accessAndMobilitySubscriptionDataResp.Nssai.IsSet() || accessAndMobilitySubscriptionDataResp.Nssai.Get() == nil {
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
+		problemDetails := utils.ProblemDetailsDataNotFound()
 		problemDetails.SetDetail("nssai not found in access and mobility subscription data")
 		return nil, problemDetails
 	}
@@ -615,10 +544,7 @@ func getNssaiProcedure(supi string, plmnID string, supportedFeatures string) (
 		udmUe.Nssai = &nssaiResp
 		return udmUe.Nssai, nil
 	} else {
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 }
 
@@ -659,20 +585,7 @@ func getSmfSelectDataProcedure(supi string, plmnID string, supportedFeatures str
 	smfSelectionSubscriptionDataResp, res, err := clientAPI.SMFSelectionSubscriptionDataDocumentAPI.
 		QuerySmfSelectDataExecute(apiQuerySmfSelectDataRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Warnln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Warnln(err)
-		} else {
-			logger.SdmLog.Warnln(err)
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
-		return
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -685,10 +598,7 @@ func getSmfSelectDataProcedure(supi string, plmnID string, supportedFeatures str
 		udmUe.SetSmfSelectionSubsData(smfSelectionSubscriptionDataResp)
 		return udmUe.SmfSelSubsData, nil
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 }
 
@@ -720,9 +630,9 @@ func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
 	apiSubscribeToSharedDataRequest = apiSubscribeToSharedDataRequest.SdmSubscription(*sdmSubscription)
 	sdmSubscriptionResp, res, err := udmClientAPI.SubscriptionCreationForSharedDataAPI.SubscribeToSharedDataExecute(apiSubscribeToSharedDataRequest)
 	if err != nil {
-		return nil, nil, problemDetailsFromClientError(res, err)
+		return nil, nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "SubscribeToSharedData")
+	defer closeResponseBody(logger.SdmLog, res, "SubscribeToSharedData")
 
 	switch res.StatusCode {
 	case http.StatusCreated:
@@ -732,10 +642,7 @@ func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
 		header.Set("Location", reourceUri)
 		return header, sdmSubscriptionResp, nil
 	case http.StatusNotFound:
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, nil, problemDetails
+		return nil, nil, utils.ProblemDetailsDataNotFound()
 	default:
 		problemDetails = models.NewProblemDetails()
 		problemDetails.SetStatus(http.StatusNotImplemented)
@@ -775,9 +682,9 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, supi string) (
 	apiCreateSdmSubscriptionsRequest = apiCreateSdmSubscriptionsRequest.SdmSubscription(*sdmSubscription)
 	sdmSubscriptionResp, res, err := clientAPI.SDMSubscriptionsCollectionAPI.CreateSdmSubscriptionsExecute(apiCreateSdmSubscriptionsRequest)
 	if err != nil {
-		return nil, nil, problemDetailsFromClientError(res, err)
+		return nil, nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "CreateSdmSubscriptions")
+	defer closeResponseBody(logger.SdmLog, res, "CreateSdmSubscriptions")
 
 	switch res.StatusCode {
 	case http.StatusCreated:
@@ -790,10 +697,7 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, supi string) (
 		header.Set("Location", udmUe.GetLocationURI2(udm_context.LocationUriSdmSubscription, supi))
 		return header, sdmSubscriptionResp, nil
 	case http.StatusNotFound:
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, nil, problemDetails
+		return nil, nil, utils.ProblemDetailsDataNotFound()
 	default:
 		problemDetails = models.NewProblemDetails()
 		problemDetails.SetStatus(http.StatusNotImplemented)
@@ -822,17 +726,14 @@ func unsubscribeForSharedDataProcedure(subscriptionID string) *models.ProblemDet
 		context.Background(), subscriptionID)
 	res, err := udmClientAPI.SubscriptionDeletionForSharedDataAPI.UnsubscribeForSharedDataExecute(apiUnsubscribeForSharedDataRequest)
 	if err != nil {
-		return problemDetailsFromClientError(res, err)
+		return problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "UnsubscribeForSharedData")
+	defer closeResponseBody(logger.SdmLog, res, "UnsubscribeForSharedData")
 
 	if res.StatusCode == http.StatusNoContent {
 		return nil
 	} else {
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return problemDetails
+		return utils.ProblemDetailsDataNotFound()
 	}
 }
 
@@ -858,17 +759,14 @@ func unsubscribeProcedure(supi string, subscriptionID string) *models.ProblemDet
 	apiRemovesdmSubscriptionsRequest := clientAPI.SDMSubscriptionDocumentAPI.RemovesdmSubscriptions(context.Background(), supi, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.RemovesdmSubscriptionsExecute(apiRemovesdmSubscriptionsRequest)
 	if err != nil {
-		return problemDetailsFromClientError(res, err)
+		return problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "RemovesdmSubscriptions")
+	defer closeResponseBody(logger.SdmLog, res, "RemovesdmSubscriptions")
 
 	if res.StatusCode == http.StatusNoContent {
 		return nil
 	} else {
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("USER_NOT_FOUND")
-		return problemDetails
+		return utils.ProblemDetailsUserNotFound()
 	}
 }
 
@@ -904,18 +802,7 @@ func modifyProcedure(sdmSubsModification *models.SdmSubsModification, supi strin
 		context.Background(), supi, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.UpdatesdmsubscriptionsExecute(apiUpdatesdmsubscriptionsRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Warnln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Warnln(err)
-		} else {
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -926,10 +813,7 @@ func modifyProcedure(sdmSubsModification *models.SdmSubsModification, supi strin
 	if res.StatusCode == http.StatusOK {
 		return sdmSubscription, nil
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("USER_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsUserNotFound()
 	}
 }
 
@@ -937,9 +821,7 @@ func individualSmSubsDataFromResponse(sessionManagementSubscriptionData *models.
 	[]models.SessionManagementSubscriptionData, *models.ProblemDetails,
 ) {
 	if sessionManagementSubscriptionData == nil {
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
+		problemDetails := utils.ProblemDetailsDataNotFound()
 		problemDetails.SetDetail("session management subscription data is empty")
 		return nil, problemDetails
 	}
@@ -950,9 +832,7 @@ func individualSmSubsDataFromResponse(sessionManagementSubscriptionData *models.
 	case sessionManagementSubscriptionData.ExtendedSmSubsData != nil:
 		return sessionManagementSubscriptionData.ExtendedSmSubsData.GetIndividualSmSubsData(), nil
 	default:
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
+		problemDetails := utils.ProblemDetailsDataNotFound()
 		problemDetails.SetDetail("session management subscription data is empty")
 		return nil, problemDetails
 	}
@@ -990,18 +870,7 @@ func modifyForSharedDataProcedure(sdmSubsModification *models.SdmSubsModificatio
 		context.Background(), supi, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.UpdatesdmsubscriptionsExecute(apiUpdatesdmsubscriptionsRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Warnln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Warnln(err)
-		} else {
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -1012,10 +881,7 @@ func modifyForSharedDataProcedure(sdmSubsModification *models.SdmSubsModificatio
 	if res.StatusCode == http.StatusOK {
 		return sdmSubscription, nil
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("USER_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsUserNotFound()
 	}
 }
 
@@ -1052,18 +918,7 @@ func getTraceDataProcedure(supi string, plmnID string) (
 		context.Background(), supi, plmnID)
 	traceDataRes, res, err := clientAPI.TraceDataDocumentAPI.QueryTraceDataExecute(apiQueryTraceDataRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Warnln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Warnln(err)
-		} else {
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -1080,10 +935,7 @@ func getTraceDataProcedure(supi string, plmnID string) (
 
 		return udmUe.TraceDataResponse.TraceData.Get(), nil
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("USER_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsUserNotFound()
 	}
 }
 
@@ -1125,19 +977,7 @@ func getUeContextInSmfDataProcedure(supi string, supportedFeatures string) (
 	apiQuerySmfRegListRequest = apiQuerySmfRegListRequest.SupportedFeatures(supportedFeatures)
 	pdusess, res, err := clientAPI.SMFRegistrationsCollectionAPI.QuerySmfRegListExecute(apiQuerySmfRegListRequest)
 	if err != nil {
-		if res == nil {
-			logger.SdmLog.Infoln(err)
-		} else if err.Error() != res.Status {
-			logger.SdmLog.Infoln(err)
-		} else {
-			logger.SdmLog.Infoln(err)
-			cause := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails).Cause
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(res.StatusCode))
-			problemDetails.SetCause(*cause)
-			problemDetails.SetDetail(err.Error())
-			return nil, problemDetails
-		}
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -1168,9 +1008,6 @@ func getUeContextInSmfDataProcedure(supi string, supportedFeatures string) (
 		udmUe.UeCtxtInSmfData = &ueContextInSmfData
 		return udmUe.UeCtxtInSmfData, nil
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("DATA_NOT_FOUND")
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsDataNotFound()
 	}
 }
