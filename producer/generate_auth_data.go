@@ -124,7 +124,7 @@ func ConfirmAuthDataProcedure(authEvent models.AuthEvent, supi string) (problemD
 	resp, err := client.AuthenticationStatusDocumentAPI.CreateAuthenticationStatusExecute(apiCreateAuthenticationStatusRequest)
 	if err != nil {
 		problemDetails = utils.ProblemDetailsFromOpenAPIError(resp, err)
-		closeResponseBody(resp, "CreateAuthenticationStatus")
+		closeResponseBody(logger.UeauLog, resp, "CreateAuthenticationStatus")
 		logger.UeauLog.Errorln("[ConfirmAuth]", err.Error())
 		return problemDetails
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
+	"github.com/omec-project/udm/logger"
 )
 
 const (
@@ -66,7 +67,7 @@ func TestIndividualSmSubsDataFromResponseRejectsEmptyResponse(t *testing.T) {
 }
 
 func TestProblemDetailsFromClientErrorHandlesTransportError(t *testing.T) {
-	problemDetails := problemDetailsFromClientError(nil, errors.New(eofDetail))
+	problemDetails := problemDetailsFromClientError(logger.SdmLog, nil, errors.New(eofDetail))
 
 	if problemDetails.GetStatus() != http.StatusInternalServerError {
 		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, problemDetails.GetStatus())
@@ -80,7 +81,7 @@ func TestProblemDetailsFromClientErrorHandlesTransportError(t *testing.T) {
 }
 
 func TestProblemDetailsFromClientErrorReturnsNilForNilError(t *testing.T) {
-	problemDetails := problemDetailsFromClientError(nil, nil)
+	problemDetails := problemDetailsFromClientError(logger.SdmLog, nil, nil)
 
 	if problemDetails != nil {
 		t.Fatalf("expected nil problem details, got %#v", problemDetails)
@@ -88,7 +89,7 @@ func TestProblemDetailsFromClientErrorReturnsNilForNilError(t *testing.T) {
 }
 
 func TestProblemDetailsFromClientErrorUsesHTTPStatusWhenResponseIsAvailable(t *testing.T) {
-	problemDetails := problemDetailsFromClientError(&http.Response{StatusCode: http.StatusBadGateway, Status: "502 Bad Gateway"}, errors.New(eofDetail))
+	problemDetails := problemDetailsFromClientError(logger.SdmLog, &http.Response{StatusCode: http.StatusBadGateway, Status: "502 Bad Gateway"}, errors.New(eofDetail))
 
 	if problemDetails.GetStatus() != http.StatusBadGateway {
 		t.Fatalf("expected status %d, got %d", http.StatusBadGateway, problemDetails.GetStatus())
@@ -106,7 +107,7 @@ func TestProblemDetailsFromClientErrorPreservesOpenAPIProblemDetails(t *testing.
 	status := int32(http.StatusNotFound)
 	problem := models.ProblemDetails{Cause: &cause, Status: &status}
 
-	problemDetails := problemDetailsFromClientError(&http.Response{StatusCode: http.StatusNotFound, Status: "404 Not Found"}, openapi.GenericOpenAPIError{
+	problemDetails := problemDetailsFromClientError(logger.SdmLog, &http.Response{StatusCode: http.StatusNotFound, Status: "404 Not Found"}, openapi.GenericOpenAPIError{
 		RawError: "404 Not Found",
 		RawModel: problem,
 	})
@@ -125,7 +126,7 @@ func TestProblemDetailsFromClientErrorPreservesOpenAPIProblemDetails(t *testing.
 func TestProblemDetailsFromClientErrorClosesResponseBody(t *testing.T) {
 	body := &trackingReadCloser{}
 
-	problemDetails := problemDetailsFromClientError(&http.Response{
+	problemDetails := problemDetailsFromClientError(logger.SdmLog, &http.Response{
 		StatusCode: http.StatusBadGateway,
 		Status:     "502 Bad Gateway",
 		Body:       body,
@@ -159,7 +160,7 @@ func TestIndividualSmSubsDataFromResponseRejectsNilResponse(t *testing.T) {
 func TestCloseResponseBodyClosesBody(t *testing.T) {
 	body := &trackingReadCloser{}
 
-	closeResponseBody(&http.Response{Body: body}, "test")
+	closeResponseBody(logger.SdmLog, &http.Response{Body: body}, "test")
 
 	if !body.closed {
 		t.Fatal("expected response body to be closed")
@@ -167,6 +168,6 @@ func TestCloseResponseBodyClosesBody(t *testing.T) {
 }
 
 func TestCloseResponseBodyHandlesNilResponse(t *testing.T) {
-	closeResponseBody(nil, "test")
-	closeResponseBody(&http.Response{}, "test")
+	closeResponseBody(logger.SdmLog, nil, "test")
+	closeResponseBody(logger.SdmLog, &http.Response{}, "test")
 }

@@ -20,32 +20,33 @@ import (
 	"github.com/omec-project/udm/logger"
 	stats "github.com/omec-project/udm/metrics"
 	"github.com/omec-project/util/httpwrapper"
+	"go.uber.org/zap"
 )
 
-func closeResponseBody(res *http.Response, operation string) {
+func closeResponseBody(log *zap.SugaredLogger, res *http.Response, operation string) {
 	if res == nil || res.Body == nil {
 		return
 	}
 
 	if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
-		logger.SdmLog.Errorf("%s response body cannot close: %+v", operation, rspCloseErr)
+		log.Errorf("%s response body cannot close: %+v", operation, rspCloseErr)
 	}
 }
 
-func problemDetailsFromClientError(res *http.Response, err error) *models.ProblemDetails {
+func problemDetailsFromClientError(log *zap.SugaredLogger, res *http.Response, err error) *models.ProblemDetails {
 	problemDetails := utils.ProblemDetailsFromOpenAPIError(res, err)
-	closeResponseBody(res, "client error")
+	closeResponseBody(log, res, "client error")
 
 	if problemDetails == nil {
 		return nil
 	}
 
 	if res == nil || err.Error() != res.Status {
-		logger.SdmLog.Errorln(err.Error())
+		log.Errorln(err.Error())
 		return problemDetails
 	}
 
-	logger.SdmLog.Warnln(err)
+	log.Warnln(err)
 	return problemDetails
 }
 
@@ -82,9 +83,9 @@ func getAmDataProcedure(supi string, plmnID string, supportedFeatures string) (
 	accessAndMobilitySubscriptionDataResp, res, err := clientAPI.AccessAndMobilitySubscriptionDataDocumentAPI.
 		QueryAmDataExecute(apiQueryAmDataRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "QueryAmData")
+	defer closeResponseBody(logger.SdmLog, res, "QueryAmData")
 
 	if res.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
@@ -125,9 +126,9 @@ func getIdTranslationResultProcedure(gpsi string) (response *models.IdTranslatio
 		context.Background(), gpsi)
 	idTranslationResultResp, res, err := clientAPI.QueryIdentityDataBySUPIOrGPSIDocumentAPI.GetIdentityDataExecute(apiGetIdentityDataRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "GetIdentityData")
+	defer closeResponseBody(logger.SdmLog, res, "GetIdentityData")
 
 	if res.StatusCode == http.StatusOK {
 		if idTranslationResultResp.SupiList != nil {
@@ -186,9 +187,9 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	apiQueryAmDataRequest = apiQueryAmDataRequest.SupportedFeatures(supportedFeatures)
 	amData, res1, err1 := clientAPI.AccessAndMobilitySubscriptionDataDocumentAPI.QueryAmDataExecute(apiQueryAmDataRequest)
 	if err1 != nil {
-		return nil, problemDetailsFromClientError(res1, err1)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res1, err1)
 	}
-	defer closeResponseBody(res1, "QueryAmData")
+	defer closeResponseBody(logger.SdmLog, res1, "QueryAmData")
 	if res1.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
 		udmUe.SetAMSubsriptionData(amData)
@@ -204,9 +205,9 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	apiQuerySmfSelectDataRequest = apiQuerySmfSelectDataRequest.SupportedFeatures(supportedFeatures)
 	smfSelData, res2, err2 := clientAPI.SMFSelectionSubscriptionDataDocumentAPI.QuerySmfSelectDataExecute(apiQuerySmfSelectDataRequest)
 	if err2 != nil {
-		return nil, problemDetailsFromClientError(res2, err2)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res2, err2)
 	}
-	defer closeResponseBody(res2, "QuerySmfSelectData")
+	defer closeResponseBody(logger.SdmLog, res2, "QuerySmfSelectData")
 	if res2.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
 		udmUe.SetSmfSelectionSubsData(smfSelData)
@@ -221,9 +222,9 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 		context.Background(), supi, plmnID)
 	traceData, res3, err3 := clientAPI.TraceDataDocumentAPI.QueryTraceDataExecute(apiQueryTraceDataRequest)
 	if err3 != nil {
-		return nil, problemDetailsFromClientError(res3, err3)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res3, err3)
 	}
-	defer closeResponseBody(res3, "QueryTraceData")
+	defer closeResponseBody(logger.SdmLog, res3, "QueryTraceData")
 	if res3.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
 		udmUe.TraceData = traceData.TraceData
@@ -241,9 +242,9 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	sessionManagementSubscriptionData, res4, err4 := clientAPI.SessionManagementSubscriptionDataAPI.
 		QuerySmDataExecute(apiQuerySmDataRequest)
 	if err4 != nil {
-		return nil, problemDetailsFromClientError(res4, err4)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res4, err4)
 	}
-	defer closeResponseBody(res4, "QuerySmData")
+	defer closeResponseBody(logger.SdmLog, res4, "QuerySmData")
 	if res4.StatusCode == http.StatusOK {
 		udmUe := udm_context.UDM_Self().NewUdmUe(supi)
 
@@ -266,9 +267,9 @@ func getSupiProcedure(supi string, plmnID string, dataSetNames []string, support
 	apiQuerySmfRegListRequest = apiQuerySmfRegListRequest.SupportedFeatures(supportedFeatures)
 	pdusess, res, err := clientAPI.SMFRegistrationsCollectionAPI.QuerySmfRegListExecute(apiQuerySmfRegListRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "QuerySmfRegList")
+	defer closeResponseBody(logger.SdmLog, res, "QuerySmfRegList")
 
 	for _, element := range pdusess {
 		var pduSession models.PduSession
@@ -334,7 +335,7 @@ func getSharedDataProcedure(sharedDataIds []string, supportedFeatures string) (
 	apiGetSharedDataRequest = apiGetSharedDataRequest.SupportedFeatures(supportedFeatures)
 	sharedDataResp, res, err := clientAPI.RetrievalOfSharedDataAPI.GetSharedDataExecute(apiGetSharedDataRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -438,7 +439,7 @@ func getSmDataProcedure(supi, plmnID, dnn, snssai, supportedFeatures string) (
 		}
 	}
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -520,7 +521,7 @@ func getNssaiProcedure(supi string, plmnID string, supportedFeatures string) (
 	accessAndMobilitySubscriptionDataResp, res, err := clientAPI.AccessAndMobilitySubscriptionDataDocumentAPI.
 		QueryAmDataExecute(apiQueryAmDataRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	if res != nil {
 		defer func() {
@@ -584,7 +585,7 @@ func getSmfSelectDataProcedure(supi string, plmnID string, supportedFeatures str
 	smfSelectionSubscriptionDataResp, res, err := clientAPI.SMFSelectionSubscriptionDataDocumentAPI.
 		QuerySmfSelectDataExecute(apiQuerySmfSelectDataRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -629,9 +630,9 @@ func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
 	apiSubscribeToSharedDataRequest = apiSubscribeToSharedDataRequest.SdmSubscription(*sdmSubscription)
 	sdmSubscriptionResp, res, err := udmClientAPI.SubscriptionCreationForSharedDataAPI.SubscribeToSharedDataExecute(apiSubscribeToSharedDataRequest)
 	if err != nil {
-		return nil, nil, problemDetailsFromClientError(res, err)
+		return nil, nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "SubscribeToSharedData")
+	defer closeResponseBody(logger.SdmLog, res, "SubscribeToSharedData")
 
 	switch res.StatusCode {
 	case http.StatusCreated:
@@ -681,9 +682,9 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, supi string) (
 	apiCreateSdmSubscriptionsRequest = apiCreateSdmSubscriptionsRequest.SdmSubscription(*sdmSubscription)
 	sdmSubscriptionResp, res, err := clientAPI.SDMSubscriptionsCollectionAPI.CreateSdmSubscriptionsExecute(apiCreateSdmSubscriptionsRequest)
 	if err != nil {
-		return nil, nil, problemDetailsFromClientError(res, err)
+		return nil, nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "CreateSdmSubscriptions")
+	defer closeResponseBody(logger.SdmLog, res, "CreateSdmSubscriptions")
 
 	switch res.StatusCode {
 	case http.StatusCreated:
@@ -725,9 +726,9 @@ func unsubscribeForSharedDataProcedure(subscriptionID string) *models.ProblemDet
 		context.Background(), subscriptionID)
 	res, err := udmClientAPI.SubscriptionDeletionForSharedDataAPI.UnsubscribeForSharedDataExecute(apiUnsubscribeForSharedDataRequest)
 	if err != nil {
-		return problemDetailsFromClientError(res, err)
+		return problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "UnsubscribeForSharedData")
+	defer closeResponseBody(logger.SdmLog, res, "UnsubscribeForSharedData")
 
 	if res.StatusCode == http.StatusNoContent {
 		return nil
@@ -758,9 +759,9 @@ func unsubscribeProcedure(supi string, subscriptionID string) *models.ProblemDet
 	apiRemovesdmSubscriptionsRequest := clientAPI.SDMSubscriptionDocumentAPI.RemovesdmSubscriptions(context.Background(), supi, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.RemovesdmSubscriptionsExecute(apiRemovesdmSubscriptionsRequest)
 	if err != nil {
-		return problemDetailsFromClientError(res, err)
+		return problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(res, "RemovesdmSubscriptions")
+	defer closeResponseBody(logger.SdmLog, res, "RemovesdmSubscriptions")
 
 	if res.StatusCode == http.StatusNoContent {
 		return nil
@@ -801,7 +802,7 @@ func modifyProcedure(sdmSubsModification *models.SdmSubsModification, supi strin
 		context.Background(), supi, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.UpdatesdmsubscriptionsExecute(apiUpdatesdmsubscriptionsRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -869,7 +870,7 @@ func modifyForSharedDataProcedure(sdmSubsModification *models.SdmSubsModificatio
 		context.Background(), supi, subscriptionID)
 	res, err := clientAPI.SDMSubscriptionDocumentAPI.UpdatesdmsubscriptionsExecute(apiUpdatesdmsubscriptionsRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -917,7 +918,7 @@ func getTraceDataProcedure(supi string, plmnID string) (
 		context.Background(), supi, plmnID)
 	traceDataRes, res, err := clientAPI.TraceDataDocumentAPI.QueryTraceDataExecute(apiQueryTraceDataRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
@@ -976,7 +977,7 @@ func getUeContextInSmfDataProcedure(supi string, supportedFeatures string) (
 	apiQuerySmfRegListRequest = apiQuerySmfRegListRequest.SupportedFeatures(supportedFeatures)
 	pdusess, res, err := clientAPI.SMFRegistrationsCollectionAPI.QuerySmfRegListExecute(apiQuerySmfRegListRequest)
 	if err != nil {
-		return nil, problemDetailsFromClientError(res, err)
+		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
