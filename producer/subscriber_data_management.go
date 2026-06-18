@@ -638,8 +638,8 @@ func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
 	case http.StatusCreated:
 		header = make(http.Header)
 		udm_context.UDM_Self().CreateSubstoNotifSharedData(sdmSubscriptionResp.GetSubscriptionId(), sdmSubscriptionResp)
-		reourceUri := udm_context.UDM_Self().GetSDMUri() + "//shared-data-subscriptions/" + sdmSubscriptionResp.GetSubscriptionId()
-		header.Set("Location", reourceUri)
+		resourceUri := udm_context.UDM_Self().GetSDMUri() + "/shared-data-subscriptions/" + sdmSubscriptionResp.GetSubscriptionId()
+		header.Set("Location", resourceUri)
 		return header, sdmSubscriptionResp, nil
 	case http.StatusNotFound:
 		return nil, nil, utils.ProblemDetailsDataNotFound()
@@ -694,7 +694,7 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, ueId string) (
 			udmUe = udm_context.UDM_Self().NewUdmUe(ueId)
 		}
 		udmUe.CreateSubscriptiontoNotifChange(sdmSubscriptionResp.GetSubscriptionId(), sdmSubscriptionResp)
-		header.Set("Location", udmUe.GetLocationURI2(udm_context.LocationUriSdmSubscription, ueId))
+		header.Set("Location", udmUe.GetLocationURI2(udm_context.LocationUriSdmSubscription, ueId)+sdmSubscriptionResp.GetSubscriptionId())
 		return header, sdmSubscriptionResp, nil
 	case http.StatusNotFound:
 		return nil, nil, utils.ProblemDetailsDataNotFound()
