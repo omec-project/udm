@@ -163,10 +163,11 @@ func parseAuthKeys(authSubs *models.AuthenticationSubscription) (k, op, opc []by
 	if authSubs.EncOpcKey != nil && authSubs.GetEncOpcKey() != "" {
 		opcStr := authSubs.GetEncOpcKey()
 		if len(opcStr) == opcStrLen {
-			opc, err = hex.DecodeString(opcStr)
-			if err != nil {
-				logger.UeauLog.Errorln("err", err)
+			decodedOPC, decodeErr := hex.DecodeString(opcStr)
+			if decodeErr != nil || len(decodedOPC) != len(opc) {
+				logger.UeauLog.Errorln("opc decode error", decodeErr)
 			} else {
+				copy(opc, decodedOPC)
 				hasOPC = true
 			}
 		} else {
