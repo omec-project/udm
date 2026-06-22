@@ -16,8 +16,8 @@ import (
 // validKey is a 32-hex-char (128-bit) key used across auth key tests.
 const (
 	validKey = "465b5ce8b199b49faa5f0a2ee238a6bc" // gitleaks:allow
-	validOPC = "e8ed289deba952e4283b54e88e6183ca"
-	validOP  = "5f1d289c5d354d0a140c2548f5f3e3ba"
+	validOPC = "e8ed289deba952e4283b54e88e6183ca" // gitleaks:allow
+	validOP  = "5f1d289c5d354d0a140c2548f5f3e3ba" // gitleaks:allow
 )
 
 func TestParseAuthKeysOPCOnly(t *testing.T) {
@@ -124,6 +124,31 @@ func TestParseAuthKeysNilPermanentKey(t *testing.T) {
 	}
 	if hasK || hasOP || hasOPC {
 		t.Error("expected all has* flags false when permanent key is nil")
+	}
+}
+
+func TestParseAuthKeysInvalidPermanentKeyEncoding(t *testing.T) {
+	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs.SetEncPermanentKey("zz5b5ce8b199b49faa5f0a2ee238a6bc")
+	authSubs.SetEncOpcKey(validOPC)
+
+	k, op, opc, hasK, hasOP, hasOPC, pd := parseAuthKeys(authSubs)
+	t.Logf("k=%x op=%x opc=%x", k, op, opc)
+
+	if pd == nil {
+		t.Fatal("expected problem details for invalid permanent key encoding")
+	}
+	if pd.GetStatus() != http.StatusForbidden {
+		t.Fatalf("expected status %d, got %d", http.StatusForbidden, pd.GetStatus())
+	}
+	if pd.GetCause() != authenticationRejected {
+		t.Fatalf("expected cause %q, got %q", authenticationRejected, pd.GetCause())
+	}
+	if pd.GetDetail() != "Invalid permanent key encoding" {
+		t.Fatalf("unexpected detail %q", pd.GetDetail())
+	}
+	if hasK || hasOP || hasOPC {
+		t.Error("expected all has* flags false when permanent key decoding fails")
 	}
 }
 

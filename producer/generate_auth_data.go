@@ -151,12 +151,14 @@ func parseAuthKeys(authSubs *models.AuthenticationSubscription) (k, op, opc []by
 		return
 	}
 	var err error
-	k, err = hex.DecodeString(kStr)
-	if err != nil {
-		logger.UeauLog.Errorln("err", err)
-	} else {
-		hasK = true
+	decodedK, err := hex.DecodeString(kStr)
+	if err != nil || len(decodedK) != len(k) {
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Invalid permanent key encoding", authenticationRejected)
+		logger.UeauLog.Errorln("permanent key decode error", err)
+		return
 	}
+	copy(k, decodedK)
+	hasK = true
 
 	if authSubs.EncOpcKey != nil && authSubs.GetEncOpcKey() != "" {
 		opcStr := authSubs.GetEncOpcKey()
@@ -240,7 +242,11 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		AMF: 16 bits (2 bytes) (hex len = 4) TS33.102 - Annex H
 	*/
 
-	k, op, opc, hasK, hasOP, hasOPC, problemDetails := parseAuthKeys(authSubs)
+	var (
+		k, op, opc          []byte
+		hasK, hasOP, hasOPC bool
+	)
+	k, op, opc, hasK, hasOP, hasOPC, problemDetails = parseAuthKeys(authSubs)
 	if problemDetails != nil {
 		return nil, problemDetails
 	}
