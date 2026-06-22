@@ -180,14 +180,18 @@ func parseAuthKeys(authSubs *models.AuthenticationSubscription) (k, op, opc []by
 		if authSubs.EncTopcKey != nil && authSubs.GetEncTopcKey() != "" {
 			opStr := authSubs.GetEncTopcKey()
 			if len(opStr) == opStrLen {
-				op, err = hex.DecodeString(opStr)
-				if err != nil {
-					logger.UeauLog.Errorln("err", err)
-				} else {
-					hasOP = true
+				decodedOP, decodeErr := hex.DecodeString(opStr)
+				if decodeErr != nil || len(decodedOP) != len(op) {
+					problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Invalid OP encoding", authenticationRejected)
+					logger.UeauLog.Errorln("op decode error", decodeErr)
+					return
 				}
+				copy(op, decodedOP)
+				hasOP = true
 			} else {
+				problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Invalid OP encoding", authenticationRejected)
 				logger.UeauLog.Errorln("opStr length is", len(opStr))
+				return
 			}
 		} else {
 			logger.UeauLog.Infoln("Nil Op")

@@ -78,11 +78,63 @@ func TestParseAuthKeysInvalidOPLength(t *testing.T) {
 	if pd.GetCause() != authenticationRejected {
 		t.Errorf("expected cause %q, got %q", authenticationRejected, pd.GetCause())
 	}
+	if pd.GetDetail() != "Invalid OP encoding" {
+		t.Errorf("unexpected detail: %q", pd.GetDetail())
+	}
 	if !hasK {
 		t.Error("expected hasK=true for valid permanent key")
 	}
 	if hasOP || hasOPC {
 		t.Error("expected hasOP=false and hasOPC=false for invalid OP")
+	}
+	if len(op) != 16 {
+		t.Errorf("expected OP buffer length 16, got %d", len(op))
+	}
+	if len(opc) != 16 {
+		t.Errorf("expected OPC buffer length 16, got %d", len(opc))
+	}
+	if len(k) != 16 {
+		t.Errorf("expected K buffer length 16, got %d", len(k))
+	}
+	if op[0] != 0 {
+		t.Errorf("expected OP buffer to remain zero-initialized, got %x", op)
+	}
+	if opc[0] != 0 {
+		t.Errorf("expected OPC buffer to remain zero-initialized, got %x", opc)
+	}
+	if k[0] == 0 {
+		t.Errorf("expected permanent key bytes to be decoded into K buffer, got %x", k)
+	}
+}
+
+func TestParseAuthKeysInvalidOPEncoding(t *testing.T) {
+	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs.SetEncPermanentKey(validKey)
+	authSubs.SetEncTopcKey("zz1d289c5d354d0a140c2548f5f3e3ba")
+
+	k, op, opc, hasK, hasOP, hasOPC, pd := parseAuthKeys(authSubs)
+	t.Logf("k=%x op=%x opc=%x", k, op, opc)
+
+	if pd == nil {
+		t.Fatal("expected problem details for invalid OP encoding")
+	}
+	if pd.GetCause() != authenticationRejected {
+		t.Errorf("expected cause %q, got %q", authenticationRejected, pd.GetCause())
+	}
+	if pd.GetDetail() != "Invalid OP encoding" {
+		t.Errorf("unexpected detail: %q", pd.GetDetail())
+	}
+	if !hasK {
+		t.Error("expected hasK=true for valid permanent key")
+	}
+	if hasOP || hasOPC {
+		t.Error("expected hasOP=false and hasOPC=false for invalid OP")
+	}
+	if len(op) != 16 {
+		t.Errorf("expected OP buffer length 16, got %d", len(op))
+	}
+	if op[0] != 0 {
+		t.Errorf("expected OP buffer to remain zero-initialized, got %x", op)
 	}
 }
 
