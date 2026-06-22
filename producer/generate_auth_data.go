@@ -136,6 +136,68 @@ func ConfirmAuthDataProcedure(authEvent models.AuthEvent, supi string) (problemD
 	return nil
 }
 
+func parseAuthKeys(authSubs *models.AuthenticationSubscription) (k, op, opc []byte, hasK, hasOP, hasOPC bool, problemDetails *models.ProblemDetails) {
+	k, op, opc = make([]byte, 16), make([]byte, 16), make([]byte, 16)
+
+	if authSubs.EncPermanentKey == nil {
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", authenticationRejected)
+		logger.UeauLog.Errorln("Nil PermanentKey")
+		return
+	}
+	kStr := authSubs.GetEncPermanentKey()
+	if len(kStr) != keyStrLen {
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", authenticationRejected)
+		logger.UeauLog.Errorln("kStr length is", len(kStr))
+		return
+	}
+	var err error
+	k, err = hex.DecodeString(kStr)
+	if err != nil {
+		logger.UeauLog.Errorln("err", err)
+	} else {
+		hasK = true
+	}
+
+	if authSubs.EncOpcKey != nil && authSubs.GetEncOpcKey() != "" {
+		opcStr := authSubs.GetEncOpcKey()
+		if len(opcStr) == opcStrLen {
+			opc, err = hex.DecodeString(opcStr)
+			if err != nil {
+				logger.UeauLog.Errorln("err", err)
+			} else {
+				hasOPC = true
+			}
+		} else {
+			logger.UeauLog.Errorln("opcStr length is", len(opcStr))
+		}
+	} else {
+		logger.UeauLog.Infoln("Nil Opc")
+	}
+
+	if !hasOPC {
+		if authSubs.EncTopcKey != nil && authSubs.GetEncTopcKey() != "" {
+			opStr := authSubs.GetEncTopcKey()
+			if len(opStr) == opStrLen {
+				op, err = hex.DecodeString(opStr)
+				if err != nil {
+					logger.UeauLog.Errorln("err", err)
+				} else {
+					hasOP = true
+				}
+			} else {
+				logger.UeauLog.Errorln("opStr length is", len(opStr))
+			}
+		} else {
+			logger.UeauLog.Infoln("Nil Op")
+		}
+	}
+
+	if !hasOPC && !hasOP {
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Both OP and OPc are missing", authenticationRejected)
+	}
+	return
+}
+
 func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest, supiOrSuci string) (
 	response *models.AuthenticationInfoResult, problemDetails *models.ProblemDetails,
 ) {
@@ -178,70 +240,8 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		AMF: 16 bits (2 bytes) (hex len = 4) TS33.102 - Annex H
 	*/
 
-	hasK, hasOP, hasOPC := false, false, false
-
-	var kStr, opcStr string
-
-	k, op, opc := make([]byte, 16), make([]byte, 16), make([]byte, 16)
-
-	logger.UeauLog.Debugln("K", k)
-
-	if authSubs.EncPermanentKey != nil {
-		kStr = authSubs.GetEncPermanentKey()
-		if len(kStr) == keyStrLen {
-			k, err = hex.DecodeString(kStr)
-			if err != nil {
-				logger.UeauLog.Errorln("err", err)
-			} else {
-				hasK = true
-			}
-		} else {
-			problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", authenticationRejected)
-			logger.UeauLog.Errorln("kStr length is", len(kStr))
-			return nil, problemDetails
-		}
-	} else {
-		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", authenticationRejected)
-		logger.UeauLog.Errorln("Nil PermanentKey")
-		return nil, problemDetails
-	}
-
-	if authSubs.EncOpcKey != nil && authSubs.GetEncOpcKey() != "" {
-		opcStr = authSubs.GetEncOpcKey()
-		if len(opcStr) == opcStrLen {
-			opc, err = hex.DecodeString(opcStr)
-			if err != nil {
-				logger.UeauLog.Errorln("err", err)
-			} else {
-				hasOPC = true
-			}
-		} else {
-			logger.UeauLog.Errorln("opcStr length is", len(opcStr))
-		}
-	} else {
-		logger.UeauLog.Infoln("Nil Opc")
-	}
-
-	if !hasOPC {
-		if authSubs.EncTopcKey != nil && authSubs.GetEncTopcKey() != "" {
-			opStr := authSubs.GetEncTopcKey()
-			if len(opStr) == opStrLen {
-				op, err = hex.DecodeString(opStr)
-				if err != nil {
-					logger.UeauLog.Errorln("err", err)
-				} else {
-					hasOP = true
-				}
-			} else {
-				logger.UeauLog.Errorln("opStr length is", len(opStr))
-			}
-		} else {
-			logger.UeauLog.Infoln("Nil Op")
-		}
-	}
-
-	if !hasOPC && !hasOP {
-		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Both OP and OPc are missing", authenticationRejected)
+	k, op, opc, hasK, hasOP, hasOPC, problemDetails := parseAuthKeys(authSubs)
+	if problemDetails != nil {
 		return nil, problemDetails
 	}
 
