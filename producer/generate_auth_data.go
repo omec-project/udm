@@ -223,7 +223,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	}
 
 	if !hasOPC && !hasOP {
-		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, err.Error(), authenticationRejected)
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Both OP and OPc are missing", authenticationRejected)
 		return nil, problemDetails
 	}
 
