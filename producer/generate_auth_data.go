@@ -222,6 +222,24 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		logger.UeauLog.Infoln("Nil Opc")
 	}
 
+	if !hasOPC {
+		if authSubs.EncTopcKey != nil && authSubs.GetEncTopcKey() != "" {
+			opStr := authSubs.GetEncTopcKey()
+			if len(opStr) == opStrLen {
+				op, err = hex.DecodeString(opStr)
+				if err != nil {
+					logger.UeauLog.Errorln("err", err)
+				} else {
+					hasOP = true
+				}
+			} else {
+				logger.UeauLog.Errorln("opStr length is", len(opStr))
+			}
+		} else {
+			logger.UeauLog.Infoln("Nil Op")
+		}
+	}
+
 	if !hasOPC && !hasOP {
 		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Both OP and OPc are missing", authenticationRejected)
 		return nil, problemDetails
