@@ -136,6 +136,82 @@ func ConfirmAuthDataProcedure(authEvent models.AuthEvent, supi string) (problemD
 	return nil
 }
 
+func parseAuthKeys(authSubs *models.AuthenticationSubscription) (k, op, opc []byte, hasK, hasOP, hasOPC bool, problemDetails *models.ProblemDetails) {
+	k, op, opc = make([]byte, 16), make([]byte, 16), make([]byte, 16)
+
+	if authSubs.EncPermanentKey == nil {
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", authenticationRejected)
+		logger.UeauLog.Errorln("Nil PermanentKey")
+		return k, op, opc, hasK, hasOP, hasOPC, problemDetails
+	}
+	kStr := authSubs.GetEncPermanentKey()
+	if len(kStr) != keyStrLen {
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", authenticationRejected)
+		logger.UeauLog.Errorln("kStr length is", len(kStr))
+		return k, op, opc, hasK, hasOP, hasOPC, problemDetails
+	}
+	var err error
+	decodedK, err := hex.DecodeString(kStr)
+	if err != nil || len(decodedK) != len(k) {
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Invalid permanent key encoding", authenticationRejected)
+		logger.UeauLog.Errorln("permanent key decode error", err)
+		return k, op, opc, hasK, hasOP, hasOPC, problemDetails
+	}
+	copy(k, decodedK)
+	hasK = true
+	var invalidOPCDetail string
+
+	if authSubs.EncOpcKey != nil && authSubs.GetEncOpcKey() != "" {
+		opcStr := authSubs.GetEncOpcKey()
+		if len(opcStr) == opcStrLen {
+			decodedOPC, decodeErr := hex.DecodeString(opcStr)
+			if decodeErr != nil || len(decodedOPC) != len(opc) {
+				invalidOPCDetail = "Invalid OPc encoding"
+				logger.UeauLog.Errorln("opc decode error", decodeErr)
+			} else {
+				copy(opc, decodedOPC)
+				hasOPC = true
+			}
+		} else {
+			invalidOPCDetail = "Invalid OPc length"
+			logger.UeauLog.Errorln("opcStr length is", len(opcStr))
+		}
+	} else {
+		logger.UeauLog.Infoln("Nil Opc")
+	}
+
+	if !hasOPC {
+		if authSubs.EncTopcKey != nil && authSubs.GetEncTopcKey() != "" {
+			opStr := authSubs.GetEncTopcKey()
+			if len(opStr) == opStrLen {
+				decodedOP, decodeErr := hex.DecodeString(opStr)
+				if decodeErr != nil || len(decodedOP) != len(op) {
+					problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Invalid OP encoding", authenticationRejected)
+					logger.UeauLog.Errorln("op decode error", decodeErr)
+					return k, op, opc, hasK, hasOP, hasOPC, problemDetails
+				}
+				copy(op, decodedOP)
+				hasOP = true
+			} else {
+				problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Invalid OP encoding", authenticationRejected)
+				logger.UeauLog.Errorln("opStr length is", len(opStr))
+				return k, op, opc, hasK, hasOP, hasOPC, problemDetails
+			}
+		} else {
+			logger.UeauLog.Infoln("Nil Op")
+		}
+	}
+
+	if !hasOPC && !hasOP {
+		detail := "Both OP and OPc are missing"
+		if invalidOPCDetail != "" {
+			detail = invalidOPCDetail
+		}
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, detail, authenticationRejected)
+	}
+	return k, op, opc, hasK, hasOP, hasOPC, problemDetails
+}
+
 func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest, supiOrSuci string) (
 	response *models.AuthenticationInfoResult, problemDetails *models.ProblemDetails,
 ) {
@@ -144,10 +220,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	response = &models.AuthenticationInfoResult{}
 	supi, err := suci.ToSupi(supiOrSuci, udm_context.UDM_Self().SuciProfiles)
 	if err != nil {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause(authenticationRejected)
-		problemDetails.SetDetail(err.Error())
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, err.Error(), authenticationRejected)
 		logger.UeauLog.Errorln("suciToSupi error:", err.Error())
 		return nil, problemDetails
 	}
@@ -161,10 +234,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	apiQueryAuthSubsDataRequest := client.AuthenticationDataDocumentAPI.QueryAuthSubsData(context.Background(), supi)
 	authSubs, res, err := client.AuthenticationDataDocumentAPI.QueryAuthSubsDataExecute(apiQueryAuthSubsDataRequest)
 	if err != nil {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause(authenticationRejected)
-		problemDetails.SetDetail(err.Error())
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, err.Error(), authenticationRejected)
 		if res != nil {
 			logger.UeauLog.Errorf("return from UDR QueryAuthSubsData error: status=%s err=%v", res.Status, err)
 		} else {
@@ -184,62 +254,12 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		AMF: 16 bits (2 bytes) (hex len = 4) TS33.102 - Annex H
 	*/
 
-	hasK, hasOP, hasOPC := false, false, false
-
-	var kStr, opcStr string
-
-	k, op, opc := make([]byte, 16), make([]byte, 16), make([]byte, 16)
-
-	logger.UeauLog.Debugln("K", k)
-
-	if authSubs.EncPermanentKey != nil {
-		kStr = authSubs.GetEncPermanentKey()
-		if len(kStr) == keyStrLen {
-			k, err = hex.DecodeString(kStr)
-			if err != nil {
-				logger.UeauLog.Errorln("err", err)
-			} else {
-				hasK = true
-			}
-		} else {
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusForbidden)
-			problemDetails.SetCause(authenticationRejected)
-			logger.UeauLog.Errorln("kStr length is", len(kStr))
-			return nil, problemDetails
-		}
-	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause(authenticationRejected)
-		logger.UeauLog.Errorln("Nil PermanentKey")
-		return nil, problemDetails
-	}
-
-	if authSubs.EncOpcKey != nil && authSubs.GetEncOpcKey() != "" {
-		opcStr = authSubs.GetEncOpcKey()
-		if len(opcStr) == opcStrLen {
-			opc, err = hex.DecodeString(opcStr)
-			if err != nil {
-				logger.UeauLog.Errorln("err", err)
-			} else {
-				hasOPC = true
-			}
-		} else {
-			logger.UeauLog.Errorln("opcStr length is", len(opcStr))
-		}
-	} else {
-		logger.UeauLog.Infoln("Nil Opc")
-	}
-
-	if !hasOPC && !hasOP {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause(authenticationRejected)
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause(authenticationRejected)
-		problemDetails.SetDetail(err.Error())
+	var (
+		k, op, opc          []byte
+		hasK, hasOP, hasOPC bool
+	)
+	k, op, opc, hasK, hasOP, hasOPC, problemDetails = parseAuthKeys(authSubs)
+	if problemDetails != nil {
 		return nil, problemDetails
 	}
 
@@ -250,9 +270,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 				logger.UeauLog.Errorln("milenage GenerateOPC err", err)
 			}
 		} else {
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusForbidden)
-			problemDetails.SetCause(authenticationRejected)
+			problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", authenticationRejected)
 			logger.UeauLog.Errorln("unable to derive OPC")
 			return nil, problemDetails
 		}
@@ -262,10 +280,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	logger.UeauLog.Debugln("sqnStr", sqnStr)
 	sqn, err := hex.DecodeString(sqnStr)
 	if err != nil {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause(authenticationRejected)
-		problemDetails.SetDetail(err.Error())
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, err.Error(), authenticationRejected)
 		logger.UeauLog.Errorln("err", err)
 		return nil, problemDetails
 	}
@@ -275,20 +290,14 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	RAND := make([]byte, 16)
 	_, err = rand.Read(RAND)
 	if err != nil {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause(authenticationRejected)
-		problemDetails.SetDetail(err.Error())
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, err.Error(), authenticationRejected)
 		logger.UeauLog.Errorln("err", err)
 		return nil, problemDetails
 	}
 
 	AMF, err := hex.DecodeString("8000")
 	if err != nil {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause(authenticationRejected)
-		problemDetails.SetDetail(err.Error())
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, err.Error(), authenticationRejected)
 		logger.UeauLog.Errorln("err", err)
 		return nil, problemDetails
 	}
@@ -297,20 +306,14 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	if authInfoRequest.ResynchronizationInfo != nil {
 		Auts, deCodeErr := hex.DecodeString(authInfoRequest.ResynchronizationInfo.Auts)
 		if deCodeErr != nil {
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusForbidden)
-			problemDetails.SetCause(authenticationRejected)
-			problemDetails.SetDetail(deCodeErr.Error())
+			problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, deCodeErr.Error(), authenticationRejected)
 			logger.UeauLog.Errorln("err", deCodeErr)
 			return nil, problemDetails
 		}
 
 		randHex, deCodeErr := hex.DecodeString(authInfoRequest.ResynchronizationInfo.Rand)
 		if deCodeErr != nil {
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusForbidden)
-			problemDetails.SetCause(authenticationRejected)
-			problemDetails.SetDetail(deCodeErr.Error())
+			problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, deCodeErr.Error(), authenticationRejected)
 			logger.UeauLog.Errorln("err", deCodeErr)
 			return nil, problemDetails
 		}
@@ -319,10 +322,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		if reflect.DeepEqual(macS, Auts[6:]) {
 			_, err = rand.Read(RAND)
 			if err != nil {
-				problemDetails = models.NewProblemDetails()
-				problemDetails.SetStatus(http.StatusForbidden)
-				problemDetails.SetCause(authenticationRejected)
-				problemDetails.SetDetail(err.Error())
+				problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, err.Error(), authenticationRejected)
 				logger.UeauLog.Errorln("err", err)
 				return nil, problemDetails
 			}
@@ -345,9 +345,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 			logger.UeauLog.Errorln("MACS", macS)
 			logger.UeauLog.Errorln("Auts[6:]", Auts[6:])
 			logger.UeauLog.Errorln("Sqn", SQNms)
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusForbidden)
-			problemDetails.SetCause("modification is rejected")
+			problemDetails = utils.ProblemDetailsWithCause("Modification rejected", http.StatusForbidden, "", utils.CauseModifyNotAllowed)
 			return nil, problemDetails
 		}
 	}
@@ -356,10 +354,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	bigSQN := big.NewInt(0)
 	sqn, err = hex.DecodeString(sqnStr)
 	if err != nil {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause(authenticationRejected)
-		problemDetails.SetDetail(err.Error())
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, err.Error(), authenticationRejected)
 		logger.UeauLog.Errorln("err", err)
 		return nil, problemDetails
 	}
@@ -385,10 +380,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	apiModifyAuthenticationSubscriptionRequest = apiModifyAuthenticationSubscriptionRequest.PatchItem(patchItemArray)
 	_, rsp, err = client.AuthenticationSubscriptionDocumentAPI.ModifyAuthenticationSubscriptionExecute(apiModifyAuthenticationSubscriptionRequest)
 	if err != nil {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause("modification is rejected")
-		problemDetails.SetDetail(err.Error())
+		problemDetails = utils.ProblemDetailsWithCause("Modification rejected", http.StatusForbidden, err.Error(), utils.CauseModifyNotAllowed)
 		logger.UeauLog.Errorln("update sqn error", err)
 		return nil, problemDetails
 	}
