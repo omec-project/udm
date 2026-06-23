@@ -159,18 +159,21 @@ func parseAuthKeys(authSubs *models.AuthenticationSubscription) (k, op, opc []by
 	}
 	copy(k, decodedK)
 	hasK = true
+	var invalidOPCDetail string
 
 	if authSubs.EncOpcKey != nil && authSubs.GetEncOpcKey() != "" {
 		opcStr := authSubs.GetEncOpcKey()
 		if len(opcStr) == opcStrLen {
 			decodedOPC, decodeErr := hex.DecodeString(opcStr)
 			if decodeErr != nil || len(decodedOPC) != len(opc) {
+				invalidOPCDetail = "Invalid OPc encoding"
 				logger.UeauLog.Errorln("opc decode error", decodeErr)
 			} else {
 				copy(opc, decodedOPC)
 				hasOPC = true
 			}
 		} else {
+			invalidOPCDetail = "Invalid OPc length"
 			logger.UeauLog.Errorln("opcStr length is", len(opcStr))
 		}
 	} else {
@@ -200,7 +203,11 @@ func parseAuthKeys(authSubs *models.AuthenticationSubscription) (k, op, opc []by
 	}
 
 	if !hasOPC && !hasOP {
-		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Both OP and OPc are missing", authenticationRejected)
+		detail := "Both OP and OPc are missing"
+		if invalidOPCDetail != "" {
+			detail = invalidOPCDetail
+		}
+		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, detail, authenticationRejected)
 	}
 	return k, op, opc, hasK, hasOP, hasOPC, problemDetails
 }
