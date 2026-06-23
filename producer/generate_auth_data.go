@@ -142,20 +142,20 @@ func parseAuthKeys(authSubs *models.AuthenticationSubscription) (k, op, opc []by
 	if authSubs.EncPermanentKey == nil {
 		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", authenticationRejected)
 		logger.UeauLog.Errorln("Nil PermanentKey")
-		return
+		return k, op, opc, hasK, hasOP, hasOPC, problemDetails
 	}
 	kStr := authSubs.GetEncPermanentKey()
 	if len(kStr) != keyStrLen {
 		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", authenticationRejected)
 		logger.UeauLog.Errorln("kStr length is", len(kStr))
-		return
+		return k, op, opc, hasK, hasOP, hasOPC, problemDetails
 	}
 	var err error
 	decodedK, err := hex.DecodeString(kStr)
 	if err != nil || len(decodedK) != len(k) {
 		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Invalid permanent key encoding", authenticationRejected)
 		logger.UeauLog.Errorln("permanent key decode error", err)
-		return
+		return k, op, opc, hasK, hasOP, hasOPC, problemDetails
 	}
 	copy(k, decodedK)
 	hasK = true
@@ -185,14 +185,14 @@ func parseAuthKeys(authSubs *models.AuthenticationSubscription) (k, op, opc []by
 				if decodeErr != nil || len(decodedOP) != len(op) {
 					problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Invalid OP encoding", authenticationRejected)
 					logger.UeauLog.Errorln("op decode error", decodeErr)
-					return
+					return k, op, opc, hasK, hasOP, hasOPC, problemDetails
 				}
 				copy(op, decodedOP)
 				hasOP = true
 			} else {
 				problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Invalid OP encoding", authenticationRejected)
 				logger.UeauLog.Errorln("opStr length is", len(opStr))
-				return
+				return k, op, opc, hasK, hasOP, hasOPC, problemDetails
 			}
 		} else {
 			logger.UeauLog.Infoln("Nil Op")
@@ -202,7 +202,7 @@ func parseAuthKeys(authSubs *models.AuthenticationSubscription) (k, op, opc []by
 	if !hasOPC && !hasOP {
 		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "Both OP and OPc are missing", authenticationRejected)
 	}
-	return
+	return k, op, opc, hasK, hasOP, hasOPC, problemDetails
 }
 
 func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest, supiOrSuci string) (
