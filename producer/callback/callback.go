@@ -42,10 +42,10 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 		return utils.ProblemDetailsContextNotFound("UDM UE context not found")
 	}
 
-	var problemDetails *models.ProblemDetails
+	problemDetails := models.NewProblemDetails()
 	for _, subscriptionDataSubscription := range ue.UdmSubsToNotify {
 		dataChangeNotification := models.ModificationNotification{}
-		dataChangeNotification.NotifyItems = notifyItems
+		dataChangeNotification.SetNotifyItems(notifyItems)
 		httpResponse, err := postJSONCallback(context.TODO(), subscriptionDataSubscription.GetOriginalCallbackReference(), dataChangeNotification)
 		if err != nil {
 			problemDetails = utils.ProblemDetails("Callback notification failed", http.StatusBadGateway, err.Error())

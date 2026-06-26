@@ -14,31 +14,52 @@ import (
 func SearchNFServiceUri(nfProfile models.NFProfileDiscovery, serviceName models.ServiceName,
 	nfServiceStatus models.NFServiceStatus,
 ) (nfUri string) {
-	if nfProfile.NfServices != nil {
-		for _, service := range nfProfile.NfServices {
-			if service.ServiceName == serviceName && service.NfServiceStatus == nfServiceStatus {
-				if nfProfile.GetFqdn() != "" {
-					nfUri = nfProfile.GetFqdn()
-				} else if service.GetFqdn() != "" {
-					nfUri = service.GetFqdn()
-				} else if service.GetApiPrefix() != "" {
-					nfUri = service.GetApiPrefix()
-				} else if len(service.IpEndPoints) > 0 {
-					point := (service.IpEndPoints)[0]
-					if point.GetIpv4Address() != "" {
-						nfUri = getSbiUri(service.Scheme, point.GetIpv4Address(), point.GetPort())
-					} else if len(nfProfile.Ipv4Addresses) != 0 {
-						nfUri = getSbiUri(service.Scheme, nfProfile.Ipv4Addresses[0], point.GetPort())
-					}
-				}
-			}
-			if nfUri != "" {
-				break
-			}
+	for _, service := range nfProfile.GetNfServices() {
+		if service.GetServiceName() != serviceName || service.GetNfServiceStatus() != nfServiceStatus {
+			continue
+		}
+
+		nfUri = resolveNFServiceURI(nfProfile, service)
+		if nfUri != "" {
+			return nfUri
 		}
 	}
 
 	return
+}
+
+func resolveNFServiceURI(nfProfile models.NFProfileDiscovery, service models.NFService) string {
+	if service.GetApiPrefix() != "" {
+		return service.GetApiPrefix()
+	}
+
+	if service.GetFqdn() != "" {
+		return service.GetFqdn()
+	}
+
+	if nfProfile.GetFqdn() != "" {
+		return nfProfile.GetFqdn()
+	}
+
+	return resolveNFServiceEndpointURI(service, nfProfile.GetIpv4Addresses())
+}
+
+func resolveNFServiceEndpointURI(service models.NFService, profileIPv4Addresses []string) string {
+	for _, point := range service.GetIpEndPoints() {
+		if point.GetIpv4Address() != "" {
+			return getSbiUri(service.GetScheme(), point.GetIpv4Address(), point.GetPort())
+		}
+	}
+
+	if len(profileIPv4Addresses) == 0 {
+		return ""
+	}
+
+	for _, point := range service.GetIpEndPoints() {
+		return getSbiUri(service.GetScheme(), profileIPv4Addresses[0], point.GetPort())
+	}
+
+	return ""
 }
 
 func getSbiUri(scheme models.UriScheme, ipv4Address string, port int32) (uri string) {

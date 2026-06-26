@@ -35,17 +35,16 @@ func getNfProfile(udmContext *udmContext.UDMContext, plmnConfig []models.PlmnId)
 		copy(plmnCopy, plmnConfig)
 	}
 
-	profile = &models.NFProfile{
-		NfInstanceId:  udmContext.NfId,
-		NfType:        models.NFTYPE_UDM,
-		NfStatus:      models.NFSTATUS_REGISTERED,
-		Ipv4Addresses: []string{udmContext.RegisterIPv4},
-		NfServices:    services,
-		UdmInfo: &models.UdmInfo{
-			GroupId: openapi.PtrString(udmContext.GroupId),
-		},
-		PlmnList: plmnCopy,
-	}
+	profile = models.NewNFProfileWithDefaults()
+	profile.SetNfInstanceId(udmContext.NfId)
+	profile.SetNfType(models.NFTYPE_UDM)
+	profile.SetNfStatus(models.NFSTATUS_REGISTERED)
+	profile.SetIpv4Addresses([]string{udmContext.RegisterIPv4})
+	profile.SetNfServices(services)
+	udmInfo := models.NewUdmInfoWithDefaults()
+	udmInfo.SetGroupId(udmContext.GroupId)
+	profile.SetUdmInfo(*udmInfo)
+	profile.SetPlmnList(plmnCopy)
 
 	return profile, nil
 }
@@ -54,7 +53,7 @@ var SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (prof *models.NFPr
 	self := udmContext.UDM_Self()
 	nfProfile, err := getNfProfile(self, plmnConfig)
 	if err != nil {
-		return &models.NFProfile{}, "", err
+		return models.NewNFProfileWithDefaults(), "", err
 	}
 
 	configuration := Nnrf_NFManagement.NewConfiguration()
@@ -64,14 +63,14 @@ var SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (prof *models.NFPr
 		serverConfig.Variables["apiRoot"] = apiRootVar
 	}
 	client := Nnrf_NFManagement.NewAPIClient(configuration)
-	apiRegisterNFInstanceRequest := client.NFInstanceIDDocumentAPI.RegisterNFInstance(context.TODO(), nfProfile.NfInstanceId)
+	apiRegisterNFInstanceRequest := client.NFInstanceIDDocumentAPI.RegisterNFInstance(context.TODO(), nfProfile.GetNfInstanceId())
 	apiRegisterNFInstanceRequest = apiRegisterNFInstanceRequest.NFProfile(*nfProfile)
 	receivedNfProfile, res, err := client.NFInstanceIDDocumentAPI.RegisterNFInstanceExecute(apiRegisterNFInstanceRequest)
 	if err != nil {
-		return &models.NFProfile{}, "", err
+		return models.NewNFProfileWithDefaults(), "", err
 	}
 	if res == nil {
-		return &models.NFProfile{}, "", fmt.Errorf("no response from server")
+		return models.NewNFProfileWithDefaults(), "", fmt.Errorf("no response from server")
 	}
 
 	switch res.StatusCode {
@@ -137,20 +136,20 @@ var SendUpdateNFInstance = func(patchItem []models.PatchItem) (receivedNfProfile
 		if openapiErr, ok := err.(openapi.GenericOpenAPIError); ok {
 			if model := openapiErr.Model(); model != nil {
 				if problem, ok := model.(models.ProblemDetails); ok {
-					return &models.NFProfile{}, &problem, nil
+					return models.NewNFProfileWithDefaults(), &problem, nil
 				}
 			}
 		}
-		return &models.NFProfile{}, nil, err
+		return models.NewNFProfileWithDefaults(), nil, err
 	}
 
 	if res == nil {
-		return &models.NFProfile{}, nil, fmt.Errorf("no response from server")
+		return models.NewNFProfileWithDefaults(), nil, fmt.Errorf("no response from server")
 	}
 	if res.StatusCode == http.StatusOK || res.StatusCode == http.StatusNoContent {
 		return receivedNfProfile, nil, nil
 	}
-	return &models.NFProfile{}, nil, fmt.Errorf("unexpected response code")
+	return models.NewNFProfileWithDefaults(), nil, fmt.Errorf("unexpected response code")
 }
 
 func SendCreateSubscription(nrfUri string, nrfSubscriptionData models.SubscriptionData) (nrfSubData *models.SubscriptionData, problemDetails *models.ProblemDetails, err error) {

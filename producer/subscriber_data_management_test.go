@@ -73,10 +73,10 @@ func TestProblemDetailsFromClientErrorHandlesTransportError(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, problemDetails.GetStatus())
 	}
 	if problemDetails.GetCause() != utils.CauseSystemFailure {
-		t.Fatalf("expected cause SYSTEM_FAILURE, got %q", problemDetails.GetCause())
+		t.Fatalf("expected cause %q, got %q", utils.CauseSystemFailure, problemDetails.GetCause())
 	}
 	if problemDetails.GetDetail() != eofDetail {
-		t.Fatalf("expected detail EOF, got %q", problemDetails.GetDetail())
+		t.Fatalf("expected detail %q, got %q", eofDetail, problemDetails.GetDetail())
 	}
 }
 
@@ -95,28 +95,26 @@ func TestProblemDetailsFromClientErrorUsesHTTPStatusWhenResponseIsAvailable(t *t
 		t.Fatalf("expected status %d, got %d", http.StatusBadGateway, problemDetails.GetStatus())
 	}
 	if problemDetails.GetCause() != utils.CauseSystemFailure {
-		t.Fatalf("expected cause SYSTEM_FAILURE, got %q", problemDetails.GetCause())
+		t.Fatalf("expected cause %q, got %q", utils.CauseSystemFailure, problemDetails.GetCause())
 	}
 	if problemDetails.GetDetail() != eofDetail {
-		t.Fatalf("expected detail EOF, got %q", problemDetails.GetDetail())
+		t.Fatalf("expected detail %q, got %q", eofDetail, problemDetails.GetDetail())
 	}
 }
 
 func TestProblemDetailsFromClientErrorPreservesOpenAPIProblemDetails(t *testing.T) {
-	cause := utils.CauseDataNotFound
-	status := int32(http.StatusNotFound)
-	problem := models.ProblemDetails{Cause: &cause, Status: &status}
+	problem := utils.ProblemDetailsDataNotFound()
 
 	problemDetails := problemDetailsFromClientError(logger.SdmLog, &http.Response{StatusCode: http.StatusNotFound, Status: "404 Not Found"}, openapi.GenericOpenAPIError{
 		RawError: "404 Not Found",
-		RawModel: problem,
+		RawModel: *problem,
 	})
 
 	if problemDetails.GetStatus() != http.StatusNotFound {
 		t.Fatalf("expected status %d, got %d", http.StatusNotFound, problemDetails.GetStatus())
 	}
-	if problemDetails.GetCause() != cause {
-		t.Fatalf("expected cause %q, got %q", cause, problemDetails.GetCause())
+	if problemDetails.GetCause() != utils.CauseDataNotFound {
+		t.Fatalf("expected cause %q, got %q", utils.CauseDataNotFound, problemDetails.GetCause())
 	}
 	if problemDetails.GetDetail() != "404 Not Found" {
 		t.Fatalf("expected detail 404 Not Found, got %q", problemDetails.GetDetail())
@@ -150,7 +148,7 @@ func TestIndividualSmSubsDataFromResponseRejectsNilResponse(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusNotFound, problemDetails.GetStatus())
 	}
 	if problemDetails.GetCause() != utils.CauseDataNotFound {
-		t.Fatalf("expected DATA_NOT_FOUND cause, got %q", problemDetails.GetCause())
+		t.Fatalf("expected %q cause, got %q", utils.CauseDataNotFound, problemDetails.GetCause())
 	}
 	if problemDetails.GetDetail() != "session management subscription data is empty" {
 		t.Fatalf("unexpected detail %q", problemDetails.GetDetail())
