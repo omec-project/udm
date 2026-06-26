@@ -9,7 +9,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
 	"github.com/omec-project/udm/logger"
@@ -37,20 +36,7 @@ func UpdateProcedure(updateRequest []models.PatchItem, gpsi string) (problemDeta
 	apiModifyPpDataRequest = apiModifyPpDataRequest.PatchItem(updateRequest)
 	_, res, err := clientAPI.ProvisionedParameterDataDocumentAPI.ModifyPpDataExecute(apiModifyPpDataRequest)
 	if err != nil {
-		problemDetails = models.NewProblemDetails()
-		if res != nil {
-			problemDetails.SetStatus(int32(res.StatusCode))
-		} else {
-			problemDetails.SetStatus(http.StatusInternalServerError)
-		}
-		if openapiErr, ok := err.(openapi.GenericOpenAPIError); ok {
-			if udrProblemDetails, ok := openapiErr.Model().(models.ProblemDetails); ok {
-				if cause := udrProblemDetails.Cause; cause != nil {
-					problemDetails.SetCause(*cause)
-				}
-			}
-		}
-		problemDetails.SetDetail(err.Error())
+		problemDetails = utils.ProblemDetailsFromOpenAPIError(res, err)
 		if res != nil {
 			defer func() {
 				if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
