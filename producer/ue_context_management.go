@@ -321,10 +321,7 @@ func UpdateAmf3gppAccessProcedure(request models.Amf3GppAccessRegistrationModifi
 	currentContext := udmContext.UDM_Self().GetAmf3gppRegContext(ueID)
 	if currentContext == nil {
 		logger.UecmLog.Errorln("[UpdateAmf3gppAccess] Empty Amf3gppRegContext")
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetCause("CONTEXT_NOT_FOUND")
-		return problemDetails
+		return utils.ProblemDetailsWithCause("Context not found", http.StatusForbidden, "", utils.CauseContextNotFound)
 	}
 
 	if _, ok := request.GetGuamiOk(); ok {
@@ -333,11 +330,8 @@ func UpdateAmf3gppAccessProcedure(request models.Amf3GppAccessRegistrationModifi
 			logger.UecmLog.Infoln("UpdateAmf3gppAccess - deregistration")
 			request.PurgeFlag = openapi.PtrBool(true)
 		} else {
-			logger.UecmLog.Errorln("INVALID_GUAMI")
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusForbidden)
-			problemDetails.SetCause("INVALID_GUAMI")
-			return problemDetails
+			logger.UecmLog.Errorln(utils.CauseInvalidGuami)
+			return utils.ProblemDetailsWithCause("Invalid GUAMI", http.StatusForbidden, "", utils.CauseInvalidGuami)
 		}
 
 		var patchItemTmp models.PatchItem
@@ -421,10 +415,7 @@ func UpdateAmfNon3gppAccessProcedure(request models.AmfNon3GppAccessRegistration
 	currentContext := udmContext.UDM_Self().GetAmfNon3gppRegContext(ueID)
 	if currentContext == nil {
 		logger.UecmLog.Errorln("[UpdateAmfNon3gppAccess] Empty AmfNon3gppRegContext")
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("CONTEXT_NOT_FOUND")
-		return problemDetails
+		return utils.ProblemDetailsContextNotFound("")
 	}
 
 	if _, ok := request.GetGuamiOk(); ok {
@@ -433,11 +424,8 @@ func UpdateAmfNon3gppAccessProcedure(request models.AmfNon3GppAccessRegistration
 			logger.UecmLog.Infoln("UpdateAmfNon3gppAccess - deregistration")
 			request.PurgeFlag = openapi.PtrBool(true)
 		} else {
-			logger.UecmLog.Errorln("INVALID_GUAMI")
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusForbidden)
-			problemDetails.SetCause("INVALID_GUAMI")
-			return problemDetails
+			logger.UecmLog.Errorln(utils.CauseInvalidGuami)
+			return utils.ProblemDetailsWithCause("Invalid GUAMI", http.StatusForbidden, "", utils.CauseInvalidGuami)
 		}
 
 		var patchItemTmp models.PatchItem

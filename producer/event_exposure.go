@@ -12,6 +12,7 @@ import (
 
 	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/util/httpwrapper"
@@ -31,9 +32,7 @@ func HandleCreateEeSubscription(request *httpwrapper.Request) *httpwrapper.Respo
 	} else if problemDetails != nil {
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	} else {
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusInternalServerError)
-		problemDetails.SetCause("UNSPECIFIED_NF_FAILURE")
+		problemDetails = utils.ProblemDetailsWithCause("Unspecified NF failure", http.StatusInternalServerError, "", utils.CauseUnspecifiedNfFailure)
 		return httpwrapper.NewResponse(http.StatusInternalServerError, nil, problemDetails)
 	}
 }
@@ -54,10 +53,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 		if ue, ok := udmSelf.UdmUeFindByGpsi(ueIdentity); ok {
 			id, err := udmSelf.EeSubscriptionIDGenerator.Allocate()
 			if err != nil {
-				problemDetails := models.NewProblemDetails()
-				problemDetails.SetStatus(http.StatusInternalServerError)
-				problemDetails.SetCause("UNSPECIFIED_NF_FAILURE")
-				return nil, problemDetails
+				return nil, utils.ProblemDetailsWithCause("Unspecified NF failure", http.StatusInternalServerError, "", utils.CauseUnspecifiedNfFailure)
 			}
 
 			subscriptionID := strconv.Itoa(int(id))
@@ -67,19 +63,13 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 			}
 			return createdEeSubscription, nil
 		} else {
-			problemDetails := models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusNotFound)
-			problemDetails.SetCause("USER_NOT_FOUND")
-			return nil, problemDetails
+			return nil, utils.ProblemDetailsUserNotFound()
 		}
 	// external groupID represents a group of UEs
 	case strings.HasPrefix(ueIdentity, "extgroupid-"):
 		id, err := udmSelf.EeSubscriptionIDGenerator.Allocate()
 		if err != nil {
-			problemDetails := models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusInternalServerError)
-			problemDetails.SetCause("UNSPECIFIED_NF_FAILURE")
-			return nil, problemDetails
+			return nil, utils.ProblemDetailsWithCause("Unspecified NF failure", http.StatusInternalServerError, "", utils.CauseUnspecifiedNfFailure)
 		}
 		subscriptionID := strconv.Itoa(int(id))
 		createdEeSubscription := &models.CreatedEeSubscription{
@@ -98,10 +88,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 	case ueIdentity == anyUE:
 		id, err := udmSelf.EeSubscriptionIDGenerator.Allocate()
 		if err != nil {
-			problemDetails := models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusInternalServerError)
-			problemDetails.SetCause("UNSPECIFIED_NF_FAILURE")
-			return nil, problemDetails
+			return nil, utils.ProblemDetailsWithCause("Unspecified NF failure", http.StatusInternalServerError, "", utils.CauseUnspecifiedNfFailure)
 		}
 		subscriptionID := strconv.Itoa(int(id))
 		createdEeSubscription := &models.CreatedEeSubscription{
@@ -114,9 +101,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 		})
 		return createdEeSubscription, nil
 	default:
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusBadRequest)
-		problemDetails.SetCause("MANDATORY_IE_INCORRECT")
+		problemDetails := utils.ProblemDetailsMandatoryIeIncorrect("")
 		problemDetails.SetInvalidParams([]models.InvalidParam{
 			{
 				Param:  "ueIdentity",
@@ -202,16 +187,10 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 				}
 				return nil
 			} else {
-				problemDetails := models.NewProblemDetails()
-				problemDetails.SetStatus(http.StatusNotFound)
-				problemDetails.SetCause("SUBSCRIPTION_NOT_FOUND")
-				return problemDetails
+				return utils.ProblemDetailsWithCause("Subscription not found", http.StatusNotFound, "", utils.CauseSubscriptionNotFound)
 			}
 		} else {
-			problemDetails := models.NewProblemDetails()
-			problemDetails.SetStatus(http.StatusNotFound)
-			problemDetails.SetCause("SUBSCRIPTION_NOT_FOUND")
-			return problemDetails
+			return utils.ProblemDetailsWithCause("Subscription not found", http.StatusNotFound, "", utils.CauseSubscriptionNotFound)
 		}
 	case strings.HasPrefix(ueIdentity, "extgroupid-"):
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
@@ -240,9 +219,7 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 		})
 		return nil
 	default:
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusBadRequest)
-		problemDetails.SetCause("MANDATORY_IE_INCORRECT")
+		problemDetails := utils.ProblemDetailsMandatoryIeIncorrect("")
 		problemDetails.SetInvalidParams([]models.InvalidParam{
 			{
 				Param:  "ueIdentity",
