@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 	udm_context "github.com/omec-project/udm/context"
 	"github.com/omec-project/udm/logger"
 )
@@ -38,11 +39,7 @@ func postJSONCallback(ctx context.Context, callbackURI string, payload interface
 func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi string) *models.ProblemDetails {
 	ue, ok := udm_context.UDM_Self().UdmUeFindBySupi(supi)
 	if !ok || ue == nil {
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetCause("CONTEXT_NOT_FOUND")
-		problemDetails.SetDetail("UDM UE context not found")
-		return problemDetails
+		return utils.ProblemDetailsContextNotFound("UDM UE context not found")
 	}
 
 	var problemDetails *models.ProblemDetails
@@ -51,8 +48,7 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 		dataChangeNotification.NotifyItems = notifyItems
 		httpResponse, err := postJSONCallback(context.TODO(), subscriptionDataSubscription.GetOriginalCallbackReference(), dataChangeNotification)
 		if err != nil {
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetDetail(err.Error())
+			problemDetails = utils.ProblemDetails("Callback notification failed", http.StatusBadGateway, err.Error())
 			logger.HttpLog.Error(err.Error())
 			if httpResponse == nil {
 				problemDetails.SetStatus(http.StatusBadGateway)
@@ -72,9 +68,7 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 			}
 		}
 		if httpResponse != nil && (httpResponse.StatusCode < http.StatusOK || httpResponse.StatusCode >= http.StatusMultipleChoices) {
-			problemDetails = models.NewProblemDetails()
-			problemDetails.SetStatus(int32(httpResponse.StatusCode))
-			problemDetails.SetDetail(fmt.Sprintf("unexpected callback response status %s", httpResponse.Status))
+			problemDetails = utils.ProblemDetails("Callback notification failed", httpResponse.StatusCode, fmt.Sprintf("unexpected callback response status %s", httpResponse.Status))
 			logger.HttpLog.Errorln(problemDetails.GetDetail())
 		}
 	}
@@ -87,9 +81,7 @@ func SendOnDeregistrationNotification3gpp(onDeregistrationNotificationUrl string
 ) *models.ProblemDetails {
 	httpResponse, err := postJSONCallback(context.TODO(), onDeregistrationNotificationUrl, deregistData)
 	if err != nil {
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetCause("DEREGISTRATION_NOTIFICATION_ERROR")
-		problemDetails.SetDetail(err.Error())
+		problemDetails := utils.ProblemDetailsWithCause("Deregistration notification error", http.StatusInternalServerError, err.Error(), utils.CauseDeregistrationNotificationError)
 		logger.HttpLog.Errorln(err.Error())
 		if httpResponse == nil {
 			problemDetails.SetStatus(http.StatusInternalServerError)
@@ -111,10 +103,7 @@ func SendOnDeregistrationNotification3gpp(onDeregistrationNotificationUrl string
 		}
 	}()
 	if httpResponse.StatusCode < http.StatusOK || httpResponse.StatusCode >= http.StatusMultipleChoices {
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetCause("DEREGISTRATION_NOTIFICATION_ERROR")
-		problemDetails.SetDetail(fmt.Sprintf("unexpected callback response status %s", httpResponse.Status))
-		problemDetails.SetStatus(int32(httpResponse.StatusCode))
+		problemDetails := utils.ProblemDetailsWithCause("Deregistration notification error", httpResponse.StatusCode, fmt.Sprintf("unexpected callback response status %s", httpResponse.Status), utils.CauseDeregistrationNotificationError)
 		logger.HttpLog.Errorln(problemDetails.GetDetail())
 		return problemDetails
 	}
@@ -127,9 +116,7 @@ func SendOnDeregistrationNotificationNon3gpp(onDeregistrationNotificationUrl str
 ) *models.ProblemDetails {
 	httpResponse, err := postJSONCallback(context.TODO(), onDeregistrationNotificationUrl, deregistData)
 	if err != nil {
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetCause("DEREGISTRATION_NOTIFICATION_ERROR")
-		problemDetails.SetDetail(err.Error())
+		problemDetails := utils.ProblemDetailsWithCause("Deregistration notification error", http.StatusInternalServerError, err.Error(), utils.CauseDeregistrationNotificationError)
 		logger.HttpLog.Errorln(err.Error())
 		if httpResponse == nil {
 			problemDetails.SetStatus(http.StatusInternalServerError)
@@ -151,10 +138,7 @@ func SendOnDeregistrationNotificationNon3gpp(onDeregistrationNotificationUrl str
 		}
 	}()
 	if httpResponse.StatusCode < http.StatusOK || httpResponse.StatusCode >= http.StatusMultipleChoices {
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetCause("DEREGISTRATION_NOTIFICATION_ERROR")
-		problemDetails.SetDetail(fmt.Sprintf("unexpected callback response status %s", httpResponse.Status))
-		problemDetails.SetStatus(int32(httpResponse.StatusCode))
+		problemDetails := utils.ProblemDetailsWithCause("Deregistration notification error", httpResponse.StatusCode, fmt.Sprintf("unexpected callback response status %s", httpResponse.Status), utils.CauseDeregistrationNotificationError)
 		logger.HttpLog.Errorln(problemDetails.GetDetail())
 		return problemDetails
 	}

@@ -644,9 +644,7 @@ func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
 	case http.StatusNotFound:
 		return nil, nil, utils.ProblemDetailsDataNotFound()
 	default:
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotImplemented)
-		problemDetails.SetCause("UNSUPPORTED_RESOURCE_URI")
+		problemDetails = utils.ProblemDetailsWithCause("Unsupported resource URI", http.StatusNotImplemented, "", utils.CauseUnsupportedResourceUri)
 		return nil, nil, problemDetails
 	}
 }
@@ -699,9 +697,7 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, ueId string) (
 	case http.StatusNotFound:
 		return nil, nil, utils.ProblemDetailsDataNotFound()
 	default:
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetStatus(http.StatusNotImplemented)
-		problemDetails.SetCause("UNSUPPORTED_RESOURCE_URI")
+		problemDetails = utils.ProblemDetailsWithCause("Unsupported resource URI", http.StatusNotImplemented, "", utils.CauseUnsupportedResourceUri)
 		return nil, nil, problemDetails
 	}
 }
