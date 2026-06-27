@@ -219,6 +219,14 @@ func getSupiProcedure(supi string, plmnID string, supportedFeatures string) (
 	}
 	defer closeResponseBody(logger.SdmLog, res1, "QueryAmData")
 	if res1.StatusCode == http.StatusOK {
+		if amData == nil {
+			return nil, utils.ProblemDetailsWithCause(
+				"Data not found",
+				http.StatusNotFound,
+				"access and mobility subscription data is empty",
+				utils.CauseDataNotFound,
+			)
+		}
 		subscriptionDataSets.SetAmData(*amData)
 	}
 
@@ -235,6 +243,14 @@ func getSupiProcedure(supi string, plmnID string, supportedFeatures string) (
 	}
 	defer closeResponseBody(logger.SdmLog, res2, "QuerySmfSelectData")
 	if res2.StatusCode == http.StatusOK {
+		if smfSelData == nil {
+			return nil, utils.ProblemDetailsWithCause(
+				"Data not found",
+				http.StatusNotFound,
+				"smf selection subscription data is empty",
+				utils.CauseDataNotFound,
+			)
+		}
 		subscriptionDataSets.SetSmfSelData(*smfSelData)
 	}
 
@@ -250,6 +266,14 @@ func getSupiProcedure(supi string, plmnID string, supportedFeatures string) (
 	}
 	defer closeResponseBody(logger.SdmLog, res3, "QueryTraceData")
 	if res3.StatusCode == http.StatusOK {
+		if traceData == nil || traceData.TraceData == nil {
+			return nil, utils.ProblemDetailsWithCause(
+				"Data not found",
+				http.StatusNotFound,
+				"trace data response is empty",
+				utils.CauseDataNotFound,
+			)
+		}
 		subscriptionDataSets.SetTraceData(*traceData.TraceData)
 	}
 
@@ -777,6 +801,14 @@ func getTraceDataProcedure(supi string, plmnID string) (
 	defer closeResponseBody(logger.SdmLog, res, "QueryTraceData")
 
 	if res.StatusCode == http.StatusOK {
+		if traceDataRes == nil || traceDataRes.TraceData == nil {
+			return nil, utils.ProblemDetailsWithCause(
+				"Data not found",
+				http.StatusNotFound,
+				"trace data response is empty",
+				utils.CauseDataNotFound,
+			)
+		}
 		return traceDataRes.TraceData, nil
 	}
 
@@ -815,7 +847,7 @@ func getUeContextInSmfDataProcedure(supi string, supportedFeatures string) (
 
 	for _, element := range pdusess {
 		pduSession := models.NewPduSession(element.GetDnn(), element.GetSmfInstanceId(), element.GetPlmnId())
-		pduSessionMap[strconv.Itoa(int(element.PduSessionId))] = *pduSession
+		pduSessionMap[strconv.Itoa(int(element.GetPduSessionId()))] = *pduSession
 	}
 	ueContextInSmfData.SetPduSessions(pduSessionMap)
 

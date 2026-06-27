@@ -26,7 +26,7 @@ func TestSearchNFServiceUri_EmptyIpEndPointsDoesNotPanic(t *testing.T) {
 	}
 }
 
-func TestSearchNFServiceUri_PrefersServiceApiPrefixOverProfileFqdn(t *testing.T) {
+func TestSearchNFServiceUri_PrefersProfileFqdnOverServiceApiPrefix(t *testing.T) {
 	service := models.NewNFServiceWithDefaults()
 	service.SetServiceName(models.SERVICENAME_NUDR_DR)
 	service.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
@@ -38,8 +38,8 @@ func TestSearchNFServiceUri_PrefersServiceApiPrefixOverProfileFqdn(t *testing.T)
 
 	nfURI := SearchNFServiceUri(*profile, models.SERVICENAME_NUDR_DR, models.NFSERVICESTATUS_REGISTERED)
 
-	if nfURI != "https://service.example.com:8443/nudr-dr/v1" {
-		t.Fatalf("expected service API prefix, got %q", nfURI)
+	if nfURI != "profile.example.com" {
+		t.Fatalf("expected profile FQDN, got %q", nfURI)
 	}
 }
 

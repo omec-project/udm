@@ -42,7 +42,7 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 		return utils.ProblemDetailsContextNotFound("UDM UE context not found")
 	}
 
-	problemDetails := models.NewProblemDetails()
+	var problemDetails *models.ProblemDetails
 	for _, subscriptionDataSubscription := range ue.UdmSubsToNotify {
 		dataChangeNotification := models.ModificationNotification{}
 		dataChangeNotification.SetNotifyItems(notifyItems)

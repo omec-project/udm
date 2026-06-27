@@ -415,7 +415,7 @@ func UpdateAmfNon3gppAccessProcedure(request models.AmfNon3GppAccessRegistration
 		request.SetPurgeFlag(true)
 
 		patchItemTmp := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/Guami")
-		patchItemTmp.SetValue(guami)
+		patchItemTmp.SetValue(*guami)
 		patchItemReqArray = append(patchItemReqArray, *patchItemTmp)
 	}
 
