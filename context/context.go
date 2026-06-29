@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/Nnrf_NFDiscovery"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/udm/suci"
@@ -60,30 +59,21 @@ type UDMContext struct {
 }
 
 type UdmUeContext struct {
-	Supi                              string
-	Gpsi                              string
-	ExternalGroupID                   string
-	Nssai                             *models.Nssai
-	Amf3GppAccessRegistration         *models.Amf3GppAccessRegistration
-	AmfNon3GppAccessRegistration      *models.AmfNon3GppAccessRegistration
-	AccessAndMobilitySubscriptionData *models.AccessAndMobilitySubscriptionData
-	SmfSelSubsData                    *models.SmfSelectionSubscriptionData
-	UeCtxtInSmfData                   *models.UeContextInSmfData
-	TraceData                         *models.TraceData
-	SessionManagementSubsData         map[string]models.SessionManagementSubscriptionData
-	SubsDataSets                      *models.SubscriptionDataSets
-	SubscribeToNotifChange            map[string]*models.SdmSubscription
-	SubscribeToNotifSharedDataChange  *models.SdmSubscription
-	PduSessionID                      string
-	UdrUri                            string
-	UdmSubsToNotify                   map[string]*models.SubscriptionDataSubscriptions
-	EeSubscriptions                   map[string]*models.EeSubscription // subscriptionID as key
-	TraceDataResponse                 models.TraceDataResponse
-	amSubsDataLock                    sync.Mutex
-	smfSelSubsDataLock                sync.Mutex
-	SmSubsDataLock                    sync.RWMutex
-	subscribeToNotifChangeLock        sync.Mutex
-	eeSubscriptionsLock               sync.RWMutex
+	Supi                             string
+	Gpsi                             string
+	ExternalGroupID                  string
+	Amf3GppAccessRegistration        *models.Amf3GppAccessRegistration
+	AmfNon3GppAccessRegistration     *models.AmfNon3GppAccessRegistration
+	SessionManagementSubsData        map[string]models.SessionManagementSubscriptionData
+	SubscribeToNotifChange           map[string]*models.SdmSubscription
+	SubscribeToNotifSharedDataChange *models.SdmSubscription
+	PduSessionID                     string
+	UdrUri                           string
+	UdmSubsToNotify                  map[string]*models.SubscriptionDataSubscriptions
+	EeSubscriptions                  map[string]*models.EeSubscription // subscriptionID as key
+	SmSubsDataLock                   sync.RWMutex
+	subscribeToNotifChangeLock       sync.Mutex
+	eeSubscriptionsLock              sync.RWMutex
 }
 
 func (ue *UdmUeContext) init() {
@@ -181,24 +171,6 @@ func GetCorrespondingSupi(list models.IdentityData) (id string) {
 	return identifier
 }
 
-// functions related to Retrieval of multiple datasets(GetSupi)
-func (context *UDMContext) CreateSubsDataSetsForUe(supi string, body models.SubscriptionDataSets) {
-	ue, ok := context.UdmUeFindBySupi(supi)
-	if !ok {
-		ue = context.NewUdmUe(supi)
-	}
-	ue.SubsDataSets = &body
-}
-
-// Functions related to the trace data configuration
-func (context *UDMContext) CreateTraceDataforUe(supi string, body models.TraceData) {
-	ue, ok := context.UdmUeFindBySupi(supi)
-	if !ok {
-		ue = context.NewUdmUe(supi)
-	}
-	ue.TraceData = &body
-}
-
 // functions related to sdmSubscription (subscribe to notification of data change)
 func (udmUeContext *UdmUeContext) CreateSubscriptiontoNotifChange(subscriptionID string, body *models.SdmSubscription) {
 	udmUeContext.subscribeToNotifChangeLock.Lock()
@@ -234,31 +206,6 @@ func (udmUeContext *UdmUeContext) HasEeSubscription(subscriptionID string) bool 
 // TODO: this function has wrong UE pool key with subscriptionID
 func (context *UDMContext) CreateSubstoNotifSharedData(subscriptionID string, body *models.SdmSubscription) {
 	context.SubscriptionOfSharedDataChange.Store(subscriptionID, body)
-}
-
-// functions related UecontextInSmfData
-func (context *UDMContext) CreateUeContextInSmfDataforUe(supi string, body models.UeContextInSmfData) {
-	ue, ok := context.UdmUeFindBySupi(supi)
-	if !ok {
-		ue = context.NewUdmUe(supi)
-	}
-	ue.UeCtxtInSmfData = &body
-}
-
-// functions for SmfSelectionSubscriptionData
-func (context *UDMContext) CreateSmfSelectionSubsDataforUe(supi string, body models.SmfSelectionSubscriptionData) {
-	ue, ok := context.UdmUeFindBySupi(supi)
-	if !ok {
-		ue = context.NewUdmUe(supi)
-	}
-	ue.SmfSelSubsData = &body
-}
-
-// SetSmfSelectionSubsData ... functions to set SmfSelectionSubscriptionData
-func (udmUeContext *UdmUeContext) SetSmfSelectionSubsData(smfSelSubsData *models.SmfSelectionSubscriptionData) {
-	udmUeContext.smfSelSubsDataLock.Lock()
-	defer udmUeContext.smfSelSubsDataLock.Unlock()
-	udmUeContext.SmfSelSubsData = smfSelSubsData
 }
 
 // SetSMSubsData ... functions to set SessionManagementSubsData
@@ -297,24 +244,6 @@ func (context *UDMContext) UdmUeFindByGpsi(gpsi string) (*UdmUeContext, bool) {
 		return true
 	})
 	return ue, ok
-}
-
-// Function to create the AccessAndMobilitySubscriptionData for Ue
-func (context *UDMContext) CreateAccessMobilitySubsDataForUe(supi string,
-	body models.AccessAndMobilitySubscriptionData,
-) {
-	ue, ok := context.UdmUeFindBySupi(supi)
-	if !ok {
-		ue = context.NewUdmUe(supi)
-	}
-	ue.AccessAndMobilitySubscriptionData = &body
-}
-
-// Function to set the AccessAndMobilitySubscriptionData for Ue
-func (udmUeContext *UdmUeContext) SetAMSubsriptionData(amData *models.AccessAndMobilitySubscriptionData) {
-	udmUeContext.amSubsDataLock.Lock()
-	defer udmUeContext.amSubsDataLock.Unlock()
-	udmUeContext.AccessAndMobilitySubscriptionData = amData
 }
 
 func (context *UDMContext) UdmAmf3gppRegContextExists(supi string) bool {
@@ -447,20 +376,20 @@ func (context *UDMContext) InitNFService(serviceName []string, version string) {
 		ipEndPoint.SetIpv4Address(context.RegisterIPv4)
 		ipEndPoint.SetTransport(models.TRANSPORTPROTOCOL_TCP)
 		ipEndPoint.SetPort(int32(context.SBIPort))
-		context.NfService[name] = models.NFService{
-			ServiceInstanceId: strconv.Itoa(index),
-			ServiceName:       name,
-			Versions: []models.NFServiceVersion{
-				{
-					ApiFullVersion:  version,
-					ApiVersionInUri: versionUri,
-				},
-			},
-			Scheme:          context.UriScheme,
-			NfServiceStatus: models.NFSERVICESTATUS_REGISTERED,
-			ApiPrefix:       openapi.PtrString(context.GetIPv4Uri()),
-			IpEndPoints:     []models.IpEndPoint{*ipEndPoint},
-		}
+		serviceVersion := models.NewNFServiceVersionWithDefaults()
+		serviceVersion.SetApiFullVersion(version)
+		serviceVersion.SetApiVersionInUri(versionUri)
+
+		nfService := models.NewNFServiceWithDefaults()
+		nfService.SetServiceInstanceId(strconv.Itoa(index))
+		nfService.SetServiceName(name)
+		nfService.SetVersions([]models.NFServiceVersion{*serviceVersion})
+		nfService.SetScheme(context.UriScheme)
+		nfService.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
+		nfService.SetApiPrefix(context.GetIPv4Uri())
+		nfService.SetIpEndPoints([]models.IpEndPoint{*ipEndPoint})
+
+		context.NfService[name] = *nfService
 	}
 }
 

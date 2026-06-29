@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/Nnrf_NFDiscovery"
 	"github.com/omec-project/openapi/v2/models"
 	nrfCache "github.com/omec-project/openapi/v2/nrfcache"
@@ -111,20 +110,18 @@ func executeNfDiscoveryRequest(
 
 	var nrfSubData *models.SubscriptionData
 	var problemDetails *models.ProblemDetails
-	for _, nfProfile := range result.NfInstances {
+	for _, nfProfile := range result.GetNfInstances() {
 		nfInstanceID := nfProfile.GetNfInstanceId()
 		// checking whether the UDM subscribed to this target nfinstanceid or not
 		if _, ok := udmSelf.NfStatusSubscriptions.Load(nfInstanceID); !ok {
-			nrfSubscriptionData := models.SubscriptionData{
-				NfStatusNotificationUri: fmt.Sprintf("%s/nudm-callback/v1/nf-status-notify", udmSelf.GetIPv4Uri()),
-				SubscrCond: &models.SubscrCond{
-					NfInstanceIdCond: &models.NfInstanceIdCond{
-						NfInstanceId: openapi.PtrString(nfInstanceID),
-					},
-				},
-				ReqNfType: &requestNfType,
-			}
-			nrfSubData, problemDetails, err = CreateSubscription(nrfUri, nrfSubscriptionData)
+			nfInstanceIDCond := models.NewNfInstanceIdCond()
+			nfInstanceIDCond.SetNfInstanceId(nfInstanceID)
+			subscrCond := models.NfInstanceIdCondAsSubscrCond(nfInstanceIDCond)
+			nrfSubscriptionData := models.NewSubscriptionData(fmt.Sprintf("%s/nudm-callback/v1/nf-status-notify", udmSelf.GetIPv4Uri()))
+			nrfSubscriptionData.SetSubscrCond(subscrCond)
+			nrfSubscriptionData.SetReqNfType(requestNfType)
+
+			nrfSubData, problemDetails, err = CreateSubscription(nrfUri, *nrfSubscriptionData)
 			if problemDetails != nil {
 				logger.ConsumerLog.Errorf("SendCreateSubscription to NRF, Problem[%+v]", problemDetails)
 			} else if err != nil {

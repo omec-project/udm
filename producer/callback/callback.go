@@ -45,7 +45,7 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 	var problemDetails *models.ProblemDetails
 	for _, subscriptionDataSubscription := range ue.UdmSubsToNotify {
 		dataChangeNotification := models.ModificationNotification{}
-		dataChangeNotification.NotifyItems = notifyItems
+		dataChangeNotification.SetNotifyItems(notifyItems)
 		httpResponse, err := postJSONCallback(context.TODO(), subscriptionDataSubscription.GetOriginalCallbackReference(), dataChangeNotification)
 		if err != nil {
 			problemDetails = utils.ProblemDetails("Callback notification failed", http.StatusBadGateway, err.Error())
