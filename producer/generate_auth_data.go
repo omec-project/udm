@@ -217,7 +217,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 ) {
 	logger.UeauLog.Debugln("in GenerateAuthDataProcedure")
 
-	response = &models.AuthenticationInfoResult{}
+	response = models.NewAuthenticationInfoResultWithDefaults()
 	supi, err := suci.ToSupi(supiOrSuci, udm_context.UDM_Self().SuciProfiles)
 	if err != nil {
 		problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, err.Error(), authenticationRejected)
@@ -418,9 +418,9 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	logger.UeauLog.Infof("AUTN = %x", AUTN)
 
 	var av models.AuthenticationVector
-	if authSubs.AuthenticationMethod == models.AUTHMETHOD__5_G_AKA {
-		response.AuthType = models.AUTHTYPE__5_G_AKA
-		av.Av5GHeAka = models.NewAv5GHeAka(models.AVTYPE__5_G_HE_AKA, "", "", "", "")
+	if authSubs.GetAuthenticationMethod() == models.AUTHMETHOD__5_G_AKA {
+		response.SetAuthType(models.AUTHTYPE__5_G_AKA)
+		av5GHeAka := models.NewAv5GHeAka(models.AVTYPE__5_G_HE_AKA, "", "", "", "")
 
 		// derive XRES*
 		key := append(CK, IK...)
@@ -446,13 +446,15 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		}
 
 		// Fill in rand, xresStar, autn, kausf
-		av.Av5GHeAka.Rand = hex.EncodeToString(RAND)
-		av.Av5GHeAka.XresStar = hex.EncodeToString(xresStar)
-		av.Av5GHeAka.Autn = hex.EncodeToString(AUTN)
-		av.Av5GHeAka.Kausf = hex.EncodeToString(kdfValForKausf)
+		av5GHeAka.SetRand(hex.EncodeToString(RAND))
+		av5GHeAka.SetXresStar(hex.EncodeToString(xresStar))
+		av5GHeAka.SetAutn(hex.EncodeToString(AUTN))
+		av5GHeAka.SetKausf(hex.EncodeToString(kdfValForKausf))
+		av = models.Av5GHeAkaAsAuthenticationVector(av5GHeAka)
 	} else { // EAP-AKA'
-		response.AuthType = models.AUTHTYPE_EAP_AKA_PRIME
-		av.AvEapAkaPrime = models.NewAvEapAkaPrime(models.AVTYPE_EAP_AKA_PRIME, "", "", "", "", "")
+		response.SetAuthType(models.AUTHTYPE_EAP_AKA_PRIME)
+		avEapAkaPrime := models.NewAvEapAkaPrimeWithDefaults()
+		avEapAkaPrime.SetAvType(models.AVTYPE_EAP_AKA_PRIME)
 
 		// derive CK' and IK'
 		key := append(CK, IK...)
@@ -472,11 +474,12 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		ikPrime := kdfVal[len(kdfVal)/2:]
 
 		// Fill in rand, xres, autn, ckPrime, ikPrime
-		av.AvEapAkaPrime.Rand = hex.EncodeToString(RAND)
-		av.AvEapAkaPrime.Xres = hex.EncodeToString(RES)
-		av.AvEapAkaPrime.Autn = hex.EncodeToString(AUTN)
-		av.AvEapAkaPrime.CkPrime = hex.EncodeToString(ckPrime)
-		av.AvEapAkaPrime.IkPrime = hex.EncodeToString(ikPrime)
+		avEapAkaPrime.SetRand(hex.EncodeToString(RAND))
+		avEapAkaPrime.SetXres(hex.EncodeToString(RES))
+		avEapAkaPrime.SetAutn(hex.EncodeToString(AUTN))
+		avEapAkaPrime.SetCkPrime(hex.EncodeToString(ckPrime))
+		avEapAkaPrime.SetIkPrime(hex.EncodeToString(ikPrime))
+		av = models.AvEapAkaPrimeAsAuthenticationVector(avEapAkaPrime)
 	}
 
 	response.SetAuthenticationVector(av)

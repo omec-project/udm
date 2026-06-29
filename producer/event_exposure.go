@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
 	udm_context "github.com/omec-project/udm/context"
@@ -58,9 +57,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 
 			subscriptionID := strconv.Itoa(int(id))
 			ue.StoreEeSubscription(subscriptionID, &eesubscription)
-			createdEeSubscription := &models.CreatedEeSubscription{
-				EeSubscription: eesubscription,
-			}
+			createdEeSubscription := models.NewCreatedEeSubscription(eesubscription)
 			return createdEeSubscription, nil
 		} else {
 			return nil, utils.ProblemDetailsUserNotFound()
@@ -72,9 +69,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 			return nil, utils.ProblemDetailsWithCause("Unspecified NF failure", http.StatusInternalServerError, "", utils.CauseUnspecifiedNfFailure)
 		}
 		subscriptionID := strconv.Itoa(int(id))
-		createdEeSubscription := &models.CreatedEeSubscription{
-			EeSubscription: eesubscription,
-		}
+		createdEeSubscription := models.NewCreatedEeSubscription(eesubscription)
 
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
@@ -91,9 +86,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 			return nil, utils.ProblemDetailsWithCause("Unspecified NF failure", http.StatusInternalServerError, "", utils.CauseUnspecifiedNfFailure)
 		}
 		subscriptionID := strconv.Itoa(int(id))
-		createdEeSubscription := &models.CreatedEeSubscription{
-			EeSubscription: eesubscription,
-		}
+		createdEeSubscription := models.NewCreatedEeSubscription(eesubscription)
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			ue.StoreEeSubscription(subscriptionID, &eesubscription)
@@ -102,12 +95,9 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 		return createdEeSubscription, nil
 	default:
 		problemDetails := utils.ProblemDetailsMandatoryIeIncorrect("")
-		problemDetails.SetInvalidParams([]models.InvalidParam{
-			{
-				Param:  "ueIdentity",
-				Reason: openapi.PtrString("incorrect format"),
-			},
-		})
+		invalidParam := models.NewInvalidParam("ueIdentity")
+		invalidParam.SetReason("incorrect format")
+		problemDetails.SetInvalidParams([]models.InvalidParam{*invalidParam})
 		return nil, problemDetails
 	}
 }
@@ -220,12 +210,9 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 		return nil
 	default:
 		problemDetails := utils.ProblemDetailsMandatoryIeIncorrect("")
-		problemDetails.SetInvalidParams([]models.InvalidParam{
-			{
-				Param:  "ueIdentity",
-				Reason: openapi.PtrString("incorrect format"),
-			},
-		})
+		invalidParam := models.NewInvalidParam("ueIdentity")
+		invalidParam.SetReason("incorrect format")
+		problemDetails.SetInvalidParams([]models.InvalidParam{*invalidParam})
 		return problemDetails
 	}
 }

@@ -6,14 +6,15 @@ package context
 import (
 	"testing"
 
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 )
 
 func TestManageSmData_HandlesNilDnnConfigurations(t *testing.T) {
 	ctx := &UDMContext{}
+	singleNssai := models.NewSnssai(1)
+	singleNssai.SetSd("010101")
 	smData := []models.SessionManagementSubscriptionData{{
-		SingleNssai: models.Snssai{Sst: 1, Sd: openapi.PtrString("010101")},
+		SingleNssai: *singleNssai,
 	}}
 
 	_, _, dnnsByDnn, allDnns := ctx.ManageSmData(smData, "1-", "internet")
@@ -33,8 +34,10 @@ func TestManageSmData_DoesNotPrependZeroValueDnnConfigs(t *testing.T) {
 	dnnConfigurations := map[string]models.DnnConfiguration{
 		"internet": {},
 	}
+	singleNssai := models.NewSnssai(1)
+	singleNssai.SetSd("010101")
 	smData := []models.SessionManagementSubscriptionData{{
-		SingleNssai:       models.Snssai{Sst: 1, Sd: openapi.PtrString("010101")},
+		SingleNssai:       *singleNssai,
 		DnnConfigurations: &dnnConfigurations,
 	}}
 
@@ -48,39 +51,35 @@ func TestManageSmData_DoesNotPrependZeroValueDnnConfigs(t *testing.T) {
 }
 
 func TestSameAsStoredGUAMI3gppMatchesEqualNidValues(t *testing.T) {
-	ue := &UdmUeContext{
-		Amf3GppAccessRegistration: &models.Amf3GppAccessRegistration{
-			Guami: models.Guami{
-				PlmnId: models.PlmnIdNid{Mcc: "001", Mnc: "01", Nid: openapi.PtrString("ABCDEFABCDEF")},
-				AmfId:  "123456",
-			},
-		},
-	}
-	inGuami := models.Guami{
-		PlmnId: models.PlmnIdNid{Mcc: "001", Mnc: "01", Nid: openapi.PtrString("ABCDEFABCDEF")},
-		AmfId:  "123456",
-	}
+	registration := models.NewAmf3GppAccessRegistrationWithDefaults()
+	plmnID := models.NewPlmnIdNid("001", "01")
+	plmnID.SetNid("ABCDEFABCDEF")
+	guami := models.NewGuami(*plmnID, "123456")
+	registration.SetGuami(*guami)
 
-	if !ue.SameAsStoredGUAMI3gpp(inGuami) {
+	ue := &UdmUeContext{
+		Amf3GppAccessRegistration: registration,
+	}
+	inGuami := models.NewGuami(*plmnID, "123456")
+
+	if !ue.SameAsStoredGUAMI3gpp(*inGuami) {
 		t.Fatal("expected GUAMI comparison to match equal values even when Nid pointers differ")
 	}
 }
 
 func TestSameAsStoredGUAMINon3gppMatchesEqualNidValues(t *testing.T) {
-	ue := &UdmUeContext{
-		AmfNon3GppAccessRegistration: &models.AmfNon3GppAccessRegistration{
-			Guami: models.Guami{
-				PlmnId: models.PlmnIdNid{Mcc: "001", Mnc: "01", Nid: openapi.PtrString("ABCDEFABCDEF")},
-				AmfId:  "654321",
-			},
-		},
-	}
-	inGuami := models.Guami{
-		PlmnId: models.PlmnIdNid{Mcc: "001", Mnc: "01", Nid: openapi.PtrString("ABCDEFABCDEF")},
-		AmfId:  "654321",
-	}
+	registration := models.NewAmfNon3GppAccessRegistrationWithDefaults()
+	plmnID := models.NewPlmnIdNid("001", "01")
+	plmnID.SetNid("ABCDEFABCDEF")
+	guami := models.NewGuami(*plmnID, "654321")
+	registration.SetGuami(*guami)
 
-	if !ue.SameAsStoredGUAMINon3gpp(inGuami) {
+	ue := &UdmUeContext{
+		AmfNon3GppAccessRegistration: registration,
+	}
+	inGuami := models.NewGuami(*plmnID, "654321")
+
+	if !ue.SameAsStoredGUAMINon3gpp(*inGuami) {
 		t.Fatal("expected non-3GPP GUAMI comparison to match equal values even when Nid pointers differ")
 	}
 }

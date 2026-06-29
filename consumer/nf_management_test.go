@@ -32,7 +32,8 @@ func Test_nf_id_updated_and_nrf_url_is_not_overwritten_when_registering(t *testi
 	self.NrfUri = svr.URL
 	self.RegisterIPv4 = "127.0.0.2"
 
-	_, _, err := SendRegisterNFInstance([]models.PlmnId{{Mcc: "123", Mnc: "45"}})
+	plmnId := models.NewPlmnId("123", "45")
+	_, _, err := SendRegisterNFInstance([]models.PlmnId{*plmnId})
 	if err != nil {
 		t.Errorf("Got and error %+v", err)
 	}
