@@ -17,7 +17,13 @@ import (
 	"github.com/omec-project/util/httpwrapper"
 )
 
-const anyUE = "anyUE"
+const (
+	anyUE            = "anyUE"
+	prefixMsisdn     = "msisdn-"
+	prefixExtID      = "extid-"
+	prefixExtgroupID = "extgroupid-"
+	fmtPatchItem     = "patch item: %+v"
+)
 
 func HandleCreateEeSubscription(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.EeLog.Infoln("Handle Create EE Subscription")
@@ -45,10 +51,10 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 	logger.EeLog.Debugf("udIdentity: %s", ueIdentity)
 	switch {
 	// GPSI (MSISDN identifier) represents a single UE
-	case strings.HasPrefix(ueIdentity, "msisdn-"):
+	case strings.HasPrefix(ueIdentity, prefixMsisdn):
 		fallthrough
 	// GPSI (External identifier) represents a single UE
-	case strings.HasPrefix(ueIdentity, "extid-"):
+	case strings.HasPrefix(ueIdentity, prefixExtID):
 		if ue, ok := udmSelf.UdmUeFindByGpsi(ueIdentity); ok {
 			id, err := udmSelf.EeSubscriptionIDGenerator.Allocate()
 			if err != nil {
@@ -63,7 +69,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 			return nil, utils.ProblemDetailsUserNotFound()
 		}
 	// external groupID represents a group of UEs
-	case strings.HasPrefix(ueIdentity, "extgroupid-"):
+	case strings.HasPrefix(ueIdentity, prefixExtgroupID):
 		id, err := udmSelf.EeSubscriptionIDGenerator.Allocate()
 		if err != nil {
 			return nil, utils.ProblemDetailsWithCause("Unspecified NF failure", http.StatusInternalServerError, "", utils.CauseUnspecifiedNfFailure)
@@ -115,13 +121,13 @@ func DeleteEeSubscriptionProcedure(ueIdentity string, subscriptionID string) {
 	udmSelf := udm_context.UDM_Self()
 
 	switch {
-	case strings.HasPrefix(ueIdentity, "msisdn-"):
+	case strings.HasPrefix(ueIdentity, prefixMsisdn):
 		fallthrough
-	case strings.HasPrefix(ueIdentity, "extid-"):
+	case strings.HasPrefix(ueIdentity, prefixExtID):
 		if ue, ok := udmSelf.UdmUeFindByGpsi(ueIdentity); ok {
 			ue.DeleteEeSubscription(subscriptionID)
 		}
-	case strings.HasPrefix(ueIdentity, "extgroupid-"):
+	case strings.HasPrefix(ueIdentity, prefixExtgroupID):
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.ExternalGroupID == ueIdentity {
@@ -166,13 +172,13 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 	udmSelf := udm_context.UDM_Self()
 
 	switch {
-	case strings.HasPrefix(ueIdentity, "msisdn-"):
+	case strings.HasPrefix(ueIdentity, prefixMsisdn):
 		fallthrough
-	case strings.HasPrefix(ueIdentity, "extid-"):
+	case strings.HasPrefix(ueIdentity, prefixExtID):
 		if ue, ok := udmSelf.UdmUeFindByGpsi(ueIdentity); ok {
 			if ue.HasEeSubscription(subscriptionID) {
 				for _, patchItem := range patchList {
-					logger.EeLog.Debugf("patch item: %+v", patchItem)
+					logger.EeLog.Debugf(fmtPatchItem, patchItem)
 					// TODO: patch the Eesubscription
 				}
 				return nil
@@ -182,13 +188,13 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 		} else {
 			return utils.ProblemDetailsWithCause("Subscription not found", http.StatusNotFound, "", utils.CauseSubscriptionNotFound)
 		}
-	case strings.HasPrefix(ueIdentity, "extgroupid-"):
+	case strings.HasPrefix(ueIdentity, prefixExtgroupID):
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.ExternalGroupID == ueIdentity {
 				if ue.HasEeSubscription(subscriptionID) {
 					for _, patchItem := range patchList {
-						logger.EeLog.Debugf("patch item: %+v", patchItem)
+						logger.EeLog.Debugf(fmtPatchItem, patchItem)
 						// TODO: patch the Eesubscription
 					}
 				}
@@ -201,7 +207,7 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.HasEeSubscription(subscriptionID) {
 				for _, patchItem := range patchList {
-					logger.EeLog.Debugf("patch item: %+v", patchItem)
+					logger.EeLog.Debugf(fmtPatchItem, patchItem)
 					// TODO: patch the Eesubscription
 				}
 			}

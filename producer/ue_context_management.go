@@ -23,6 +23,12 @@ import (
 	"github.com/omec-project/util/httpwrapper"
 )
 
+const (
+	uecmAmf3gppAccess    = "amf-3gpp-access"
+	uecmAmfNon3gppAccess = "amf-non-3gpp-access"
+	uecmSmfRegistrations = "smf-registrations"
+)
+
 func createUDMClientToUDR(id string) (*Nudr_DR.APIClient, error) {
 	uri := getUdrURI(id)
 	if uri == "" {
@@ -81,16 +87,16 @@ func HandleGetAmf3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Re
 	supportedFeatures := request.Query.Get("supported-features")
 	response, problemDetails := GetAmf3gppAccessProcedure(ueID, supportedFeatures)
 	if response != nil {
-		stats.IncrementUdmUeContextManagementStats("get", "amf-3gpp-access", "SUCCESS")
+		stats.IncrementUdmUeContextManagementStats("get", uecmAmf3gppAccess, "SUCCESS")
 		// status code is based on SPEC, and option headers
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	}
 	if problemDetails != nil {
-		stats.IncrementUdmUeContextManagementStats("get", "amf-3gpp-access", "FAILURE")
+		stats.IncrementUdmUeContextManagementStats("get", uecmAmf3gppAccess, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
 	problemDetails = utils.ProblemDetailsUnspecified()
-	stats.IncrementUdmUeContextManagementStats("get", "amf-3gpp-access", "FAILURE")
+	stats.IncrementUdmUeContextManagementStats("get", uecmAmf3gppAccess, "FAILURE")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
@@ -125,16 +131,16 @@ func HandleGetAmfNon3gppAccessRequest(request *httpwrapper.Request) *httpwrapper
 	supportedFeatures := request.Query.Get("supported-features")
 	response, problemDetails := GetAmfNon3gppAccessProcedure(supportedFeatures, ueId)
 	if response != nil {
-		stats.IncrementUdmUeContextManagementStats("get", "amf-non-3gpp-access", "SUCCESS")
+		stats.IncrementUdmUeContextManagementStats("get", uecmAmfNon3gppAccess, "SUCCESS")
 		// status code is based on SPEC, and option headers
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	}
 	if problemDetails != nil {
-		stats.IncrementUdmUeContextManagementStats("get", "amf-non-3gpp-access", "FAILURE")
+		stats.IncrementUdmUeContextManagementStats("get", uecmAmfNon3gppAccess, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
 	problemDetails = utils.ProblemDetailsUnspecified()
-	stats.IncrementUdmUeContextManagementStats("get", "amf-non-3gpp-access", "FAILURE")
+	stats.IncrementUdmUeContextManagementStats("get", uecmAmfNon3gppAccess, "FAILURE")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
@@ -170,15 +176,15 @@ func HandleRegistrationAmf3gppAccessRequest(request *httpwrapper.Request) *httpw
 	logger.UecmLog.Info("UEID: ", ueID)
 	header, response, problemDetails := RegistrationAmf3gppAccessProcedure(registerRequest, ueID)
 	if response != nil {
-		stats.IncrementUdmUeContextManagementStats("create", "amf-3gpp-access", "SUCCESS")
+		stats.IncrementUdmUeContextManagementStats("create", uecmAmf3gppAccess, "SUCCESS")
 		// status code is based on SPEC, and option headers
 		return httpwrapper.NewResponse(http.StatusCreated, header, response)
 	}
 	if problemDetails != nil {
-		stats.IncrementUdmUeContextManagementStats("create", "amf-3gpp-access", "FAILURE")
+		stats.IncrementUdmUeContextManagementStats("create", uecmAmf3gppAccess, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	stats.IncrementUdmUeContextManagementStats("create", "amf-3gpp-access", "SUCCESS")
+	stats.IncrementUdmUeContextManagementStats("create", uecmAmf3gppAccess, "SUCCESS")
 	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
@@ -237,15 +243,15 @@ func HandleRegisterAmfNon3gppAccessRequest(request *httpwrapper.Request) *httpwr
 	ueID := request.Params["ueId"]
 	header, response, problemDetails := RegisterAmfNon3gppAccessProcedure(registerRequest, ueID)
 	if response != nil {
-		stats.IncrementUdmUeContextManagementStats("create", "amf-non-3gpp-access", "SUCCESS")
+		stats.IncrementUdmUeContextManagementStats("create", uecmAmfNon3gppAccess, "SUCCESS")
 		// status code is based on SPEC, and option headers
 		return httpwrapper.NewResponse(http.StatusCreated, header, response)
 	}
 	if problemDetails != nil {
-		stats.IncrementUdmUeContextManagementStats("create", "amf-non-3gpp-access", "FAILURE")
+		stats.IncrementUdmUeContextManagementStats("create", uecmAmfNon3gppAccess, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	stats.IncrementUdmUeContextManagementStats("create", "amf-non-3gpp-access", "SUCCESS")
+	stats.IncrementUdmUeContextManagementStats("create", uecmAmfNon3gppAccess, "SUCCESS")
 	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
@@ -302,10 +308,10 @@ func HandleUpdateAmf3gppAccessRequest(request *httpwrapper.Request) *httpwrapper
 	ueID := request.Params["ueId"]
 	problemDetails := UpdateAmf3gppAccessProcedure(amf3GppAccessRegistrationModification, ueID)
 	if problemDetails != nil {
-		stats.IncrementUdmUeContextManagementStats("update", "amf-3gpp-access", "FAILURE")
+		stats.IncrementUdmUeContextManagementStats("update", uecmAmf3gppAccess, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	stats.IncrementUdmUeContextManagementStats("update", "amf-3gpp-access", "SUCCESS")
+	stats.IncrementUdmUeContextManagementStats("update", uecmAmf3gppAccess, "SUCCESS")
 	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
@@ -388,10 +394,10 @@ func HandleUpdateAmfNon3gppAccessRequest(request *httpwrapper.Request) *httpwrap
 	ueID := request.Params["ueId"]
 	problemDetails := UpdateAmfNon3gppAccessProcedure(requestMSG, ueID)
 	if problemDetails != nil {
-		stats.IncrementUdmUeContextManagementStats("update", "amf-non-3gpp-access", "FAILURE")
+		stats.IncrementUdmUeContextManagementStats("update", uecmAmfNon3gppAccess, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	stats.IncrementUdmUeContextManagementStats("update", "amf-non-3gpp-access", "SUCCESS")
+	stats.IncrementUdmUeContextManagementStats("update", uecmAmfNon3gppAccess, "SUCCESS")
 	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
@@ -480,10 +486,10 @@ func HandleDeregistrationSmfRegistrations(request *httpwrapper.Request) *httpwra
 
 	problemDetails := DeregistrationSmfRegistrationsProcedure(ueID, int32(pduSessionID))
 	if problemDetails != nil {
-		stats.IncrementUdmUeContextManagementStats("delete", "smf-registrations", "FAILURE")
+		stats.IncrementUdmUeContextManagementStats("delete", uecmSmfRegistrations, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	stats.IncrementUdmUeContextManagementStats("delete", "smf-registrations", "SUCCESS")
+	stats.IncrementUdmUeContextManagementStats("delete", uecmSmfRegistrations, "SUCCESS")
 	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
@@ -515,15 +521,15 @@ func HandleRegistrationSmfRegistrationsRequest(request *httpwrapper.Request) *ht
 	pduSessionID := request.Params["pduSessionId"]
 	header, response, problemDetails := RegistrationSmfRegistrationsProcedure(&registerRequest, ueID, pduSessionID)
 	if response != nil {
-		stats.IncrementUdmUeContextManagementStats("create", "smf-registrations", "SUCCESS")
+		stats.IncrementUdmUeContextManagementStats("create", uecmSmfRegistrations, "SUCCESS")
 		// status code is based on SPEC, and option headers
 		return httpwrapper.NewResponse(http.StatusCreated, header, response)
 	}
 	if problemDetails != nil {
-		stats.IncrementUdmUeContextManagementStats("create", "smf-registrations", "FAILURE")
+		stats.IncrementUdmUeContextManagementStats("create", uecmSmfRegistrations, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	stats.IncrementUdmUeContextManagementStats("create", "smf-registrations", "SUCCESS")
+	stats.IncrementUdmUeContextManagementStats("create", uecmSmfRegistrations, "SUCCESS")
 	// all nil
 	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
