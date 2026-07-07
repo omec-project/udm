@@ -20,8 +20,8 @@ import (
 const (
 	anyUE            = "anyUE"
 	prefixMsisdn     = "msisdn-"
-	prefixExtid      = "extid-"
-	prefixExtgroupId = "extgroupid-"
+	prefixExtID      = "extid-"
+	prefixExtgroupID = "extgroupid-"
 	fmtPatchItem     = "patch item: %+v"
 )
 
@@ -54,7 +54,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 	case strings.HasPrefix(ueIdentity, prefixMsisdn):
 		fallthrough
 	// GPSI (External identifier) represents a single UE
-	case strings.HasPrefix(ueIdentity, prefixExtid):
+	case strings.HasPrefix(ueIdentity, prefixExtID):
 		if ue, ok := udmSelf.UdmUeFindByGpsi(ueIdentity); ok {
 			id, err := udmSelf.EeSubscriptionIDGenerator.Allocate()
 			if err != nil {
@@ -69,7 +69,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 			return nil, utils.ProblemDetailsUserNotFound()
 		}
 	// external groupID represents a group of UEs
-	case strings.HasPrefix(ueIdentity, prefixExtgroupId):
+	case strings.HasPrefix(ueIdentity, prefixExtgroupID):
 		id, err := udmSelf.EeSubscriptionIDGenerator.Allocate()
 		if err != nil {
 			return nil, utils.ProblemDetailsWithCause("Unspecified NF failure", http.StatusInternalServerError, "", utils.CauseUnspecifiedNfFailure)
@@ -123,11 +123,11 @@ func DeleteEeSubscriptionProcedure(ueIdentity string, subscriptionID string) {
 	switch {
 	case strings.HasPrefix(ueIdentity, prefixMsisdn):
 		fallthrough
-	case strings.HasPrefix(ueIdentity, prefixExtid):
+	case strings.HasPrefix(ueIdentity, prefixExtID):
 		if ue, ok := udmSelf.UdmUeFindByGpsi(ueIdentity); ok {
 			ue.DeleteEeSubscription(subscriptionID)
 		}
-	case strings.HasPrefix(ueIdentity, prefixExtgroupId):
+	case strings.HasPrefix(ueIdentity, prefixExtgroupID):
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.ExternalGroupID == ueIdentity {
@@ -174,7 +174,7 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 	switch {
 	case strings.HasPrefix(ueIdentity, prefixMsisdn):
 		fallthrough
-	case strings.HasPrefix(ueIdentity, prefixExtid):
+	case strings.HasPrefix(ueIdentity, prefixExtID):
 		if ue, ok := udmSelf.UdmUeFindByGpsi(ueIdentity); ok {
 			if ue.HasEeSubscription(subscriptionID) {
 				for _, patchItem := range patchList {
@@ -188,7 +188,7 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 		} else {
 			return utils.ProblemDetailsWithCause("Subscription not found", http.StatusNotFound, "", utils.CauseSubscriptionNotFound)
 		}
-	case strings.HasPrefix(ueIdentity, prefixExtgroupId):
+	case strings.HasPrefix(ueIdentity, prefixExtgroupID):
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.ExternalGroupID == ueIdentity {
