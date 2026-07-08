@@ -366,13 +366,11 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 
 	SQNheStr := fmt.Sprintf("%x", bigSQN)
 	SQNheStr = strictHex(SQNheStr, 12)
-	patchItemArray := []models.PatchItem{
-		{
-			Op:    models.PATCHOPERATION_REPLACE,
-			Path:  "/sequenceNumber/sqn",
-			Value: SQNheStr,
-		},
-	}
+	var patchItem models.PatchItem
+	patchItem.SetOp(models.PATCHOPERATION_REPLACE)
+	patchItem.SetPath("/sequenceNumber/sqn")
+	patchItem.SetValue(SQNheStr)
+	patchItemArray := []models.PatchItem{patchItem}
 
 	var rsp *http.Response
 	apiModifyAuthenticationSubscriptionRequest := client.AuthenticationSubscriptionDocumentAPI.ModifyAuthenticationSubscription(
