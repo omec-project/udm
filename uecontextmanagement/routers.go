@@ -34,6 +34,7 @@ const (
 	pathAmfNon3gppAccess  = "/:ueId/registrations/amf-non-3gpp-access"
 	pathSmsf3gppAccess    = "/:ueId/registrations/smsf-3gpp-access"
 	pathSmsfNon3gppAccess = "/:ueId/registrations/smsf-non-3gpp-access"
+	contentTypeJson       = "application/json"
 )
 
 // Route is the information for every URI.

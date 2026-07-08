@@ -31,8 +31,6 @@ import (
 	"github.com/omec-project/util/httpwrapper"
 )
 
-const contentTypeJson = "application/json"
-
 // Put /:ueId/registrations/amf-non-3gpp-access
 // register as AMF for non-3GPP access
 func HTTPNon3GppRegistration(c *gin.Context) {
