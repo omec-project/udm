@@ -29,6 +29,13 @@ import (
 	utilLogger "github.com/omec-project/util/logger"
 )
 
+const (
+	pathAmf3gppAccess     = "/:ueId/registrations/amf-3gpp-access"
+	pathAmfNon3gppAccess  = "/:ueId/registrations/amf-non-3gpp-access"
+	pathSmsf3gppAccess    = "/:ueId/registrations/smsf-3gpp-access"
+	pathSmsfNon3gppAccess = "/:ueId/registrations/smsf-non-3gpp-access"
+)
+
 // Route is the information for every URI.
 type Route struct {
 	// Name is the name of this Route.
@@ -137,25 +144,25 @@ func getRoutes() []Route {
 		{
 			"Get3GppRegistration",
 			http.MethodGet,
-			"/:ueId/registrations/amf-3gpp-access",
+			pathAmf3gppAccess,
 			HTTPGet3GppRegistration,
 		},
 		{
 			"GetNon3GppRegistration",
 			http.MethodGet,
-			"/:ueId/registrations/amf-non-3gpp-access",
+			pathAmfNon3gppAccess,
 			HTTPGetNon3GppRegistration,
 		},
 		{
 			"Call3GppRegistration",
 			http.MethodPut,
-			"/:ueId/registrations/amf-3gpp-access",
+			pathAmf3gppAccess,
 			HTTPCall3GppRegistration,
 		},
 		{
 			"Non3GppRegistration",
 			http.MethodPut,
-			"/:ueId/registrations/amf-non-3gpp-access",
+			pathAmfNon3gppAccess,
 			HTTPNon3GppRegistration,
 		},
 		{
@@ -203,13 +210,13 @@ func getRoutes() []Route {
 		{
 			"Update3GppRegistration",
 			http.MethodPatch,
-			"/:ueId/registrations/amf-3gpp-access",
+			pathAmf3gppAccess,
 			HTTPUpdate3GppRegistration,
 		},
 		{
 			"UpdateNon3GppRegistration",
 			http.MethodPatch,
-			"/:ueId/registrations/amf-non-3gpp-access",
+			pathAmfNon3gppAccess,
 			HTTPUpdateNon3GppRegistration,
 		},
 		{
@@ -227,13 +234,13 @@ func getRoutes() []Route {
 		{
 			"UpdateSmsf3GppRegistration",
 			http.MethodPatch,
-			"/:ueId/registrations/smsf-3gpp-access",
+			pathSmsf3gppAccess,
 			HTTPUpdateSmsf3GppRegistration,
 		},
 		{
 			"UpdateSmsfNon3GppRegistration",
 			http.MethodPatch,
-			"/:ueId/registrations/smsf-non-3gpp-access",
+			pathSmsfNon3gppAccess,
 			HTTPUpdateSmsfNon3GppRegistration,
 		},
 		{
@@ -269,37 +276,37 @@ func getRoutes() []Route {
 		{
 			"Get3GppSmsfRegistration",
 			http.MethodGet,
-			"/:ueId/registrations/smsf-3gpp-access",
+			pathSmsf3gppAccess,
 			HTTPGet3GppSmsfRegistration,
 		},
 		{
 			"Call3GppSmsfDeregistration",
 			http.MethodDelete,
-			"/:ueId/registrations/smsf-3gpp-access",
+			pathSmsf3gppAccess,
 			HTTPCall3GppSmsfDeregistration,
 		},
 		{
 			"Non3GppSmsfDeregistration",
 			http.MethodDelete,
-			"/:ueId/registrations/smsf-non-3gpp-access",
+			pathSmsfNon3gppAccess,
 			HTTPNon3GppSmsfDeregistration,
 		},
 		{
 			"GetNon3GppSmsfRegistration",
 			http.MethodGet,
-			"/:ueId/registrations/smsf-non-3gpp-access",
+			pathSmsfNon3gppAccess,
 			HTTPGetNon3GppSmsfRegistration,
 		},
 		{
 			"Call3GppSmsfRegistration",
 			http.MethodPut,
-			"/:ueId/registrations/smsf-3gpp-access",
+			pathSmsf3gppAccess,
 			HTTPCall3GppSmsfRegistration,
 		},
 		{
 			"Non3GppSmsfRegistration",
 			http.MethodPut,
-			"/:ueId/registrations/smsf-non-3gpp-access",
+			pathSmsfNon3gppAccess,
 			HTTPNon3GppSmsfRegistration,
 		},
 		{
