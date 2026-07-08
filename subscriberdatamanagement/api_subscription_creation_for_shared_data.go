@@ -31,8 +31,6 @@ import (
 	"github.com/omec-project/util/httpwrapper"
 )
 
-const contentTypeJson = "application/json"
-
 // Post /shared-data-subscriptions
 // subscribe to notifications for shared data
 func HTTPSubscribeToSharedData(c *gin.Context) {
