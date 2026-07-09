@@ -374,7 +374,7 @@ func (context *UDMContext) InitNFService(serviceName []string, version string) {
 	for index, nameString := range serviceName {
 		name, err := models.NewServiceNameFromValue(nameString)
 		if err != nil {
-			logger.CfgLog.Errorf("invalid service name: %s", nameString)
+			logger.CfgLog.Errorf("invalid service name: %s (not in the list of valid service names)", nameString)
 			continue
 		}
 		ipEndPoint := models.NewIpEndPoint()
