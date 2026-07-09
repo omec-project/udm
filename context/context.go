@@ -17,6 +17,7 @@ import (
 
 	"github.com/omec-project/openapi/v2/Nnrf_NFDiscovery"
 	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/suci"
 	"github.com/omec-project/util/idgenerator"
 )
@@ -371,25 +372,26 @@ func (context *UDMContext) InitNFService(serviceName []string, version string) {
 	tmpVersion := strings.Split(version, ".")
 	versionUri := "v" + tmpVersion[0]
 	for index, nameString := range serviceName {
-		name := models.ServiceName(nameString)
+		name, err := models.NewServiceNameFromValue(nameString)
+		if err != nil {
+			logger.CfgLog.Errorf("invalid service name: %s (not in the list of valid service names)", nameString)
+			continue
+		}
 		ipEndPoint := models.NewIpEndPoint()
 		ipEndPoint.SetIpv4Address(context.RegisterIPv4)
 		ipEndPoint.SetTransport(models.TRANSPORTPROTOCOL_TCP)
 		ipEndPoint.SetPort(int32(context.SBIPort))
-		serviceVersion := models.NewNFServiceVersionWithDefaults()
-		serviceVersion.SetApiFullVersion(version)
-		serviceVersion.SetApiVersionInUri(versionUri)
-
-		nfService := models.NewNFServiceWithDefaults()
-		nfService.SetServiceInstanceId(strconv.Itoa(index))
-		nfService.SetServiceName(name)
-		nfService.SetVersions([]models.NFServiceVersion{*serviceVersion})
-		nfService.SetScheme(context.UriScheme)
-		nfService.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
+		serviceVersion := models.NewNFServiceVersion(versionUri, version)
+		nfService := models.NewNFService(
+			strconv.Itoa(index),
+			*name,
+			[]models.NFServiceVersion{*serviceVersion},
+			context.UriScheme,
+			models.NFSERVICESTATUS_REGISTERED,
+		)
 		nfService.SetApiPrefix(context.GetIPv4Uri())
 		nfService.SetIpEndPoints([]models.IpEndPoint{*ipEndPoint})
-
-		context.NfService[name] = *nfService
+		context.NfService[*name] = *nfService
 	}
 }
 

@@ -32,14 +32,13 @@ func TestManageSmData_HandlesNilDnnConfigurations(t *testing.T) {
 func TestManageSmData_DoesNotPrependZeroValueDnnConfigs(t *testing.T) {
 	ctx := &UDMContext{}
 	dnnConfigurations := map[string]models.DnnConfiguration{
-		"internet": {},
+		"internet": *models.NewDnnConfigurationWithDefaults(),
 	}
 	singleNssai := models.NewSnssai(1)
 	singleNssai.SetSd("010101")
-	smData := []models.SessionManagementSubscriptionData{{
-		SingleNssai:       *singleNssai,
-		DnnConfigurations: &dnnConfigurations,
-	}}
+	smSubsData := models.NewSessionManagementSubscriptionData(*singleNssai)
+	smSubsData.SetDnnConfigurations(dnnConfigurations)
+	smData := []models.SessionManagementSubscriptionData{*smSubsData}
 
 	dnnsByDnn, _ := func() ([]models.DnnConfiguration, []map[string]models.DnnConfiguration) {
 		_, _, dnnsByDnn, allDnns := ctx.ManageSmData(smData, "1-", "internet")

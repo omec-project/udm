@@ -21,7 +21,7 @@ const (
 )
 
 func TestParseAuthKeysOPCOnly(t *testing.T) {
-	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs := models.NewAuthenticationSubscription(models.AUTHMETHOD__5_G_AKA)
 	authSubs.SetEncPermanentKey(validKey)
 	authSubs.SetEncOpcKey(validOPC)
 
@@ -43,7 +43,7 @@ func TestParseAuthKeysOPCOnly(t *testing.T) {
 }
 
 func TestParseAuthKeysOPOnly(t *testing.T) {
-	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs := models.NewAuthenticationSubscription(models.AUTHMETHOD__5_G_AKA)
 	authSubs.SetEncPermanentKey(validKey)
 	authSubs.SetEncTopcKey(validOP)
 
@@ -65,7 +65,7 @@ func TestParseAuthKeysOPOnly(t *testing.T) {
 }
 
 func TestParseAuthKeysInvalidOPLength(t *testing.T) {
-	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs := models.NewAuthenticationSubscription(models.AUTHMETHOD__5_G_AKA)
 	authSubs.SetEncPermanentKey(validKey)
 	authSubs.SetEncTopcKey("tooshort")
 
@@ -108,7 +108,7 @@ func TestParseAuthKeysInvalidOPLength(t *testing.T) {
 }
 
 func TestParseAuthKeysInvalidOPEncoding(t *testing.T) {
-	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs := models.NewAuthenticationSubscription(models.AUTHMETHOD__5_G_AKA)
 	authSubs.SetEncPermanentKey(validKey)
 	authSubs.SetEncTopcKey("zz1d289c5d354d0a140c2548f5f3e3ba")
 
@@ -139,7 +139,7 @@ func TestParseAuthKeysInvalidOPEncoding(t *testing.T) {
 }
 
 func TestParseAuthKeysInvalidOPCEncodingPreservesBuffer(t *testing.T) {
-	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs := models.NewAuthenticationSubscription(models.AUTHMETHOD__5_G_AKA)
 	authSubs.SetEncPermanentKey(validKey)
 	authSubs.SetEncOpcKey("zzed289deba952e4283b54e88e6183ca")
 
@@ -176,7 +176,7 @@ func TestParseAuthKeysInvalidOPCEncodingPreservesBuffer(t *testing.T) {
 }
 
 func TestParseAuthKeysInvalidOPCLengthPreservesBuffer(t *testing.T) {
-	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs := models.NewAuthenticationSubscription(models.AUTHMETHOD__5_G_AKA)
 	authSubs.SetEncPermanentKey(validKey)
 	authSubs.SetEncOpcKey("tooshort")
 
@@ -213,7 +213,7 @@ func TestParseAuthKeysInvalidOPCLengthPreservesBuffer(t *testing.T) {
 }
 
 func TestParseAuthKeysBothMissing(t *testing.T) {
-	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs := models.NewAuthenticationSubscription(models.AUTHMETHOD__5_G_AKA)
 	authSubs.SetEncPermanentKey(validKey)
 
 	k, op, opc, hasK, hasOP, hasOPC, pd := parseAuthKeys(authSubs)
@@ -237,7 +237,7 @@ func TestParseAuthKeysBothMissing(t *testing.T) {
 }
 
 func TestParseAuthKeysNilPermanentKey(t *testing.T) {
-	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs := models.NewAuthenticationSubscription(models.AUTHMETHOD__5_G_AKA)
 
 	k, op, opc, hasK, hasOP, hasOPC, pd := parseAuthKeys(authSubs)
 	t.Logf("k=%x op=%x opc=%x", k, op, opc)
@@ -254,7 +254,7 @@ func TestParseAuthKeysNilPermanentKey(t *testing.T) {
 }
 
 func TestParseAuthKeysInvalidPermanentKeyEncoding(t *testing.T) {
-	authSubs := models.NewAuthenticationSubscriptionWithDefaults()
+	authSubs := models.NewAuthenticationSubscription(models.AUTHMETHOD__5_G_AKA)
 	authSubs.SetEncPermanentKey("zz5b5ce8b199b49faa5f0a2ee238a6bc")
 	authSubs.SetEncOpcKey(validOPC)
 
