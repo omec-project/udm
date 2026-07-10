@@ -17,7 +17,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/udm/consumer"
 )
@@ -159,7 +158,8 @@ func TestNfRegistrationService_WhenConfigChanged_ThenRegisterNFSuccessAndStartTi
 	registrations := []models.PlmnId{}
 	registerCalled := make(chan struct{}, 1)
 	consumer.SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (*models.NFProfile, string, error) {
-		profile := models.NFProfile{HeartBeatTimer: openapi.PtrInt32(60)}
+		profile := models.NewNFProfileWithDefaults()
+		profile.SetHeartBeatTimer(60)
 		registrationMu.Lock()
 		registrations = append(registrations, plmnConfig...)
 		registrationMu.Unlock()
@@ -167,7 +167,7 @@ func TestNfRegistrationService_WhenConfigChanged_ThenRegisterNFSuccessAndStartTi
 		case registerCalled <- struct{}{}:
 		default:
 		}
-		return &profile, "", nil
+		return profile, "", nil
 	}
 
 	newConfig := []models.PlmnId{{Mcc: "001", Mnc: "01"}}
@@ -257,9 +257,10 @@ func TestNfRegistrationService_ConfigChanged_RetryIfRegisterNFFails(t *testing.T
 
 	var called atomic.Int32
 	consumer.SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (*models.NFProfile, string, error) {
-		profile := models.NFProfile{HeartBeatTimer: openapi.PtrInt32(60)}
+		profile := models.NewNFProfileWithDefaults()
+		profile.SetHeartBeatTimer(60)
 		called.Add(1)
-		return &profile, "", errors.New("mock error")
+		return profile, "", errors.New("mock error")
 	}
 
 	ch <- []models.PlmnId{{Mcc: "001", Mnc: "01"}}
@@ -355,12 +356,13 @@ func TestHeartbeatNF_Success(t *testing.T) {
 	}()
 
 	consumer.SendUpdateNFInstance = func(patchItem []models.PatchItem) (*models.NFProfile, *models.ProblemDetails, error) {
-		return &models.NFProfile{}, nil, nil
+		return models.NewNFProfileWithDefaults(), nil, nil
 	}
 	consumer.SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (*models.NFProfile, string, error) {
 		calledRegister = true
-		profile := models.NFProfile{HeartBeatTimer: openapi.PtrInt32(60)}
-		return &profile, "", nil
+		profile := models.NewNFProfileWithDefaults()
+		profile.SetHeartBeatTimer(60)
+		return profile, "", nil
 	}
 	plmnConfig := []models.PlmnId{}
 	heartbeatNF(plmnConfig)
@@ -394,13 +396,14 @@ func TestHeartbeatNF_WhenNfUpdateFails_ThenNfRegistersIsCalled(t *testing.T) {
 	}()
 
 	consumer.SendUpdateNFInstance = func(patchItem []models.PatchItem) (*models.NFProfile, *models.ProblemDetails, error) {
-		return &models.NFProfile{}, nil, errors.New("mock error")
+		return models.NewNFProfileWithDefaults(), nil, errors.New("mock error")
 	}
 
 	consumer.SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (*models.NFProfile, string, error) {
-		profile := models.NFProfile{HeartBeatTimer: openapi.PtrInt32(60)}
+		profile := models.NewNFProfileWithDefaults()
+		profile.SetHeartBeatTimer(60)
 		calledRegister = true
-		return &profile, "", nil
+		return profile, "", nil
 	}
 
 	plmnConfig := []models.PlmnId{}

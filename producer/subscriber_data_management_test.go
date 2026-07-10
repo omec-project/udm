@@ -48,7 +48,9 @@ func TestIndividualSmSubsDataFromResponseHandlesArrayVariant(t *testing.T) {
 
 func TestIndividualSmSubsDataFromResponseHandlesExtendedVariant(t *testing.T) {
 	expected := []models.SessionManagementSubscriptionData{{SingleNssai: models.Snssai{Sst: 2}}}
-	response := models.ExtendedSmSubsDataAsSmSubsData(&models.ExtendedSmSubsData{IndividualSmSubsData: expected})
+	extendedSmSubsData := models.NewExtendedSmSubsDataWithDefaults()
+	extendedSmSubsData.SetIndividualSmSubsData(expected)
+	response := models.ExtendedSmSubsDataAsSmSubsData(extendedSmSubsData)
 
 	actual, problemDetails := individualSmSubsDataFromResponse(&response)
 	if problemDetails != nil {
