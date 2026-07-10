@@ -27,6 +27,8 @@ import (
 	"github.com/omec-project/udm/service"
 )
 
+const httpProto10 = "HTTP/1.0"
+
 var (
 	UDMTest        = &service.UDM{}
 	nfInstanceID   = "34343-4343-43-434-343"
@@ -156,7 +158,7 @@ func TestCreateSubscriptionSuccess(t *testing.T) {
 	httpResponse := http.Response{
 		Status:     "200 OK",
 		StatusCode: 200,
-		Proto:      "HTTP/1.0",
+		Proto:      httpProto10,
 		ProtoMajor: 1,
 		ProtoMinor: 0,
 		Body:       stringReadCloser,
@@ -247,7 +249,7 @@ func TestCreateSubscriptionFail(t *testing.T) {
 	httpResponseTemporaryDirect := http.Response{
 		Status:     "307 Temporary Direct",
 		StatusCode: 307,
-		Proto:      "HTTP/1.0",
+		Proto:      httpProto10,
 		ProtoMajor: 1,
 		ProtoMinor: 0,
 		Body:       stringReadCloser,
@@ -255,7 +257,7 @@ func TestCreateSubscriptionFail(t *testing.T) {
 	httpResponseSuccess := http.Response{
 		Status:     "200 OK",
 		StatusCode: 200,
-		Proto:      "HTTP/1.0",
+		Proto:      httpProto10,
 		ProtoMajor: 1,
 		ProtoMinor: 0,
 		Body:       stringReadCloser,

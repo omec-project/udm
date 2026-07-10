@@ -19,6 +19,8 @@ import (
 	"github.com/omec-project/udm/logger"
 )
 
+const errServerNoResponse = "server no response"
+
 func getNfProfile(udmContext *udmContext.UDMContext, plmnConfig []models.PlmnId) (profile *models.NFProfile, err error) {
 	if udmContext == nil {
 		return nil, fmt.Errorf("udm context has not been initialized. NF profile cannot be built")
@@ -183,7 +185,7 @@ func SendCreateSubscription(nrfUri string, nrfSubscriptionData models.Subscripti
 		problem := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
 		problemDetails = &problem
 	} else {
-		err = openapi.ReportError("server no response")
+		err = openapi.ReportError(errServerNoResponse)
 	}
 	return
 }
@@ -217,7 +219,7 @@ func SendRemoveSubscription(subscriptionId string) (problemDetails *models.Probl
 		problem := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
 		problemDetails = &problem
 	} else {
-		err = openapi.ReportError("server no response")
+		err = openapi.ReportError(errServerNoResponse)
 	}
 	return
 }
