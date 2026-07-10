@@ -366,13 +366,9 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 
 	SQNheStr := fmt.Sprintf("%x", bigSQN)
 	SQNheStr = strictHex(SQNheStr, 12)
-	patchItemArray := []models.PatchItem{
-		{
-			Op:    models.PATCHOPERATION_REPLACE,
-			Path:  "/sequenceNumber/sqn",
-			Value: SQNheStr,
-		},
-	}
+	patchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/sequenceNumber/sqn")
+	patchItem.SetValue(SQNheStr)
+	patchItemArray := []models.PatchItem{*patchItem}
 
 	var rsp *http.Response
 	apiModifyAuthenticationSubscriptionRequest := client.AuthenticationSubscriptionDocumentAPI.ModifyAuthenticationSubscription(
@@ -453,8 +449,6 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		av = models.Av5GHeAkaAsAuthenticationVector(av5GHeAka)
 	} else { // EAP-AKA'
 		response.SetAuthType(models.AUTHTYPE_EAP_AKA_PRIME)
-		avEapAkaPrime := models.NewAvEapAkaPrimeWithDefaults()
-		avEapAkaPrime.SetAvType(models.AVTYPE_EAP_AKA_PRIME)
 
 		// derive CK' and IK'
 		key := append(CK, IK...)
@@ -474,11 +468,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		ikPrime := kdfVal[len(kdfVal)/2:]
 
 		// Fill in rand, xres, autn, ckPrime, ikPrime
-		avEapAkaPrime.SetRand(hex.EncodeToString(RAND))
-		avEapAkaPrime.SetXres(hex.EncodeToString(RES))
-		avEapAkaPrime.SetAutn(hex.EncodeToString(AUTN))
-		avEapAkaPrime.SetCkPrime(hex.EncodeToString(ckPrime))
-		avEapAkaPrime.SetIkPrime(hex.EncodeToString(ikPrime))
+		avEapAkaPrime := models.NewAvEapAkaPrime(models.AVTYPE_EAP_AKA_PRIME, hex.EncodeToString(RAND), hex.EncodeToString(RES), hex.EncodeToString(AUTN), hex.EncodeToString(ckPrime), hex.EncodeToString(ikPrime))
 		av = models.AvEapAkaPrimeAsAuthenticationVector(avEapAkaPrime)
 	}
 
