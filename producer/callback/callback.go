@@ -48,7 +48,7 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 		dataChangeNotification.SetNotifyItems(notifyItems)
 		httpResponse, err := postJSONCallback(context.TODO(), subscriptionDataSubscription.GetOriginalCallbackReference(), dataChangeNotification)
 		if err != nil {
-			problemDetails = utils.ProblemDetails("Callback notification failed", http.StatusBadGateway, err.Error())
+			problemDetails = utils.ProblemDetailsWithCause("callback notification failed", http.StatusBadGateway, err.Error(), utils.CauseNotificationError)
 			logger.HttpLog.Error(err.Error())
 			if httpResponse == nil {
 				problemDetails.SetStatus(http.StatusBadGateway)
@@ -68,7 +68,7 @@ func DataChangeNotificationProcedure(notifyItems []models.NotifyItem, supi strin
 			}
 		}
 		if httpResponse != nil && (httpResponse.StatusCode < http.StatusOK || httpResponse.StatusCode >= http.StatusMultipleChoices) {
-			problemDetails = utils.ProblemDetails("Callback notification failed", httpResponse.StatusCode, fmt.Sprintf("unexpected callback response status %s", httpResponse.Status))
+			problemDetails = utils.ProblemDetailsWithCause("callback notification failed", httpResponse.StatusCode, fmt.Sprintf("unexpected callback response status %s", httpResponse.Status), utils.CauseNotificationError)
 			logger.HttpLog.Errorln(problemDetails.GetDetail())
 		}
 	}
