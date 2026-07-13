@@ -83,8 +83,8 @@ func TestParseAuthKeysInvalidOPLength(t *testing.T) {
 	if pd == nil {
 		t.Fatal("expected problem details for invalid OP length")
 	}
-	if pd.GetCause() != authenticationRejected {
-		t.Errorf("expected cause %q, got %q", authenticationRejected, pd.GetCause())
+	if pd.GetCause() != utils.CauseAuthenticationRejected {
+		t.Errorf("expected cause %q, got %q", utils.CauseAuthenticationRejected, pd.GetCause())
 	}
 	if pd.GetDetail() != "Invalid OP encoding" {
 		t.Errorf("unexpected detail: %q", pd.GetDetail())
@@ -126,8 +126,8 @@ func TestParseAuthKeysInvalidOPEncoding(t *testing.T) {
 	if pd == nil {
 		t.Fatal("expected problem details for invalid OP encoding")
 	}
-	if pd.GetCause() != authenticationRejected {
-		t.Errorf("expected cause %q, got %q", authenticationRejected, pd.GetCause())
+	if pd.GetCause() != utils.CauseAuthenticationRejected {
+		t.Errorf("expected cause %q, got %q", utils.CauseAuthenticationRejected, pd.GetCause())
 	}
 	if pd.GetDetail() != "Invalid OP encoding" {
 		t.Errorf("unexpected detail: %q", pd.GetDetail())
@@ -157,8 +157,8 @@ func TestParseAuthKeysInvalidOPCEncodingPreservesBuffer(t *testing.T) {
 	if pd == nil {
 		t.Fatal("expected problem details when OPC decoding fails and OP is unavailable")
 	}
-	if pd.GetCause() != authenticationRejected {
-		t.Errorf("expected cause %q, got %q", authenticationRejected, pd.GetCause())
+	if pd.GetCause() != utils.CauseAuthenticationRejected {
+		t.Errorf("expected cause %q, got %q", utils.CauseAuthenticationRejected, pd.GetCause())
 	}
 	if pd.GetDetail() != "Invalid OPc encoding" {
 		t.Errorf("unexpected detail: %q", pd.GetDetail())
@@ -194,8 +194,8 @@ func TestParseAuthKeysInvalidOPCLengthPreservesBuffer(t *testing.T) {
 	if pd == nil {
 		t.Fatal("expected problem details when OPC length is invalid and OP is unavailable")
 	}
-	if pd.GetCause() != authenticationRejected {
-		t.Errorf("expected cause %q, got %q", authenticationRejected, pd.GetCause())
+	if pd.GetCause() != utils.CauseAuthenticationRejected {
+		t.Errorf("expected cause %q, got %q", utils.CauseAuthenticationRejected, pd.GetCause())
 	}
 	if pd.GetDetail() != "Invalid OPc length" {
 		t.Errorf("unexpected detail: %q", pd.GetDetail())
@@ -230,8 +230,8 @@ func TestParseAuthKeysBothMissing(t *testing.T) {
 	if pd == nil {
 		t.Fatal("expected problem details when both OP and OPC are missing")
 	}
-	if pd.GetCause() != authenticationRejected {
-		t.Errorf("expected cause %q, got %q", authenticationRejected, pd.GetCause())
+	if pd.GetCause() != utils.CauseAuthenticationRejected {
+		t.Errorf("expected cause %q, got %q", utils.CauseAuthenticationRejected, pd.GetCause())
 	}
 	if pd.GetDetail() != "Both OP and OPc are missing" {
 		t.Errorf("unexpected detail: %q", pd.GetDetail())
@@ -275,8 +275,8 @@ func TestParseAuthKeysInvalidPermanentKeyEncoding(t *testing.T) {
 	if pd.GetStatus() != http.StatusForbidden {
 		t.Fatalf("expected status %d, got %d", http.StatusForbidden, pd.GetStatus())
 	}
-	if pd.GetCause() != authenticationRejected {
-		t.Fatalf("expected cause %q, got %q", authenticationRejected, pd.GetCause())
+	if pd.GetCause() != utils.CauseAuthenticationRejected {
+		t.Fatalf("expected cause %q, got %q", utils.CauseAuthenticationRejected, pd.GetCause())
 	}
 	if pd.GetDetail() != "Invalid permanent key encoding" {
 		t.Fatalf("unexpected detail %q", pd.GetDetail())
@@ -301,7 +301,7 @@ func TestProblemDetailsFromOpenAPIErrorHandlesTransportError(t *testing.T) {
 }
 
 func TestProblemDetailsFromOpenAPIErrorPreservesOpenAPIProblemDetails(t *testing.T) {
-	problem := utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", authenticationRejected)
+	problem := utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", utils.CauseAuthenticationRejected)
 
 	problemDetails := utils.ProblemDetailsFromOpenAPIError(&http.Response{StatusCode: http.StatusForbidden, Status: "forbidden"}, openapi.GenericOpenAPIError{
 		RawError: "forbidden",
@@ -311,8 +311,8 @@ func TestProblemDetailsFromOpenAPIErrorPreservesOpenAPIProblemDetails(t *testing
 	if problemDetails.GetStatus() != http.StatusForbidden {
 		t.Fatalf("expected status %d, got %d", http.StatusForbidden, problemDetails.GetStatus())
 	}
-	if problemDetails.GetCause() != authenticationRejected {
-		t.Fatalf("expected cause %q, got %q", authenticationRejected, problemDetails.GetCause())
+	if problemDetails.GetCause() != utils.CauseAuthenticationRejected {
+		t.Fatalf("expected cause %q, got %q", utils.CauseAuthenticationRejected, problemDetails.GetCause())
 	}
 	if problemDetails.GetDetail() != "forbidden" {
 		t.Fatalf("expected detail forbidden, got %q", problemDetails.GetDetail())
@@ -331,7 +331,7 @@ func newAuthRequest(supiOrSuci string) *httpwrapper.Request {
 
 // TestHandleGenerateAuthDataRequest_InvalidSuciPrefix verifies that an
 // unrecognised supiOrSuci prefix causes the handler to return 403 Forbidden
-// with cause AUTHENTICATION_REJECTED.  This path is exercised entirely within
+// with cause AUTHENTICATION_REJECTED. This path is exercised entirely within
 // suci.ToSupi and requires no network connectivity.
 func TestHandleGenerateAuthDataRequest_InvalidSuciPrefix_ReturnsForbidden(t *testing.T) {
 	resp := HandleGenerateAuthDataRequest(newAuthRequest("unknown-format-xyz"))
@@ -343,8 +343,8 @@ func TestHandleGenerateAuthDataRequest_InvalidSuciPrefix_ReturnsForbidden(t *tes
 	if !ok {
 		t.Fatalf("expected *models.ProblemDetails body, got %T", resp.Body)
 	}
-	if pd.GetCause() != authenticationRejected {
-		t.Errorf("expected cause %q, got %q", authenticationRejected, pd.GetCause())
+	if pd.GetCause() != utils.CauseAuthenticationRejected {
+		t.Errorf("expected cause %q, got %q", utils.CauseAuthenticationRejected, pd.GetCause())
 	}
 }
 
