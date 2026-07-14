@@ -62,7 +62,9 @@ func HTTPCall3GppRegistration(c *gin.Context) {
 
 	// step 5: response
 	for key, val := range rsp.Header { // header response is optional
-		c.Header(key, val[0])
+		if len(val) > 0 {
+			c.Header(key, val[0])
+		}
 	}
 	responseBody, err := openapi.SetBody(rsp.Body, contentTypeJson)
 	if err != nil {

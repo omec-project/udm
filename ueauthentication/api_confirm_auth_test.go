@@ -18,6 +18,7 @@ func TestWriteResponseWithNilBody(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(recorder)
 
 	writeResponse(ctx, httpwrapper.NewResponse(http.StatusCreated, nil, nil))
+	ctx.Writer.WriteHeaderNow()
 
 	if recorder.Code != http.StatusCreated {
 		t.Fatalf("expected status %d, got %d", http.StatusCreated, recorder.Code)

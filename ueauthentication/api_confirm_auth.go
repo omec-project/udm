@@ -63,9 +63,13 @@ func HTTPConfirmAuth(c *gin.Context) {
 }
 
 func writeResponse(c *gin.Context, rsp *httpwrapper.Response) {
+	for key, val := range rsp.Header { // header response is optional
+		if len(val) > 0 {
+			c.Header(key, val[0])
+		}
+	}
 	if rsp.Body == nil {
 		c.Status(rsp.Status)
-		c.Writer.WriteHeaderNow()
 		return
 	}
 
