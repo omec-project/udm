@@ -59,6 +59,19 @@ func HTTPConfirmAuth(c *gin.Context) {
 	req.Params["supi"] = c.Params.ByName("supi")
 
 	rsp := producer.HandleConfirmAuthDataRequest(req)
+	writeResponse(c, rsp)
+}
+
+func writeResponse(c *gin.Context, rsp *httpwrapper.Response) {
+	for key, val := range rsp.Header { // header response is optional
+		if len(val) > 0 {
+			c.Header(key, val[0])
+		}
+	}
+	if rsp.Body == nil {
+		c.Status(rsp.Status)
+		return
+	}
 
 	responseBody, err := openapi.SetBody(rsp.Body, contentTypeJson)
 	if err != nil {

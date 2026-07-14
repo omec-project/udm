@@ -62,7 +62,13 @@ func HTTPNon3GppRegistration(c *gin.Context) {
 	rsp := producer.HandleRegisterAmfNon3gppAccessRequest(req)
 
 	for key, val := range rsp.Header { // header response is optional
-		c.Header(key, val[0])
+		if len(val) > 0 {
+			c.Header(key, val[0])
+		}
+	}
+	if rsp.Body == nil {
+		c.Status(rsp.Status)
+		return
 	}
 	responseBody, err := openapi.SetBody(rsp.Body, contentTypeJson)
 	if err != nil {
