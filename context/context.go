@@ -9,6 +9,7 @@ package context
 
 import (
 	"fmt"
+	"maps"
 	"math"
 	"strconv"
 	"strings"
@@ -175,7 +176,7 @@ func GetCorrespondingSupi(list models.IdentityData) (id string) {
 }
 
 // functions related to sdmSubscription (subscribe to notification of data change)
-func (udmUeContext *UdmUeContext) CreateSubscriptiontoNotifChange(subscriptionID string, body *models.SdmSubscription) {
+func (udmUeContext *UdmUeContext) CreateSubscriptionToNotifChange(subscriptionID string, body *models.SdmSubscription) {
 	udmUeContext.subscribeToNotifChangeLock.Lock()
 	defer udmUeContext.subscribeToNotifChangeLock.Unlock()
 
@@ -192,6 +193,9 @@ func (udmUeContext *UdmUeContext) UpdateSubscriptionToNotifChange(subscriptionID
 	if !exists {
 		return nil
 	}
+	if modification == nil {
+		return deepCopySdmSubscription(sub)
+	}
 	if modification.HasExpires() {
 		sub.SetExpires(modification.GetExpires())
 	}
@@ -201,7 +205,29 @@ func (udmUeContext *UdmUeContext) UpdateSubscriptionToNotifChange(subscriptionID
 	if modification.HasExpectedUeBehaviourThresholds() {
 		sub.SetExpectedUeBehaviourThresholds(modification.GetExpectedUeBehaviourThresholds())
 	}
-	return sub
+	return deepCopySdmSubscription(sub)
+}
+
+// deepCopySdmSubscription returns a deep copy of sub. Slice fields
+// (MonitoredResourceUris) and map fields (ExpectedUeBehaviourThresholds) are
+// explicitly copied so that callers cannot mutate the cached subscription state
+// through the returned pointer after the lock is released.
+func deepCopySdmSubscription(sub *models.SdmSubscription) *models.SdmSubscription {
+	if sub == nil {
+		return nil
+	}
+	cp := *sub
+	if uris := sub.GetMonitoredResourceUris(); uris != nil {
+		urisCopy := make([]string, len(uris))
+		copy(urisCopy, uris)
+		cp.SetMonitoredResourceUris(urisCopy)
+	}
+	if src := sub.GetExpectedUeBehaviourThresholds(); src != nil {
+		dst := make(map[string]models.ExpectedUeBehaviourThreshold, len(src))
+		maps.Copy(dst, src)
+		cp.SetExpectedUeBehaviourThresholds(dst)
+	}
+	return &cp
 }
 
 func (udmUeContext *UdmUeContext) StoreEeSubscription(subscriptionID string, body *models.EeSubscription) {

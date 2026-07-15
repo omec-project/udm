@@ -638,7 +638,7 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, ueId string) (
 	if res.StatusCode == http.StatusCreated {
 		header = make(http.Header)
 		udmUe := getOrCreateUdmUe(ueId)
-		udmUe.CreateSubscriptiontoNotifChange(sdmSubscriptionResp.GetSubscriptionId(), sdmSubscriptionResp)
+		udmUe.CreateSubscriptionToNotifChange(sdmSubscriptionResp.GetSubscriptionId(), sdmSubscriptionResp)
 		header.Set("Location", udmUe.GetLocationURI2(udm_context.LocationUriSdmSubscription, ueId)+sdmSubscriptionResp.GetSubscriptionId())
 		return header, sdmSubscriptionResp, nil
 	}
@@ -706,7 +706,31 @@ func HandleModifyRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	ueId := request.Params["ueId"]
 	subscriptionID := request.Params["subscriptionId"]
 	response, problemDetails := modifyProcedure(&sdmSubsModification, ueId, subscriptionID)
+	if response == nil && problemDetails == nil {
+		stats.IncrementUdmSubscriberDataManagementStats("update", metricSdmSubs, "SUCCESS")
+		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
+	}
 	return responseWithProblemDetails("update", metricSdmSubs, http.StatusOK, nil, response, problemDetails)
+}
+
+func buildSdmModificationPatchItems(mod *models.SdmSubsModification) []models.PatchItem {
+	patchItems := make([]models.PatchItem, 0, 3)
+	if mod.HasExpires() {
+		patchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/expires")
+		patchItem.SetValue(mod.GetExpires())
+		patchItems = append(patchItems, *patchItem)
+	}
+	if mod.HasMonitoredResourceUris() {
+		patchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/monitoredResourceUris")
+		patchItem.SetValue(mod.GetMonitoredResourceUris())
+		patchItems = append(patchItems, *patchItem)
+	}
+	if mod.HasExpectedUeBehaviourThresholds() {
+		patchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/expectedUeBehaviourThresholds")
+		patchItem.SetValue(mod.GetExpectedUeBehaviourThresholds())
+		patchItems = append(patchItems, *patchItem)
+	}
+	return patchItems
 }
 
 func modifyProcedure(sdmSubsModification *models.SdmSubsModification, ueId string, subscriptionID string) (
@@ -717,42 +741,57 @@ func modifyProcedure(sdmSubsModification *models.SdmSubsModification, ueId strin
 		return nil, utils.ProblemDetailsSystemFailure(err.Error())
 	}
 
-	var patchItems []models.PatchItem
-	if sdmSubsModification.HasExpires() {
-		patchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/expires")
-		patchItem.SetValue(sdmSubsModification.GetExpires())
-		patchItems = append(patchItems, *patchItem)
-	}
-	if sdmSubsModification.HasMonitoredResourceUris() {
-		patchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/monitoredResourceUris")
-		patchItem.SetValue(sdmSubsModification.GetMonitoredResourceUris())
-		patchItems = append(patchItems, *patchItem)
-	}
-	if sdmSubsModification.HasExpectedUeBehaviourThresholds() {
-		patchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/expectedUeBehaviourThresholds")
-		patchItem.SetValue(sdmSubsModification.GetExpectedUeBehaviourThresholds())
-		patchItems = append(patchItems, *patchItem)
+	patchItems := buildSdmModificationPatchItems(sdmSubsModification)
+	if len(patchItems) == 0 {
+		// Nothing to modify; treat as a successful no-op and return 204 No Content.
+		return nil, nil
 	}
 
 	apiModifysdmSubscriptionRequest := clientAPI.SDMSubscriptionDocumentAPI.ModifysdmSubscription(
 		context.Background(), ueId, subscriptionID)
 	apiModifysdmSubscriptionRequest = apiModifysdmSubscriptionRequest.PatchItem(patchItems)
-	_, res, err := clientAPI.SDMSubscriptionDocumentAPI.ModifysdmSubscriptionExecute(apiModifysdmSubscriptionRequest)
+	patchResult, res, err := clientAPI.SDMSubscriptionDocumentAPI.ModifysdmSubscriptionExecute(apiModifysdmSubscriptionRequest)
 	if err != nil {
 		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
 	defer closeResponseBody(logger.SdmLog, res, "ModifysdmSubscription")
 
-	udmUe, ok := udm_context.UDM_Self().UdmUeFindBySupi(ueId)
-	if !ok {
-		return nil, utils.ProblemDetailsUserNotFound()
-	}
-	updatedSub := udmUe.UpdateSubscriptionToNotifChange(subscriptionID, sdmSubsModification)
-	if updatedSub == nil {
-		return nil, utils.ProblemDetailsUserNotFound()
-	}
+	switch res.StatusCode {
+	case http.StatusOK:
+		// Per 3GPP TS 29.504, a UDR 200 OK on a PATCH request carries a PatchResult
+		// body. A non-empty failure report means some patches were not applied.
+		if failedOps := patchFailureCount(patchResult); failedOps > 0 {
+			logger.SdmLog.Warnf("UDR modify for subscription %s returned 200 OK with %d failed patch operation(s); local cache not updated", subscriptionID, failedOps)
+			return nil, utils.ProblemDetailsSystemFailure("patch partially applied by UDR")
+		}
+		// 200 OK with a nil or empty PatchResult report means all patch operations succeeded.
+		fallthrough
+	case http.StatusNoContent:
+		// All patches applied successfully. Update the local cache as a best-effort
+		// side-effect; the HTTP response is always 204 regardless of cache state.
+		udmUe, ok := udm_context.UDM_Self().UdmUeFindBySupi(ueId)
+		if !ok {
+			logger.SdmLog.Warnf("UE context not found for %s; local subscription state not updated after successful modify", ueId)
+			return nil, nil
+		}
+		if updatedSub := udmUe.UpdateSubscriptionToNotifChange(subscriptionID, sdmSubsModification); updatedSub == nil {
+			logger.SdmLog.Warnf("subscription %s not found in local cache for %s; local state not updated after successful modify", subscriptionID, ueId)
+		}
+		return nil, nil
 
-	return updatedSub, nil
+	default:
+		return nil, utils.ProblemDetailsSystemFailure(res.Status)
+	}
+}
+
+// patchFailureCount returns the number of PATCH operations reported as failed
+// by UDR in a 200 OK response. Per 3GPP TS 29.504, a nil or empty PatchResult
+// report means all operations succeeded.
+func patchFailureCount(patchResult *models.PatchResult) int {
+	if patchResult == nil {
+		return 0
+	}
+	return len(patchResult.GetReport())
 }
 
 func individualSmSubsDataFromResponse(sessionManagementSubscriptionData *models.SmSubsData) (
