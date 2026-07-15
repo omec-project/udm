@@ -5,6 +5,7 @@ package context
 
 import (
 	"testing"
+	"time"
 
 	"github.com/omec-project/openapi/v2/models"
 )
@@ -132,5 +133,125 @@ func TestInitNFService_PopulatesNfServiceMap(t *testing.T) {
 		if svc.GetApiPrefix() != expectedPrefix {
 			t.Errorf("service %q: expected API prefix %q, got %q", nameStr, expectedPrefix, svc.GetApiPrefix())
 		}
+	}
+}
+
+func newTestUeContext(subscriptionID string, sub *models.SdmSubscription) *UdmUeContext {
+	ue := &UdmUeContext{}
+	ue.init()
+	if sub != nil {
+		ue.SubscribeToNotifChange[subscriptionID] = sub
+	}
+	return ue
+}
+
+func TestUpdateSubscriptionToNotifChange_SubscriptionNotFound(t *testing.T) {
+	ue := newTestUeContext("sub-1", nil)
+	result := ue.UpdateSubscriptionToNotifChange("sub-1", &models.SdmSubsModification{})
+	if result != nil {
+		t.Fatalf("expected nil for missing subscription, got %+v", result)
+	}
+}
+
+func TestUpdateSubscriptionToNotifChange_UpdatesPresent(t *testing.T) {
+	existing := models.NewSdmSubscriptionWithDefaults()
+	t1 := time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
+	t2 := time.Date(2027, 6, 1, 0, 0, 0, 0, time.UTC)
+	existing.SetExpires(t1)
+	existing.SetMonitoredResourceUris([]string{"/old-uri"})
+
+	ue := newTestUeContext("sub-1", existing)
+
+	mod := models.NewSdmSubsModificationWithDefaults()
+	mod.SetExpires(t2)
+	mod.SetMonitoredResourceUris([]string{"/new-uri-1", "/new-uri-2"})
+
+	result := ue.UpdateSubscriptionToNotifChange("sub-1", mod)
+	if result == nil {
+		t.Fatal("expected non-nil result for existing subscription")
+	}
+	if !result.GetExpires().Equal(t2) {
+		t.Errorf("expires: expected %v, got %v", t2, result.GetExpires())
+	}
+	uris := result.GetMonitoredResourceUris()
+	if len(uris) != 2 || uris[0] != "/new-uri-1" {
+		t.Errorf("monitoredResourceUris: unexpected value %v", uris)
+	}
+}
+
+func TestUpdateSubscriptionToNotifChange_SkipsAbsentFields(t *testing.T) {
+	existing := models.NewSdmSubscriptionWithDefaults()
+	t1 := time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
+	t2 := time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)
+	existing.SetExpires(t1)
+	existing.SetMonitoredResourceUris([]string{"/keep-me"})
+
+	ue := newTestUeContext("sub-1", existing)
+
+	// modification that only sets expires, leaving monitoredResourceUris untouched
+	mod := models.NewSdmSubsModificationWithDefaults()
+	mod.SetExpires(t2)
+
+	result := ue.UpdateSubscriptionToNotifChange("sub-1", mod)
+	if result == nil {
+		t.Fatal("expected non-nil result for existing subscription")
+	}
+	if !result.GetExpires().Equal(t2) {
+		t.Errorf("expires: expected %v, got %v", t2, result.GetExpires())
+	}
+	uris := result.GetMonitoredResourceUris()
+	if len(uris) != 1 || uris[0] != "/keep-me" {
+		t.Errorf("monitoredResourceUris should be unchanged, got %v", uris)
+	}
+}
+
+func TestUpdateSubscriptionToNotifChange_NilModificationReturnsCopy(t *testing.T) {
+	existing := models.NewSdmSubscriptionWithDefaults()
+	t1 := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	existing.SetExpires(t1)
+	existing.SetMonitoredResourceUris([]string{"/uri-a"})
+
+	ue := newTestUeContext("sub-1", existing)
+
+	result := ue.UpdateSubscriptionToNotifChange("sub-1", nil)
+	if result == nil {
+		t.Fatal("expected non-nil result when modification is nil")
+	}
+	if !result.GetExpires().Equal(t1) {
+		t.Errorf("expires should be unchanged: expected %v, got %v", t1, result.GetExpires())
+	}
+	uris := result.GetMonitoredResourceUris()
+	if len(uris) != 1 || uris[0] != "/uri-a" {
+		t.Errorf("monitoredResourceUris should be unchanged, got %v", uris)
+	}
+}
+
+func TestUpdateSubscriptionToNotifChange_ReturnedCopyIsIsolated(t *testing.T) {
+	existing := models.NewSdmSubscriptionWithDefaults()
+	existing.SetMonitoredResourceUris([]string{"/uri-a", "/uri-b"})
+	thresholds := map[string]models.ExpectedUeBehaviourThreshold{"key1": {}}
+	existing.SetExpectedUeBehaviourThresholds(thresholds)
+
+	ue := newTestUeContext("sub-1", existing)
+
+	result := ue.UpdateSubscriptionToNotifChange("sub-1", nil)
+	if result == nil {
+		t.Fatal("expected non-nil result")
+	}
+
+	// Mutate the returned copy's slice — must not affect the cached subscription.
+	uris := result.GetMonitoredResourceUris()
+	uris[0] = "/mutated"
+	cachedUris := ue.SubscribeToNotifChange["sub-1"].GetMonitoredResourceUris()
+	if cachedUris[0] != "/uri-a" {
+		t.Errorf("mutating returned slice corrupted cached subscription: got %v", cachedUris[0])
+	}
+
+	// Mutate the returned copy's map — must not affect the cached subscription.
+	resultMap := result.GetExpectedUeBehaviourThresholds()
+	resultMap["injected"] = models.ExpectedUeBehaviourThreshold{}
+	cachedSub := ue.SubscribeToNotifChange["sub-1"]
+	if _, ok := cachedSub.GetExpectedUeBehaviourThresholds()["injected"]; ok {
+		t.Error("mutating returned map corrupted cached subscription")
 	}
 }
