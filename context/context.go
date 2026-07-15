@@ -184,6 +184,26 @@ func (udmUeContext *UdmUeContext) CreateSubscriptiontoNotifChange(subscriptionID
 	}
 }
 
+func (udmUeContext *UdmUeContext) UpdateSubscriptionToNotifChange(subscriptionID string, modification *models.SdmSubsModification) *models.SdmSubscription {
+	udmUeContext.subscribeToNotifChangeLock.Lock()
+	defer udmUeContext.subscribeToNotifChangeLock.Unlock()
+
+	sub, exists := udmUeContext.SubscribeToNotifChange[subscriptionID]
+	if !exists {
+		return nil
+	}
+	if modification.HasExpires() {
+		sub.SetExpires(modification.GetExpires())
+	}
+	if modification.HasMonitoredResourceUris() {
+		sub.SetMonitoredResourceUris(modification.GetMonitoredResourceUris())
+	}
+	if modification.HasExpectedUeBehaviourThresholds() {
+		sub.SetExpectedUeBehaviourThresholds(modification.GetExpectedUeBehaviourThresholds())
+	}
+	return sub
+}
+
 func (udmUeContext *UdmUeContext) StoreEeSubscription(subscriptionID string, body *models.EeSubscription) {
 	udmUeContext.eeSubscriptionsLock.Lock()
 	defer udmUeContext.eeSubscriptionsLock.Unlock()

@@ -717,20 +717,42 @@ func modifyProcedure(sdmSubsModification *models.SdmSubsModification, ueId strin
 		return nil, utils.ProblemDetailsSystemFailure(err.Error())
 	}
 
-	sdmSubscription := models.NewSdmSubscriptionWithDefaults()
-	apiUpdatesdmsubscriptionsRequest := clientAPI.SDMSubscriptionDocumentAPI.Updatesdmsubscriptions(
+	var patchItems []models.PatchItem
+	if sdmSubsModification.HasExpires() {
+		patchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/expires")
+		patchItem.SetValue(sdmSubsModification.GetExpires())
+		patchItems = append(patchItems, *patchItem)
+	}
+	if sdmSubsModification.HasMonitoredResourceUris() {
+		patchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/monitoredResourceUris")
+		patchItem.SetValue(sdmSubsModification.GetMonitoredResourceUris())
+		patchItems = append(patchItems, *patchItem)
+	}
+	if sdmSubsModification.HasExpectedUeBehaviourThresholds() {
+		patchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/expectedUeBehaviourThresholds")
+		patchItem.SetValue(sdmSubsModification.GetExpectedUeBehaviourThresholds())
+		patchItems = append(patchItems, *patchItem)
+	}
+
+	apiModifysdmSubscriptionRequest := clientAPI.SDMSubscriptionDocumentAPI.ModifysdmSubscription(
 		context.Background(), ueId, subscriptionID)
-	res, err := clientAPI.SDMSubscriptionDocumentAPI.UpdatesdmsubscriptionsExecute(apiUpdatesdmsubscriptionsRequest)
+	apiModifysdmSubscriptionRequest = apiModifysdmSubscriptionRequest.PatchItem(patchItems)
+	_, res, err := clientAPI.SDMSubscriptionDocumentAPI.ModifysdmSubscriptionExecute(apiModifysdmSubscriptionRequest)
 	if err != nil {
 		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
 	}
-	defer closeResponseBody(logger.SdmLog, res, "Updatesdmsubscriptions")
+	defer closeResponseBody(logger.SdmLog, res, "ModifysdmSubscription")
 
-	if res.StatusCode == http.StatusOK {
-		return sdmSubscription, nil
+	udmUe, ok := udm_context.UDM_Self().UdmUeFindBySupi(ueId)
+	if !ok {
+		return nil, utils.ProblemDetailsUserNotFound()
+	}
+	updatedSub := udmUe.UpdateSubscriptionToNotifChange(subscriptionID, sdmSubsModification)
+	if updatedSub == nil {
+		return nil, utils.ProblemDetailsUserNotFound()
 	}
 
-	return nil, utils.ProblemDetailsUserNotFound()
+	return updatedSub, nil
 }
 
 func individualSmSubsDataFromResponse(sessionManagementSubscriptionData *models.SmSubsData) (
