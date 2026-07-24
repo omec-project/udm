@@ -166,51 +166,46 @@ func HandleUpdateEeSubscription(request *httpwrapper.Request) *httpwrapper.Respo
 }
 
 // TODO: complete this procedure based on TS 29503 5.5
+// applyPatchToUe localizes the patching logic and reduces nesting in the main caller.
+func applyPatchToUe(ue *udm_context.UdmUeContext, subscriptionID string, patchList []models.PatchItem) bool {
+	// Defensive check to prevent nil pointer dereference panics
+	if ue == nil {
+		return false
+	}
+	if !ue.HasEeSubscription(subscriptionID) {
+		return false
+	}
+	for _, patchItem := range patchList {
+		logger.EeLog.Debugf(fmtPatchItem, patchItem)
+		// TODO: patch the Eesubscription
+	}
+	return true
+}
+
 func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 	patchList []models.PatchItem,
 ) *models.ProblemDetails {
 	udmSelf := udm_context.UDM_Self()
 
 	switch {
-	case strings.HasPrefix(ueIdentity, prefixMsisdn):
-		fallthrough
-	case strings.HasPrefix(ueIdentity, prefixExtID):
-		if ue, ok := udmSelf.UdmUeFindByGpsi(ueIdentity); ok {
-			if ue.HasEeSubscription(subscriptionID) {
-				for _, patchItem := range patchList {
-					logger.EeLog.Debugf(fmtPatchItem, patchItem)
-					// TODO: patch the Eesubscription
-				}
-				return nil
-			} else {
-				return utils.ProblemDetailsWithCause("Subscription not found", http.StatusNotFound, "", utils.CauseSubscriptionNotFound)
-			}
-		} else {
+	case strings.HasPrefix(ueIdentity, prefixMsisdn), strings.HasPrefix(ueIdentity, prefixExtID):
+		ue, ok := udmSelf.UdmUeFindByGpsi(ueIdentity)
+		if !ok || !applyPatchToUe(ue, subscriptionID, patchList) {
 			return utils.ProblemDetailsWithCause("Subscription not found", http.StatusNotFound, "", utils.CauseSubscriptionNotFound)
 		}
+		return nil
 	case strings.HasPrefix(ueIdentity, prefixExtgroupID):
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.ExternalGroupID == ueIdentity {
-				if ue.HasEeSubscription(subscriptionID) {
-					for _, patchItem := range patchList {
-						logger.EeLog.Debugf(fmtPatchItem, patchItem)
-						// TODO: patch the Eesubscription
-					}
-				}
+				applyPatchToUe(ue, subscriptionID, patchList)
 			}
 			return true
 		})
 		return nil
 	case ueIdentity == anyUE:
 		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
-			ue := value.(*udm_context.UdmUeContext)
-			if ue.HasEeSubscription(subscriptionID) {
-				for _, patchItem := range patchList {
-					logger.EeLog.Debugf(fmtPatchItem, patchItem)
-					// TODO: patch the Eesubscription
-				}
-			}
+			applyPatchToUe(value.(*udm_context.UdmUeContext), subscriptionID, patchList)
 			return true
 		})
 		return nil
