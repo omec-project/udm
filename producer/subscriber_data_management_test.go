@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
@@ -48,7 +49,9 @@ func TestIndividualSmSubsDataFromResponseHandlesArrayVariant(t *testing.T) {
 
 func TestIndividualSmSubsDataFromResponseHandlesExtendedVariant(t *testing.T) {
 	expected := []models.SessionManagementSubscriptionData{{SingleNssai: models.Snssai{Sst: 2}}}
-	response := models.ExtendedSmSubsDataAsSmSubsData(&models.ExtendedSmSubsData{IndividualSmSubsData: expected})
+	extendedSmSubsData := models.NewExtendedSmSubsDataWithDefaults()
+	extendedSmSubsData.SetIndividualSmSubsData(expected)
+	response := models.ExtendedSmSubsDataAsSmSubsData(extendedSmSubsData)
 
 	actual, problemDetails := individualSmSubsDataFromResponse(&response)
 	if problemDetails != nil {
@@ -168,4 +171,90 @@ func TestCloseResponseBodyClosesBody(t *testing.T) {
 func TestCloseResponseBodyHandlesNilResponse(t *testing.T) {
 	closeResponseBody(logger.SdmLog, nil, "test")
 	closeResponseBody(logger.SdmLog, &http.Response{}, "test")
+}
+
+func TestBuildSdmModificationPatchItems_NoFieldsSet(t *testing.T) {
+	mod := models.NewSdmSubsModificationWithDefaults()
+
+	items := buildSdmModificationPatchItems(mod)
+
+	if items == nil {
+		t.Fatal("expected a non-nil (empty) slice, got nil")
+	}
+	if len(items) != 0 {
+		t.Fatalf("expected 0 patch items, got %d", len(items))
+	}
+}
+
+func TestBuildSdmModificationPatchItems_AllFieldsSet(t *testing.T) {
+	mod := models.NewSdmSubsModificationWithDefaults()
+	mod.SetExpires(time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC))
+	mod.SetMonitoredResourceUris([]string{"/nudm-sdm/v2/imsi-001010000000001/am-data"})
+	mod.SetExpectedUeBehaviourThresholds(map[string]models.ExpectedUeBehaviourThreshold{})
+
+	items := buildSdmModificationPatchItems(mod)
+
+	if len(items) != 3 {
+		t.Fatalf("expected 3 patch items, got %d", len(items))
+	}
+	paths := map[string]bool{}
+	for _, item := range items {
+		if item.GetOp() != models.PATCHOPERATION_REPLACE {
+			t.Errorf("expected op REPLACE for path %q, got %v", item.GetPath(), item.GetOp())
+		}
+		if item.GetValue() == nil {
+			t.Errorf("expected non-nil value for path %q", item.GetPath())
+		}
+		paths[item.GetPath()] = true
+	}
+	for _, expected := range []string{"/expires", "/monitoredResourceUris", "/expectedUeBehaviourThresholds"} {
+		if !paths[expected] {
+			t.Errorf("expected patch item for path %q not found", expected)
+		}
+	}
+}
+
+func TestBuildSdmModificationPatchItems_OnlyMonitoredUrisSet(t *testing.T) {
+	mod := models.NewSdmSubsModificationWithDefaults()
+	uris := []string{"/nudm-sdm/v2/imsi-001010000000001/am-data", "/nudm-sdm/v2/imsi-001010000000001/smf-select-data"}
+	mod.SetMonitoredResourceUris(uris)
+
+	items := buildSdmModificationPatchItems(mod)
+
+	if len(items) != 1 {
+		t.Fatalf("expected 1 patch item, got %d", len(items))
+	}
+	if items[0].GetPath() != "/monitoredResourceUris" {
+		t.Errorf("expected path /monitoredResourceUris, got %q", items[0].GetPath())
+	}
+	if items[0].GetOp() != models.PATCHOPERATION_REPLACE {
+		t.Errorf("expected op REPLACE, got %v", items[0].GetOp())
+	}
+}
+
+func TestPatchFailureCount_NilResult(t *testing.T) {
+	count := patchFailureCount(nil)
+	if count != 0 {
+		t.Fatalf("expected 0 for nil PatchResult, got %d", count)
+	}
+}
+
+func TestPatchFailureCount_EmptyReport(t *testing.T) {
+	// PatchResult with no report entries: all patches succeeded.
+	result := models.NewPatchResultWithDefaults()
+	count := patchFailureCount(result)
+	if count != 0 {
+		t.Fatalf("expected 0 for PatchResult with empty report, got %d", count)
+	}
+}
+
+func TestPatchFailureCount_WithFailures(t *testing.T) {
+	result := models.NewPatchResult([]models.ReportItem{
+		*models.NewReportItem("/monitoredResourceUris"),
+		*models.NewReportItem("/expires"),
+	})
+	count := patchFailureCount(result)
+	if count != 2 {
+		t.Fatalf("expected 2 failed operations, got %d", count)
+	}
 }

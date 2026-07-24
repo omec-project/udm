@@ -27,6 +27,8 @@ import (
 	"github.com/omec-project/udm/service"
 )
 
+const httpProto10 = "HTTP/1.0"
+
 var (
 	UDMTest        = &service.UDM{}
 	nfInstanceID   = "34343-4343-43-434-343"
@@ -54,50 +56,30 @@ func TestGetUDRUri(t *testing.T) {
 	origSendNfDiscoveryToNrf := consumer.SendNfDiscoveryToNrf
 	udrInfo1 := models.NewUdrInfo()
 	udrInfo1.SetSupportedDataSets([]models.DataSetId{models.DATASETID_SUBSCRIPTION})
-	udrProfile1 := models.NewNFProfileDiscoveryWithDefaults()
+	udrProfile1 := models.NewNFProfileDiscovery(nfInstanceID, models.NFTYPE_UDR, models.NFSTATUS_REGISTERED)
 	udrProfile1.SetUdrInfo(*udrInfo1)
-	udrProfile1.SetNfInstanceId(nfInstanceID)
-	udrProfile1.SetNfType(models.NFTYPE_UDR)
-	udrProfile1.SetNfStatus(models.NFSTATUS_REGISTERED)
 	udrUri1 := "https://10.0.13.1:8090"
 	udrUri2 := "https://20.20.13.1:8090"
-	version1 := models.NewNFServiceVersionWithDefaults()
-	version1.SetApiFullVersion("1")
-	version1.SetApiVersionInUri("versionUri")
-	ipEndPoint1 := models.NewIpEndPointWithDefaults()
+	version1 := models.NewNFServiceVersion("versionUri", "1")
+	ipEndPoint1 := models.NewIpEndPoint()
 	ipEndPoint1.SetIpv4Address("10.0.13.1")
 	ipEndPoint1.SetTransport(models.TRANSPORTPROTOCOL_TCP)
 	ipEndPoint1.SetPort(8090)
-	service1 := models.NewNFServiceWithDefaults()
-	service1.SetServiceInstanceId("datarepository")
-	service1.SetServiceName(models.SERVICENAME_NUDR_DR)
-	service1.SetVersions([]models.NFServiceVersion{*version1})
-	service1.SetScheme(models.URISCHEME_HTTPS)
-	service1.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
+	service1 := models.NewNFService("datarepository", models.SERVICENAME_NUDR_DR, []models.NFServiceVersion{*version1}, models.URISCHEME_HTTPS, models.NFSERVICESTATUS_REGISTERED)
 	service1.SetApiPrefix(udrUri1)
 	service1.SetIpEndPoints([]models.IpEndPoint{*ipEndPoint1})
 	udrProfile1.SetNfServices([]models.NFService{*service1})
 	searchResult1 := models.NewSearchResult(7, []models.NFProfileDiscovery{*udrProfile1})
 	udrInfo2 := models.NewUdrInfo()
 	udrInfo2.SetSupportedDataSets([]models.DataSetId{models.DATASETID_SUBSCRIPTION})
-	udrProfile2 := models.NewNFProfileDiscoveryWithDefaults()
+	udrProfile2 := models.NewNFProfileDiscovery("9999-4343-43-434-343", models.NFTYPE_UDR, models.NFSTATUS_REGISTERED)
 	udrProfile2.SetUdrInfo(*udrInfo2)
-	udrProfile2.SetNfInstanceId("9999-4343-43-434-343")
-	udrProfile2.SetNfType(models.NFTYPE_UDR)
-	udrProfile2.SetNfStatus(models.NFSTATUS_REGISTERED)
-	version2 := models.NewNFServiceVersionWithDefaults()
-	version2.SetApiFullVersion("1")
-	version2.SetApiVersionInUri("versionUri")
-	ipEndPoint2 := models.NewIpEndPointWithDefaults()
+	version2 := models.NewNFServiceVersion("versionUri", "1")
+	ipEndPoint2 := models.NewIpEndPoint()
 	ipEndPoint2.SetIpv4Address("10.0.13.1")
 	ipEndPoint2.SetTransport(models.TRANSPORTPROTOCOL_TCP)
 	ipEndPoint2.SetPort(8090)
-	service2 := models.NewNFServiceWithDefaults()
-	service2.SetServiceInstanceId("datarepository")
-	service2.SetServiceName(models.SERVICENAME_NUDR_DR)
-	service2.SetVersions([]models.NFServiceVersion{*version2})
-	service2.SetScheme(models.URISCHEME_HTTPS)
-	service2.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
+	service2 := models.NewNFService("datarepository", models.SERVICENAME_NUDR_DR, []models.NFServiceVersion{*version2}, models.URISCHEME_HTTPS, models.NFSERVICESTATUS_REGISTERED)
 	service2.SetApiPrefix(udrUri2)
 	service2.SetIpEndPoints([]models.IpEndPoint{*ipEndPoint2})
 	udrProfile2.SetNfServices([]models.NFService{*service2})
@@ -176,7 +158,7 @@ func TestCreateSubscriptionSuccess(t *testing.T) {
 	httpResponse := http.Response{
 		Status:     "200 OK",
 		StatusCode: 200,
-		Proto:      "HTTP/1.0",
+		Proto:      httpProto10,
 		ProtoMajor: 1,
 		ProtoMinor: 0,
 		Body:       stringReadCloser,
@@ -267,7 +249,7 @@ func TestCreateSubscriptionFail(t *testing.T) {
 	httpResponseTemporaryDirect := http.Response{
 		Status:     "307 Temporary Direct",
 		StatusCode: 307,
-		Proto:      "HTTP/1.0",
+		Proto:      httpProto10,
 		ProtoMajor: 1,
 		ProtoMinor: 0,
 		Body:       stringReadCloser,
@@ -275,7 +257,7 @@ func TestCreateSubscriptionFail(t *testing.T) {
 	httpResponseSuccess := http.Response{
 		Status:     "200 OK",
 		StatusCode: 200,
-		Proto:      "HTTP/1.0",
+		Proto:      httpProto10,
 		ProtoMajor: 1,
 		ProtoMinor: 0,
 		Body:       stringReadCloser,

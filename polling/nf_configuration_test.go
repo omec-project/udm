@@ -191,10 +191,7 @@ func TestHandlePolledPlmnConfig_ConfigDidNotChanged_ConfigIsNotSendToChannel(t *
 }
 
 func TestFetchPlmnConfig(t *testing.T) {
-	validPlmnList := []models.PlmnId{
-		{Mcc: "001", Mnc: "01"},
-		{Mcc: "002", Mnc: "02"},
-	}
+	validPlmnList := []models.PlmnId{{Mcc: "001", Mnc: "01"}, {Mcc: "002", Mnc: "02"}}
 	validJson, err := json.Marshal(validPlmnList)
 	if err != nil {
 		t.Fail()

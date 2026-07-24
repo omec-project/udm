@@ -41,7 +41,9 @@ func HTTPUnsubscribe(c *gin.Context) {
 	rsp := producer.HandleUnsubscribeRequest(req)
 	// step 5: response
 	for key, val := range rsp.Header { // header response is optional
-		c.Header(key, val[0])
+		if len(val) > 0 {
+			c.Header(key, val[0])
+		}
 	}
 	if rsp.Status == http.StatusNoContent {
 		c.Status(rsp.Status)
