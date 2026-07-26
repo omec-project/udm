@@ -59,14 +59,13 @@ func getUdrURI(id string) string {
 		var udrURI string
 		udmContext.UDM_Self().UdmUePool.Range(func(key, value interface{}) bool {
 			ue := value.(*udmContext.UdmUeContext)
-			if ue.Amf3GppAccessRegistration != nil && ue.Amf3GppAccessRegistration.GetPei() == id {
+			// Consolidation of PEI logic: Check both 3GPP and Non-3GPP registrations
+			is3GppMatch := ue.Amf3GppAccessRegistration != nil && ue.Amf3GppAccessRegistration.GetPei() == id
+			isNon3GppMatch := ue.AmfNon3GppAccessRegistration != nil && ue.AmfNon3GppAccessRegistration.GetPei() == id
+			if is3GppMatch || isNon3GppMatch {
 				ue.UdrUri = consumer.SendNFInstancesUDR(ue.Supi, consumer.NFDiscoveryToUDRParamSupi)
 				udrURI = ue.UdrUri
-				return false
-			} else if ue.AmfNon3GppAccessRegistration != nil && ue.AmfNon3GppAccessRegistration.GetPei() == id {
-				ue.UdrUri = consumer.SendNFInstancesUDR(ue.Supi, consumer.NFDiscoveryToUDRParamSupi)
-				udrURI = ue.UdrUri
-				return false
+				return false // Stop iteration
 			}
 			return true
 		})
