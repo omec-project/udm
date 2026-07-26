@@ -41,7 +41,7 @@ func HTTPUpdate3GppRegistration(c *gin.Context) {
 	}
 
 	// step 2: convert requestBody to openapi models
-	err = openapi.Decode(&amf3GppAccessRegistrationModification, requestBody, "application/json")
+	err = openapi.Decode(&amf3GppAccessRegistrationModification, requestBody, contentTypeJson)
 	if err != nil {
 		problemDetail := "[Request Body] " + err.Error()
 		rsp := utils.ProblemDetailsMalformedRequestSyntax(problemDetail)
@@ -59,12 +59,12 @@ func HTTPUpdate3GppRegistration(c *gin.Context) {
 		return
 	}
 
-	responseBody, err := openapi.SetBody(rsp.Body, "application/json")
+	responseBody, err := openapi.SetBody(rsp.Body, contentTypeJson)
 	if err != nil {
 		logger.UecmLog.Errorln(err)
 		problemDetails := utils.ProblemDetailsSystemFailure(err.Error())
 		c.JSON(http.StatusInternalServerError, problemDetails)
 	} else {
-		c.Data(rsp.Status, "application/json", responseBody.Bytes())
+		c.Data(rsp.Status, contentTypeJson, responseBody.Bytes())
 	}
 }

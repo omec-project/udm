@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const contentTypeJson = "application/json"
+
 // Route is the information for every URI.
 type Route struct {
 	// HandlerFunc is the handler function of this route.

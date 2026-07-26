@@ -44,8 +44,8 @@ func TestSearchNFServiceUri_PrefersProfileFqdnOverServiceApiPrefix(t *testing.T)
 }
 
 func TestSearchNFServiceUri_UsesLaterIpEndpoint(t *testing.T) {
-	first := models.NewIpEndPointWithDefaults()
-	second := models.NewIpEndPointWithDefaults()
+	first := models.NewIpEndPoint()
+	second := models.NewIpEndPoint()
 	second.SetIpv4Address("10.20.30.40")
 	second.SetPort(8080)
 

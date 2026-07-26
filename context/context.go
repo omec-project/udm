@@ -9,6 +9,7 @@ package context
 
 import (
 	"fmt"
+	"maps"
 	"math"
 	"strconv"
 	"strings"
@@ -17,11 +18,14 @@ import (
 
 	"github.com/omec-project/openapi/v2/Nnrf_NFDiscovery"
 	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/udm/logger"
 	"github.com/omec-project/udm/suci"
 	"github.com/omec-project/util/idgenerator"
 )
 
 var udmContext UDMContext
+
+const uecmUriPrefix = "/nudm-uecm/v1/"
 
 const (
 	LocationUriAmf3GppAccessRegistration int = iota
@@ -172,13 +176,58 @@ func GetCorrespondingSupi(list models.IdentityData) (id string) {
 }
 
 // functions related to sdmSubscription (subscribe to notification of data change)
-func (udmUeContext *UdmUeContext) CreateSubscriptiontoNotifChange(subscriptionID string, body *models.SdmSubscription) {
+func (udmUeContext *UdmUeContext) CreateSubscriptionToNotifChange(subscriptionID string, body *models.SdmSubscription) {
 	udmUeContext.subscribeToNotifChangeLock.Lock()
 	defer udmUeContext.subscribeToNotifChangeLock.Unlock()
 
 	if _, exist := udmUeContext.SubscribeToNotifChange[subscriptionID]; !exist {
 		udmUeContext.SubscribeToNotifChange[subscriptionID] = body
 	}
+}
+
+func (udmUeContext *UdmUeContext) UpdateSubscriptionToNotifChange(subscriptionID string, modification *models.SdmSubsModification) *models.SdmSubscription {
+	udmUeContext.subscribeToNotifChangeLock.Lock()
+	defer udmUeContext.subscribeToNotifChangeLock.Unlock()
+
+	sub, exists := udmUeContext.SubscribeToNotifChange[subscriptionID]
+	if !exists {
+		return nil
+	}
+	if modification == nil {
+		return deepCopySdmSubscription(sub)
+	}
+	if modification.HasExpires() {
+		sub.SetExpires(modification.GetExpires())
+	}
+	if modification.HasMonitoredResourceUris() {
+		sub.SetMonitoredResourceUris(modification.GetMonitoredResourceUris())
+	}
+	if modification.HasExpectedUeBehaviourThresholds() {
+		sub.SetExpectedUeBehaviourThresholds(modification.GetExpectedUeBehaviourThresholds())
+	}
+	return deepCopySdmSubscription(sub)
+}
+
+// deepCopySdmSubscription returns a deep copy of sub. Slice fields
+// (MonitoredResourceUris) and map fields (ExpectedUeBehaviourThresholds) are
+// explicitly copied so that callers cannot mutate the cached subscription state
+// through the returned pointer after the lock is released.
+func deepCopySdmSubscription(sub *models.SdmSubscription) *models.SdmSubscription {
+	if sub == nil {
+		return nil
+	}
+	cp := *sub
+	if uris := sub.GetMonitoredResourceUris(); uris != nil {
+		urisCopy := make([]string, len(uris))
+		copy(urisCopy, uris)
+		cp.SetMonitoredResourceUris(urisCopy)
+	}
+	if src := sub.GetExpectedUeBehaviourThresholds(); src != nil {
+		dst := make(map[string]models.ExpectedUeBehaviourThreshold, len(src))
+		maps.Copy(dst, src)
+		cp.SetExpectedUeBehaviourThresholds(dst)
+	}
+	return &cp
 }
 
 func (udmUeContext *UdmUeContext) StoreEeSubscription(subscriptionID string, body *models.EeSubscription) {
@@ -315,11 +364,11 @@ func (context *UDMContext) GetAmfNon3gppRegContext(supi string) *models.AmfNon3G
 func (ue *UdmUeContext) GetLocationURI(types int) string {
 	switch types {
 	case LocationUriAmf3GppAccessRegistration:
-		return UDM_Self().GetIPv4Uri() + "/nudm-uecm/v1/" + ue.Supi + "/registrations/amf-3gpp-access"
+		return UDM_Self().GetIPv4Uri() + uecmUriPrefix + ue.Supi + "/registrations/amf-3gpp-access"
 	case LocationUriAmfNon3GppAccessRegistration:
-		return UDM_Self().GetIPv4Uri() + "/nudm-uecm/v1/" + ue.Supi + "/registrations/amf-non-3gpp-access"
+		return UDM_Self().GetIPv4Uri() + uecmUriPrefix + ue.Supi + "/registrations/amf-non-3gpp-access"
 	case LocationUriSmfRegistration:
-		return UDM_Self().GetIPv4Uri() + "/nudm-uecm/v1/" + ue.Supi + "/registrations/smf-registrations/" + ue.PduSessionID
+		return UDM_Self().GetIPv4Uri() + uecmUriPrefix + ue.Supi + "/registrations/smf-registrations/" + ue.PduSessionID
 	}
 	return ""
 }
@@ -371,25 +420,26 @@ func (context *UDMContext) InitNFService(serviceName []string, version string) {
 	tmpVersion := strings.Split(version, ".")
 	versionUri := "v" + tmpVersion[0]
 	for index, nameString := range serviceName {
-		name := models.ServiceName(nameString)
+		name, err := models.NewServiceNameFromValue(nameString)
+		if err != nil {
+			logger.CfgLog.Errorf("invalid service name: %s (not in the list of valid service names)", nameString)
+			continue
+		}
 		ipEndPoint := models.NewIpEndPoint()
 		ipEndPoint.SetIpv4Address(context.RegisterIPv4)
 		ipEndPoint.SetTransport(models.TRANSPORTPROTOCOL_TCP)
 		ipEndPoint.SetPort(int32(context.SBIPort))
-		serviceVersion := models.NewNFServiceVersionWithDefaults()
-		serviceVersion.SetApiFullVersion(version)
-		serviceVersion.SetApiVersionInUri(versionUri)
-
-		nfService := models.NewNFServiceWithDefaults()
-		nfService.SetServiceInstanceId(strconv.Itoa(index))
-		nfService.SetServiceName(name)
-		nfService.SetVersions([]models.NFServiceVersion{*serviceVersion})
-		nfService.SetScheme(context.UriScheme)
-		nfService.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
+		serviceVersion := models.NewNFServiceVersion(versionUri, version)
+		nfService := models.NewNFService(
+			strconv.Itoa(index),
+			*name,
+			[]models.NFServiceVersion{*serviceVersion},
+			context.UriScheme,
+			models.NFSERVICESTATUS_REGISTERED,
+		)
 		nfService.SetApiPrefix(context.GetIPv4Uri())
 		nfService.SetIpEndPoints([]models.IpEndPoint{*ipEndPoint})
-
-		context.NfService[name] = *nfService
+		context.NfService[*name] = *nfService
 	}
 }
 

@@ -102,13 +102,9 @@ func heartbeatNF(plmnConfig []models.PlmnId) {
 	}
 	keepAliveTimerMutex.Unlock()
 
-	patchItem := []models.PatchItem{
-		{
-			Op:    models.PATCHOPERATION_REPLACE,
-			Path:  "/nfStatus",
-			Value: models.NFSTATUS_REGISTERED,
-		},
-	}
+	registeredPatchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/nfStatus")
+	registeredPatchItem.SetValue(models.NFSTATUS_REGISTERED)
+	patchItem := []models.PatchItem{*registeredPatchItem}
 	nfProfile, problemDetails, err := consumer.SendUpdateNFInstance(patchItem)
 
 	if shouldRegister(problemDetails, err) {

@@ -29,6 +29,8 @@ import (
 	utilLogger "github.com/omec-project/util/logger"
 )
 
+const contentTypeJson = "application/json"
+
 // Route is the information for every URI.
 type Route struct {
 	// Name is the name of this Route.
