@@ -41,23 +41,21 @@ func createUDMClientToUDR(id string) (*Nudr_DR.APIClient, error) {
 		apiRootVar.DefaultValue = uri
 		serverConfig.Variables["apiRoot"] = apiRootVar
 	}
-	clientAPI := Nudr_DR.NewAPIClient(configuration)
-	return clientAPI, nil
+	return Nudr_DR.NewAPIClient(configuration), nil
 }
 
 func getUdrURI(id string) string {
 	if strings.Contains(id, "imsi") || strings.Contains(id, "nai") { // supi
 		ue, ok := udmContext.UDM_Self().UdmUeFindBySupi(id)
 		if ok {
-			if ue.UdrUri != "" {
-				return ue.UdrUri
-			}
-			ue.UdrUri = consumer.SendNFInstancesUDR(id, consumer.NFDiscoveryToUDRParamSupi)
-			return ue.UdrUri
+			return ue.GetOrSetUdrUri(func() string {
+				return consumer.SendNFInstancesUDR(id, consumer.NFDiscoveryToUDRParamSupi)
+			})
 		}
 		ue = udmContext.UDM_Self().NewUdmUe(id)
-		ue.UdrUri = consumer.SendNFInstancesUDR(id, consumer.NFDiscoveryToUDRParamSupi)
-		return ue.UdrUri
+		return ue.GetOrSetUdrUri(func() string {
+			return consumer.SendNFInstancesUDR(id, consumer.NFDiscoveryToUDRParamSupi)
+		})
 	} else if strings.Contains(id, "pei") {
 		var udrURI string
 		udmContext.UDM_Self().UdmUePool.Range(func(key, value interface{}) bool {
@@ -66,10 +64,9 @@ func getUdrURI(id string) string {
 			is3GppMatch := ue.Amf3GppAccessRegistration != nil && ue.Amf3GppAccessRegistration.GetPei() == id
 			isNon3GppMatch := ue.AmfNon3GppAccessRegistration != nil && ue.AmfNon3GppAccessRegistration.GetPei() == id
 			if is3GppMatch || isNon3GppMatch {
-				if ue.UdrUri == "" {
-					ue.UdrUri = consumer.SendNFInstancesUDR(ue.Supi, consumer.NFDiscoveryToUDRParamSupi)
-				}
-				udrURI = ue.UdrUri
+				udrURI = ue.GetOrSetUdrUri(func() string {
+					return consumer.SendNFInstancesUDR(ue.Supi, consumer.NFDiscoveryToUDRParamSupi)
+				})
 				return false // Stop iteration
 			}
 			return true
@@ -177,7 +174,7 @@ func HandleRegistrationAmf3gppAccessRequest(request *httpwrapper.Request) *httpw
 	logger.UecmLog.Debugln("handle RegistrationAmf3gppAccess")
 	registerRequest := request.Body.(models.Amf3GppAccessRegistration)
 	ueID := request.Params["ueId"]
-	logger.UecmLog.Info("UEID: ", ueID)
+	logger.UecmLog.Debugf("UEID: %s", ueID)
 	header, response, problemDetails := RegistrationAmf3gppAccessProcedure(registerRequest, ueID)
 	if response != nil {
 		stats.IncrementUdmUeContextManagementStats("create", uecmAmf3gppAccess, "SUCCESS")
@@ -484,8 +481,10 @@ func HandleDeregistrationSmfRegistrations(request *httpwrapper.Request) *httpwra
 
 	pduSessionID, err := strconv.ParseInt(pduSessionIDStr, 10, 32)
 	if err != nil {
-		logger.UecmLog.Infoln("pduSessionID error:", err)
-		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
+		logger.UecmLog.Errorln("pduSessionID error:", err)
+		problemDetails := utils.ProblemDetailsMalformedRequestSyntax(err.Error())
+		stats.IncrementUdmUeContextManagementStats("delete", uecmSmfRegistrations, "FAILURE")
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
 
 	problemDetails := DeregistrationSmfRegistrationsProcedure(ueID, int32(pduSessionID))
@@ -542,17 +541,16 @@ func HandleRegistrationSmfRegistrationsRequest(request *httpwrapper.Request) *ht
 func RegistrationSmfRegistrationsProcedure(request *models.SmfRegistration, ueID string, pduSessionID string) (
 	header http.Header, response *models.SmfRegistration, problemDetails *models.ProblemDetails,
 ) {
-	contextExisted := false
-	udmContext.UDM_Self().CreateSmfRegContext(ueID, pduSessionID)
-	if !udmContext.UDM_Self().UdmSmfRegContextNotExists(ueID) {
-		contextExisted = true
-	}
-
+	// Validate before mutating context to avoid persisting invalid state.
 	pduID64, err := strconv.ParseInt(pduSessionID, 10, 32)
 	if err != nil {
-		logger.UecmLog.Errorln(err.Error())
+		return nil, nil, utils.ProblemDetailsMalformedRequestSyntax(err.Error())
 	}
 	pduID32 := int32(pduID64)
+
+	// Check existence before CreateSmfRegContext; that call always sets PduSessionID.
+	contextExisted := !udmContext.UDM_Self().UdmSmfRegContextNotExists(ueID)
+	udmContext.UDM_Self().CreateSmfRegContext(ueID, pduSessionID)
 
 	clientAPI, err := createUDMClientToUDR(ueID)
 	if err != nil {

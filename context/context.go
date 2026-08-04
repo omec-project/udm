@@ -78,12 +78,45 @@ type UdmUeContext struct {
 	SmSubsDataLock                   sync.RWMutex
 	subscribeToNotifChangeLock       sync.Mutex
 	eeSubscriptionsLock              sync.RWMutex
+	udrUriLock                       sync.RWMutex
 }
 
 func (ue *UdmUeContext) init() {
 	ue.UdmSubsToNotify = make(map[string]*models.SubscriptionDataSubscriptions)
 	ue.EeSubscriptions = make(map[string]*models.EeSubscription)
 	ue.SubscribeToNotifChange = make(map[string]*models.SdmSubscription)
+}
+
+// GetOrSetUdrUri returns the cached UdrUri if already set; otherwise calls fetch.
+// Only non-empty results are cached; empty URIs are not cached so discovery is
+// retried on the next request, allowing recovery when NRF or UDR comes back.
+// Call ClearUdrUri to evict a stale URI and force re-discovery on the next request.
+func (ue *UdmUeContext) GetOrSetUdrUri(fetch func() string) string {
+	ue.udrUriLock.RLock()
+	if ue.UdrUri != "" {
+		uri := ue.UdrUri
+		ue.udrUriLock.RUnlock()
+		return uri
+	}
+	ue.udrUriLock.RUnlock()
+
+	ue.udrUriLock.Lock()
+	defer ue.udrUriLock.Unlock()
+	if ue.UdrUri == "" {
+		if uri := fetch(); uri != "" {
+			ue.UdrUri = uri
+			return uri
+		}
+		return ""
+	}
+	return ue.UdrUri
+}
+
+// ClearUdrUri evicts the cached UDR URI so the next GetOrSetUdrUri call re-runs NRF discovery.
+func (ue *UdmUeContext) ClearUdrUri() {
+	ue.udrUriLock.Lock()
+	ue.UdrUri = ""
+	ue.udrUriLock.Unlock()
 }
 
 type UdmNFContext struct {
