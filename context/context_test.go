@@ -255,3 +255,138 @@ func TestUpdateSubscriptionToNotifChange_ReturnedCopyIsIsolated(t *testing.T) {
 		t.Error("mutating returned map corrupted cached subscription")
 	}
 }
+
+const testUdrUri = "https://udr.example.com"
+
+func TestGetOrSetUdrUri_CachesNonEmptyResult(t *testing.T) {
+	ue := &UdmUeContext{}
+	calls := 0
+	fetch := func() string {
+		calls++
+		return testUdrUri
+	}
+
+	first := ue.GetOrSetUdrUri(fetch)
+	second := ue.GetOrSetUdrUri(fetch)
+
+	if first != testUdrUri {
+		t.Errorf("first call: got %q, want %q", first, testUdrUri)
+	}
+	if second != testUdrUri {
+		t.Errorf("second call: got %q, want %q", second, testUdrUri)
+	}
+	if calls != 1 {
+		t.Errorf("fetch called %d times, want 1 (result should be cached)", calls)
+	}
+}
+
+func TestGetOrSetUdrUri_DoesNotCacheEmptyResult(t *testing.T) {
+	ue := &UdmUeContext{}
+	calls := 0
+	fetch := func() string {
+		calls++
+		return ""
+	}
+
+	first := ue.GetOrSetUdrUri(fetch)
+	second := ue.GetOrSetUdrUri(fetch)
+
+	if first != "" || second != "" {
+		t.Errorf("expected empty URI on discovery failure, got %q / %q", first, second)
+	}
+	if calls != 2 {
+		t.Errorf("fetch called %d times, want 2 (empty URI must not be cached)", calls)
+	}
+}
+
+func TestGetOrSetUdrUri_RecoversAfterFailure(t *testing.T) {
+	ue := &UdmUeContext{}
+	calls := 0
+	fetch := func() string {
+		calls++
+		if calls < 3 {
+			return ""
+		}
+		return testUdrUri
+	}
+
+	for i := 0; i < 2; i++ {
+		if got := ue.GetOrSetUdrUri(fetch); got != "" {
+			t.Errorf("call %d: expected empty URI during failure, got %q", i+1, got)
+		}
+	}
+	got := ue.GetOrSetUdrUri(fetch)
+	if got != testUdrUri {
+		t.Errorf("recovery call: got %q, want %q", got, testUdrUri)
+	}
+	// Further calls must use the cache.
+	extra := ue.GetOrSetUdrUri(fetch)
+	if extra != testUdrUri {
+		t.Errorf("post-recovery call: got %q, want %q", extra, testUdrUri)
+	}
+	if calls != 3 {
+		t.Errorf("fetch called %d times, want 3", calls)
+	}
+}
+
+func TestGetOrSetUdrUri_ConcurrentCallsResultInSingleFetch(t *testing.T) {
+	ue := &UdmUeContext{}
+	calls := 0
+	start := make(chan struct{})
+	fetch := func() string {
+		calls++
+		<-start // all goroutines unblock simultaneously
+		time.Sleep(5 * time.Millisecond)
+		return testUdrUri
+	}
+
+	const n = 20
+	results := make([]string, n)
+	done := make(chan int, n)
+	for i := 0; i < n; i++ {
+		go func(idx int) {
+			results[idx] = ue.GetOrSetUdrUri(fetch)
+			done <- idx
+		}(i)
+	}
+	close(start)
+	for i := 0; i < n; i++ {
+		<-done
+	}
+
+	for i, r := range results {
+		if r != testUdrUri {
+			t.Errorf("goroutine %d: got %q, want %q", i, r, testUdrUri)
+		}
+	}
+	if calls != 1 {
+		t.Errorf("fetch called %d times under concurrency, want 1", calls)
+	}
+}
+
+func TestClearUdrUri_ForcesRediscovery(t *testing.T) {
+	ue := &UdmUeContext{}
+	calls := 0
+	fetch := func() string {
+		calls++
+		return testUdrUri
+	}
+
+	// Populate the cache.
+	_ = ue.GetOrSetUdrUri(fetch)
+	if calls != 1 {
+		t.Fatalf("setup: expected 1 fetch call, got %d", calls)
+	}
+
+	// Evict the cached URI.
+	ue.ClearUdrUri()
+
+	// Next call must re-run discovery.
+	got := ue.GetOrSetUdrUri(fetch)
+	if got != testUdrUri {
+		t.Errorf("post-eviction call: got %q, want %q", got, testUdrUri)
+	}
+	if calls != 2 {
+		t.Errorf("fetch called %d times after eviction, want 2", calls)
+	}
+}

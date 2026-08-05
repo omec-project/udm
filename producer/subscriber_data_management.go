@@ -124,7 +124,7 @@ func subscriptionCreationProblemDetails(res *http.Response) *models.ProblemDetai
 }
 
 func HandleGetAmDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle GetAmData")
+	logger.SdmLog.Debugln("handle GetAmData")
 	supi := request.Params["supi"]
 	plmnID := request.Query.Get(queryPlmnID)
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
@@ -158,7 +158,7 @@ func getAmDataProcedure(supi string, plmnID string, supportedFeatures string) (
 }
 
 func HandleGetIdTranslationResultRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle GetIdTranslationResultRequest")
+	logger.SdmLog.Debugln("handle GetIdTranslationResultRequest")
 	gpsi := request.Params["gpsi"]
 	response, problemDetails := getIdTranslationResultProcedure(gpsi)
 	return responseWithProblemDetails("get", "id-translation-result", http.StatusOK, nil, response, problemDetails)
@@ -197,7 +197,7 @@ func getIdTranslationResultProcedure(gpsi string) (response *models.IdTranslatio
 }
 
 func HandleGetSupiRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle GetSupiRequest")
+	logger.SdmLog.Debugln("handle GetSupiRequest")
 	supi := request.Params["supi"]
 	plmnID := request.Query.Get(queryPlmnID)
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
@@ -348,7 +348,7 @@ func getSupiProcedure(supi string, plmnID string, supportedFeatures string) (
 }
 
 func HandleGetSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle GetSharedData")
+	logger.SdmLog.Debugln("handle GetSharedData")
 	sharedDataIds := request.Query["sharedDataIds"]
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
 	response, problemDetails := getSharedDataProcedure(sharedDataIds, supportedFeatures)
@@ -382,7 +382,7 @@ func getSharedDataProcedure(sharedDataIds []string, supportedFeatures string) (
 }
 
 func HandleGetSmDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle GetSmData")
+	logger.SdmLog.Debugln("handle GetSmData")
 	supi := request.Params["supi"]
 	plmnID := request.Query.Get(queryPlmnID)
 	dnn := request.Query.Get("dnn")
@@ -422,7 +422,7 @@ func HandleGetSmDataRequest(request *httpwrapper.Request) *httpwrapper.Response 
 func getSmDataProcedure(supi, plmnID, dnn, snssai, supportedFeatures string) (
 	response any, problemDetails *models.ProblemDetails,
 ) {
-	logger.SdmLog.Infof("getSmDataProcedure: SUPI[%s] PLMNID[%s] DNN[%s] SNssai[%s]", supi, plmnID, dnn, snssai)
+	logger.SdmLog.Debugf("getSmDataProcedure: SUPI[%s] PLMNID[%s] DNN[%s] SNssai[%s]", supi, plmnID, dnn, snssai)
 
 	clientAPI, err := createUDMClientToUDR(supi)
 	if err != nil {
@@ -504,7 +504,7 @@ func getSmDataProcedure(supi, plmnID, dnn, snssai, supportedFeatures string) (
 }
 
 func HandleGetNssaiRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle GetNssai")
+	logger.SdmLog.Debugln("handle GetNssai")
 	supi := request.Params["supi"]
 	plmnID := request.Query.Get(queryPlmnID)
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
@@ -544,7 +544,7 @@ func getNssaiProcedure(supi string, plmnID string, supportedFeatures string) (
 }
 
 func HandleGetSmfSelectDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle GetSmfSelectData")
+	logger.SdmLog.Debugln("handle GetSmfSelectData")
 	supi := request.Params["supi"]
 	plmnID := request.Query.Get(queryPlmnID)
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
@@ -578,7 +578,7 @@ func getSmfSelectDataProcedure(supi string, plmnID string, supportedFeatures str
 }
 
 func HandleSubscribeToSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle SubscribeToSharedData")
+	logger.SdmLog.Debugln("handle SubscribeToSharedData")
 	sdmSubscription := request.Body.(models.SdmSubscription)
 	header, response, problemDetails := subscribeToSharedDataProcedure(&sdmSubscription)
 	return createResponseWithProblemDetails(metricSharedDataSubs, header, response, problemDetails)
@@ -611,7 +611,7 @@ func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
 }
 
 func HandleSubscribeRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle Subscribe")
+	logger.SdmLog.Debugln("handle Subscribe")
 	sdmSubscription := request.Body.(models.SdmSubscription)
 	ueId := request.Params["ueId"]
 	header, response, problemDetails := subscribeProcedure(&sdmSubscription, ueId)
@@ -647,7 +647,7 @@ func subscribeProcedure(sdmSubscription *models.SdmSubscription, ueId string) (
 }
 
 func HandleUnsubscribeForSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle UnsubscribeForSharedData")
+	logger.SdmLog.Debugln("handle UnsubscribeForSharedData")
 	subscriptionID := request.Params["subscriptionId"]
 	problemDetails := unsubscribeForSharedDataProcedure(subscriptionID)
 	return deleteResponseWithProblemDetails(metricSharedDataSubs, problemDetails)
@@ -673,7 +673,7 @@ func unsubscribeForSharedDataProcedure(subscriptionID string) *models.ProblemDet
 }
 
 func HandleUnsubscribeRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle Unsubscribe")
+	logger.SdmLog.Debugln("handle Unsubscribe")
 	ueId := request.Params["ueId"]
 	subscriptionID := request.Params["subscriptionId"]
 	problemDetails := unsubscribeProcedure(ueId, subscriptionID)
@@ -701,7 +701,7 @@ func unsubscribeProcedure(ueId string, subscriptionID string) *models.ProblemDet
 }
 
 func HandleModifyRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle Modify")
+	logger.SdmLog.Debugln("handle Modify")
 	sdmSubsModification := request.Body.(models.SdmSubsModification)
 	ueId := request.Params["ueId"]
 	subscriptionID := request.Params["subscriptionId"]
@@ -816,7 +816,7 @@ func individualSmSubsDataFromResponse(sessionManagementSubscriptionData *models.
 }
 
 func HandleModifyForSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle ModifyForSharedData")
+	logger.SdmLog.Debugln("handle ModifyForSharedData")
 	sdmSubsModification := request.Body.(models.SdmSubsModification)
 	subscriptionID := request.Params["subscriptionId"]
 	response, problemDetails := modifyForSharedDataProcedure(sdmSubsModification, subscriptionID)
@@ -846,7 +846,7 @@ func modifyForSharedDataProcedure(sdmSubsModification models.SdmSubsModification
 }
 
 func HandleGetTraceDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle GetTraceData")
+	logger.SdmLog.Debugln("handle GetTraceData")
 	supi := request.Params["supi"]
 	plmnID := request.Query.Get(queryPlmnID)
 	response, problemDetails := getTraceDataProcedure(supi, plmnID)
@@ -885,7 +885,7 @@ func getTraceDataProcedure(supi string, plmnID string) (
 }
 
 func HandleGetUeContextInSmfDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.SdmLog.Infoln("handle GetUeContextInSmfData")
+	logger.SdmLog.Debugln("handle GetUeContextInSmfData")
 	supi := request.Params["supi"]
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
 	response, problemDetails := getUeContextInSmfDataProcedure(supi, supportedFeatures)

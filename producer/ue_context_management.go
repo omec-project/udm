@@ -41,20 +41,21 @@ func createUDMClientToUDR(id string) (*Nudr_DR.APIClient, error) {
 		apiRootVar.DefaultValue = uri
 		serverConfig.Variables["apiRoot"] = apiRootVar
 	}
-	clientAPI := Nudr_DR.NewAPIClient(configuration)
-	return clientAPI, nil
+	return Nudr_DR.NewAPIClient(configuration), nil
 }
 
 func getUdrURI(id string) string {
 	if strings.Contains(id, "imsi") || strings.Contains(id, "nai") { // supi
 		ue, ok := udmContext.UDM_Self().UdmUeFindBySupi(id)
 		if ok {
-			ue.UdrUri = consumer.SendNFInstancesUDR(id, consumer.NFDiscoveryToUDRParamSupi)
-			return ue.UdrUri
+			return ue.GetOrSetUdrUri(func() string {
+				return consumer.SendNFInstancesUDR(id, consumer.NFDiscoveryToUDRParamSupi)
+			})
 		}
 		ue = udmContext.UDM_Self().NewUdmUe(id)
-		ue.UdrUri = consumer.SendNFInstancesUDR(id, consumer.NFDiscoveryToUDRParamSupi)
-		return ue.UdrUri
+		return ue.GetOrSetUdrUri(func() string {
+			return consumer.SendNFInstancesUDR(id, consumer.NFDiscoveryToUDRParamSupi)
+		})
 	} else if strings.Contains(id, "pei") {
 		var udrURI string
 		udmContext.UDM_Self().UdmUePool.Range(func(key, value interface{}) bool {
@@ -63,8 +64,9 @@ func getUdrURI(id string) string {
 			is3GppMatch := ue.Amf3GppAccessRegistration != nil && ue.Amf3GppAccessRegistration.GetPei() == id
 			isNon3GppMatch := ue.AmfNon3GppAccessRegistration != nil && ue.AmfNon3GppAccessRegistration.GetPei() == id
 			if is3GppMatch || isNon3GppMatch {
-				ue.UdrUri = consumer.SendNFInstancesUDR(ue.Supi, consumer.NFDiscoveryToUDRParamSupi)
-				udrURI = ue.UdrUri
+				udrURI = ue.GetOrSetUdrUri(func() string {
+					return consumer.SendNFInstancesUDR(ue.Supi, consumer.NFDiscoveryToUDRParamSupi)
+				})
 				return false // Stop iteration
 			}
 			return true
@@ -81,7 +83,7 @@ func getUdrURI(id string) string {
 }
 
 func HandleGetAmf3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.UecmLog.Infof("Handle HandleGetAmf3gppAccessRequest")
+	logger.UecmLog.Debugf("Handle HandleGetAmf3gppAccessRequest")
 	ueID := request.Params["ueId"]
 	supportedFeatures := request.Query.Get("supported-features")
 	response, problemDetails := GetAmf3gppAccessProcedure(ueID, supportedFeatures)
@@ -125,7 +127,7 @@ func GetAmf3gppAccessProcedure(ueID string, supportedFeatures string) (
 }
 
 func HandleGetAmfNon3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.UecmLog.Infoln("handle GetAmfNon3gppAccessRequest")
+	logger.UecmLog.Debugln("handle GetAmfNon3gppAccessRequest")
 	ueId := request.Params["ueId"]
 	supportedFeatures := request.Query.Get("supported-features")
 	response, problemDetails := GetAmfNon3gppAccessProcedure(supportedFeatures, ueId)
@@ -169,10 +171,10 @@ func GetAmfNon3gppAccessProcedure(supportedFeatures, ueID string) (response *mod
 }
 
 func HandleRegistrationAmf3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.UecmLog.Infoln("handle RegistrationAmf3gppAccess")
+	logger.UecmLog.Debugln("handle RegistrationAmf3gppAccess")
 	registerRequest := request.Body.(models.Amf3GppAccessRegistration)
 	ueID := request.Params["ueId"]
-	logger.UecmLog.Info("UEID: ", ueID)
+	logger.UecmLog.Debugf("UEID: %s", ueID)
 	header, response, problemDetails := RegistrationAmf3gppAccessProcedure(registerRequest, ueID)
 	if response != nil {
 		stats.IncrementUdmUeContextManagementStats("create", uecmAmf3gppAccess, "SUCCESS")
@@ -237,7 +239,7 @@ func RegistrationAmf3gppAccessProcedure(registerRequest models.Amf3GppAccessRegi
 
 // HandleRegisterAmfNon3gppAccessRequest TS 29.503 5.3.2.2.3
 func HandleRegisterAmfNon3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.UecmLog.Infoln("handle RegisterAmfNon3gppAccessRequest")
+	logger.UecmLog.Debugln("handle RegisterAmfNon3gppAccessRequest")
 	registerRequest := request.Body.(models.AmfNon3GppAccessRegistration)
 	ueID := request.Params["ueId"]
 	header, response, problemDetails := RegisterAmfNon3gppAccessProcedure(registerRequest, ueID)
@@ -302,7 +304,7 @@ func RegisterAmfNon3gppAccessProcedure(registerRequest models.AmfNon3GppAccessRe
 
 // HandleUpdateAmf3gppAccessRequest TODO: ueID may be SUPI or GPSI, but this function did not handle this condition
 func HandleUpdateAmf3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.UecmLog.Infoln("handle UpdateAmf3gppAccessRequest")
+	logger.UecmLog.Debugln("handle UpdateAmf3gppAccessRequest")
 	amf3GppAccessRegistrationModification := request.Body.(models.Amf3GppAccessRegistrationModification)
 	ueID := request.Params["ueId"]
 	problemDetails := UpdateAmf3gppAccessProcedure(amf3GppAccessRegistrationModification, ueID)
@@ -330,7 +332,7 @@ func UpdateAmf3gppAccessProcedure(request models.Amf3GppAccessRegistrationModifi
 			logger.UecmLog.Errorln(utils.CauseInvalidGuami)
 			return utils.ProblemDetailsWithCause("Invalid GUAMI", http.StatusForbidden, "", utils.CauseInvalidGuami)
 		}
-		logger.UecmLog.Infoln("UpdateAmf3gppAccess - deregistration")
+		logger.UecmLog.Debugln("UpdateAmf3gppAccess - deregistration")
 		request.SetPurgeFlag(true)
 
 		patchItemTmp := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/Guami")
@@ -388,7 +390,7 @@ func UpdateAmf3gppAccessProcedure(request models.Amf3GppAccessRegistrationModifi
 
 // HandleUpdateAmfNon3gppAccessRequest TODO: ueID may be SUPI or GPSI, but this function did not handle this condition
 func HandleUpdateAmfNon3gppAccessRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.UecmLog.Infoln("handle UpdateAmfNon3gppAccessRequest")
+	logger.UecmLog.Debugln("handle UpdateAmfNon3gppAccessRequest")
 	requestMSG := request.Body.(models.AmfNon3GppAccessRegistrationModification)
 	ueID := request.Params["ueId"]
 	problemDetails := UpdateAmfNon3gppAccessProcedure(requestMSG, ueID)
@@ -416,7 +418,7 @@ func UpdateAmfNon3gppAccessProcedure(request models.AmfNon3GppAccessRegistration
 			logger.UecmLog.Errorln(utils.CauseInvalidGuami)
 			return utils.ProblemDetailsWithCause("Invalid GUAMI", http.StatusForbidden, "", utils.CauseInvalidGuami)
 		}
-		logger.UecmLog.Infoln("UpdateAmfNon3gppAccess - deregistration")
+		logger.UecmLog.Debugln("UpdateAmfNon3gppAccess - deregistration")
 		request.SetPurgeFlag(true)
 
 		patchItemTmp := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/Guami")
@@ -473,14 +475,16 @@ func UpdateAmfNon3gppAccessProcedure(request models.AmfNon3GppAccessRegistration
 }
 
 func HandleDeregistrationSmfRegistrations(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.UecmLog.Infoln("handle DeregistrationSmfRegistrations")
+	logger.UecmLog.Debugln("handle DeregistrationSmfRegistrations")
 	ueID := request.Params["ueId"]
 	pduSessionIDStr := request.Params["pduSessionId"]
 
 	pduSessionID, err := strconv.ParseInt(pduSessionIDStr, 10, 32)
 	if err != nil {
-		logger.UecmLog.Infoln("pduSessionID error:", err)
-		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
+		logger.UecmLog.Errorln("pduSessionID error:", err)
+		problemDetails := utils.ProblemDetailsMalformedRequestSyntax(err.Error())
+		stats.IncrementUdmUeContextManagementStats("delete", uecmSmfRegistrations, "FAILURE")
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
 
 	problemDetails := DeregistrationSmfRegistrationsProcedure(ueID, int32(pduSessionID))
@@ -514,7 +518,7 @@ func DeregistrationSmfRegistrationsProcedure(ueID string, pduSessionID int32) (p
 
 // HandleRegistrationSmfRegistrationsRequest SmfRegistrations
 func HandleRegistrationSmfRegistrationsRequest(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.UecmLog.Infoln("handle RegistrationSmfRegistrations")
+	logger.UecmLog.Debugln("handle RegistrationSmfRegistrations")
 	registerRequest := request.Body.(models.SmfRegistration)
 	ueID := request.Params["ueId"]
 	pduSessionID := request.Params["pduSessionId"]
@@ -537,17 +541,16 @@ func HandleRegistrationSmfRegistrationsRequest(request *httpwrapper.Request) *ht
 func RegistrationSmfRegistrationsProcedure(request *models.SmfRegistration, ueID string, pduSessionID string) (
 	header http.Header, response *models.SmfRegistration, problemDetails *models.ProblemDetails,
 ) {
-	contextExisted := false
-	udmContext.UDM_Self().CreateSmfRegContext(ueID, pduSessionID)
-	if !udmContext.UDM_Self().UdmSmfRegContextNotExists(ueID) {
-		contextExisted = true
-	}
-
+	// Validate before mutating context to avoid persisting invalid state.
 	pduID64, err := strconv.ParseInt(pduSessionID, 10, 32)
 	if err != nil {
-		logger.UecmLog.Errorln(err.Error())
+		return nil, nil, utils.ProblemDetailsMalformedRequestSyntax(err.Error())
 	}
 	pduID32 := int32(pduID64)
+
+	// Check existence before CreateSmfRegContext; that call always sets PduSessionID.
+	contextExisted := !udmContext.UDM_Self().UdmSmfRegContextNotExists(ueID)
+	udmContext.UDM_Self().CreateSmfRegContext(ueID, pduSessionID)
 
 	clientAPI, err := createUDMClientToUDR(ueID)
 	if err != nil {
