@@ -90,7 +90,7 @@ func (ue *UdmUeContext) init() {
 // GetOrSetUdrUri returns the cached UdrUri if already set; otherwise calls fetch.
 // Only non-empty results are cached; empty URIs are not cached so discovery is
 // retried on the next request, allowing recovery when NRF or UDR comes back.
-// Call ClearUdrUri to evict a stale URI and force re-discovery on the next request.
+// Call ClearUdrUri to evict the cached URI and force re-discovery when the UDR endpoint changes.
 func (ue *UdmUeContext) GetOrSetUdrUri(fetch func() string) string {
 	ue.udrUriLock.RLock()
 	if ue.UdrUri != "" {
