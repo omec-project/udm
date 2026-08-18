@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2024 Canonical Ltd.
-
 configuration:
   keys:
     udmProfileAHNPrivateKey: whatever private key
