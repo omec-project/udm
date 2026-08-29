@@ -433,7 +433,7 @@ func getSmDataProcedure(supi, plmnID, dnn, snssai, supportedFeatures string) (
 	err = json.Unmarshal([]byte(snssai), &snssaiJson)
 	if err != nil {
 		logger.SdmLog.Errorf("error unmarshaling JSON: %v", err)
-		return response, problemDetails
+		return nil, utils.ProblemDetailsMalformedRequestSyntax(err.Error())
 	}
 
 	apiQuerySmDataRequest := clientAPI.SessionManagementSubscriptionDataAPI.

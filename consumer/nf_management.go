@@ -170,14 +170,16 @@ func SendCreateSubscription(nrfUri string, nrfSubscriptionData models.Subscripti
 	apiCreateSubscriptionRequest := client.SubscriptionsCollectionAPI.CreateSubscription(context.TODO())
 	apiCreateSubscriptionRequest = apiCreateSubscriptionRequest.SubscriptionData(nrfSubscriptionData)
 	nrfSubData, res, err = client.SubscriptionsCollectionAPI.CreateSubscriptionExecute(apiCreateSubscriptionRequest)
-	if err == nil {
-		return nrfSubData, problemDetails, err
-	} else if res != nil {
+	if res != nil {
 		defer func() {
 			if resCloseErr := res.Body.Close(); resCloseErr != nil {
 				logger.ConsumerLog.Errorf("SendCreateSubscription response cannot close: %+v", resCloseErr)
 			}
 		}()
+	}
+	if err == nil {
+		return nrfSubData, problemDetails, err
+	} else if res != nil {
 		if res.Status != err.Error() {
 			logger.ConsumerLog.Errorf("SendCreateSubscription received error response: %v", res.Status)
 			return nrfSubData, problemDetails, err
@@ -205,14 +207,16 @@ func SendRemoveSubscription(subscriptionId string) (problemDetails *models.Probl
 	var res *http.Response
 	apiRemoveSubscriptionRequest := client.SubscriptionIDDocumentAPI.RemoveSubscription(context.Background(), subscriptionId)
 	res, err = client.SubscriptionIDDocumentAPI.RemoveSubscriptionExecute(apiRemoveSubscriptionRequest)
+	if res != nil {
+		defer func() {
+			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
+				logger.ConsumerLog.Errorf("RemoveSubscription's response body cannot close: %+v", bodyCloseErr)
+			}
+		}()
+	}
 	if err == nil {
 		return problemDetails, err
 	} else if res != nil {
-		defer func() {
-			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
-				err = fmt.Errorf("RemoveSubscription's response body cannot close: %w", bodyCloseErr)
-			}
-		}()
 		if res.Status != err.Error() {
 			return problemDetails, err
 		}
