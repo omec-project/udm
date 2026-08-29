@@ -106,10 +106,11 @@ func TestProblemDetailsFromClientErrorUsesHTTPStatusWhenResponseIsAvailable(t *t
 }
 
 func TestProblemDetailsFromClientErrorPreservesOpenAPIProblemDetails(t *testing.T) {
+	const notFoundDetail = "404 Not Found"
 	problem := utils.ProblemDetailsDataNotFound()
 
-	problemDetails := problemDetailsFromClientError(logger.SdmLog, &http.Response{StatusCode: http.StatusNotFound, Status: "404 Not Found"}, openapi.GenericOpenAPIError{
-		RawError: "404 Not Found",
+	problemDetails := problemDetailsFromClientError(logger.SdmLog, &http.Response{StatusCode: http.StatusNotFound, Status: notFoundDetail}, openapi.GenericOpenAPIError{
+		RawError: notFoundDetail,
 		RawModel: *problem,
 	})
 
@@ -119,7 +120,7 @@ func TestProblemDetailsFromClientErrorPreservesOpenAPIProblemDetails(t *testing.
 	if problemDetails.GetCause() != utils.CauseDataNotFound {
 		t.Fatalf("expected cause %q, got %q", utils.CauseDataNotFound, problemDetails.GetCause())
 	}
-	if problemDetails.GetDetail() != "404 Not Found" {
+	if problemDetails.GetDetail() != notFoundDetail {
 		t.Fatalf("expected detail 404 Not Found, got %q", problemDetails.GetDetail())
 	}
 }

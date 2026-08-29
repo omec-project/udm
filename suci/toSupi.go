@@ -63,7 +63,7 @@ func compressKey(uncompressed []byte, y *big.Int) []byte {
 
 // modified from https://stackoverflow.com/questions/46283760/
 // how-to-uncompress-a-single-x9-62-compressed-point-on-an-ecdh-p256-curve-in-go.
-func uncompressKey(compressedBytes []byte, priv []byte) (*big.Int, *big.Int) {
+func uncompressKey(compressedBytes []byte) (*big.Int, *big.Int) {
 	// Split the sign byte from the rest
 	signByte := uint(compressedBytes[0])
 	xBytes := compressedBytes[1:]
@@ -268,7 +268,7 @@ func profileB(input, supiType, privateKey string) (string, error) {
 		xUncompressed = new(big.Int).SetBytes(decryptPublicKey[1:(ProfileBPubKeyLen/2 + 1)])
 		yUncompressed = new(big.Int).SetBytes(decryptPublicKey[(ProfileBPubKeyLen/2 + 1):])
 	} else {
-		xUncompressed, yUncompressed = uncompressKey(decryptPublicKey, bHNPriv)
+		xUncompressed, yUncompressed = uncompressKey(decryptPublicKey)
 		if xUncompressed == nil || yUncompressed == nil {
 			logger.Util3GPPLog.Errorln("uncompressed key has invalid point")
 			return "", fmt.Errorf("key uncompression error")

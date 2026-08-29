@@ -301,10 +301,11 @@ func TestProblemDetailsFromOpenAPIErrorHandlesTransportError(t *testing.T) {
 }
 
 func TestProblemDetailsFromOpenAPIErrorPreservesOpenAPIProblemDetails(t *testing.T) {
+	const testForbiddenDetail = "forbidden"
 	problem := utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", utils.CauseAuthenticationRejected)
 
-	problemDetails := utils.ProblemDetailsFromOpenAPIError(&http.Response{StatusCode: http.StatusForbidden, Status: "forbidden"}, openapi.GenericOpenAPIError{
-		RawError: "forbidden",
+	problemDetails := utils.ProblemDetailsFromOpenAPIError(&http.Response{StatusCode: http.StatusForbidden, Status: testForbiddenDetail}, openapi.GenericOpenAPIError{
+		RawError: testForbiddenDetail,
 		RawModel: problem,
 	})
 
@@ -314,7 +315,7 @@ func TestProblemDetailsFromOpenAPIErrorPreservesOpenAPIProblemDetails(t *testing
 	if problemDetails.GetCause() != utils.CauseAuthenticationRejected {
 		t.Fatalf("expected cause %q, got %q", utils.CauseAuthenticationRejected, problemDetails.GetCause())
 	}
-	if problemDetails.GetDetail() != "forbidden" {
+	if problemDetails.GetDetail() != testForbiddenDetail {
 		t.Fatalf("expected detail forbidden, got %q", problemDetails.GetDetail())
 	}
 }

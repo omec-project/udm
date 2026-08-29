@@ -20,6 +20,9 @@ import (
 
 var UdmConfig Config
 
+// defaultWebuiUri is used when no webuiUri is configured.
+const defaultWebuiUri = "http://webui:5001"
+
 // TODO: Support configuration update from REST api
 func InitConfigFactory(f string) error {
 	content, err := os.ReadFile(f)
@@ -32,7 +35,7 @@ func InitConfigFactory(f string) error {
 		return err
 	}
 	if UdmConfig.Configuration.WebuiUri == "" {
-		UdmConfig.Configuration.WebuiUri = "http://webui:5001"
+		UdmConfig.Configuration.WebuiUri = defaultWebuiUri
 		logger.CfgLog.Infof("webuiUri not set in configuration file. Using %v", UdmConfig.Configuration.WebuiUri)
 		return nil
 	}

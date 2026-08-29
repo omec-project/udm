@@ -171,7 +171,7 @@ func SendCreateSubscription(nrfUri string, nrfSubscriptionData models.Subscripti
 	apiCreateSubscriptionRequest = apiCreateSubscriptionRequest.SubscriptionData(nrfSubscriptionData)
 	nrfSubData, res, err = client.SubscriptionsCollectionAPI.CreateSubscriptionExecute(apiCreateSubscriptionRequest)
 	if err == nil {
-		return
+		return nrfSubData, problemDetails, err
 	} else if res != nil {
 		defer func() {
 			if resCloseErr := res.Body.Close(); resCloseErr != nil {
@@ -180,14 +180,14 @@ func SendCreateSubscription(nrfUri string, nrfSubscriptionData models.Subscripti
 		}()
 		if res.Status != err.Error() {
 			logger.ConsumerLog.Errorf("SendCreateSubscription received error response: %v", res.Status)
-			return
+			return nrfSubData, problemDetails, err
 		}
 		problem := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
 		problemDetails = &problem
 	} else {
 		err = openapi.ReportError(errServerNoResponse)
 	}
-	return
+	return nrfSubData, problemDetails, err
 }
 
 func SendRemoveSubscription(subscriptionId string) (problemDetails *models.ProblemDetails, err error) {
@@ -206,7 +206,7 @@ func SendRemoveSubscription(subscriptionId string) (problemDetails *models.Probl
 	apiRemoveSubscriptionRequest := client.SubscriptionIDDocumentAPI.RemoveSubscription(context.Background(), subscriptionId)
 	res, err = client.SubscriptionIDDocumentAPI.RemoveSubscriptionExecute(apiRemoveSubscriptionRequest)
 	if err == nil {
-		return
+		return problemDetails, err
 	} else if res != nil {
 		defer func() {
 			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
@@ -214,12 +214,12 @@ func SendRemoveSubscription(subscriptionId string) (problemDetails *models.Probl
 			}
 		}()
 		if res.Status != err.Error() {
-			return
+			return problemDetails, err
 		}
 		problem := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
 		problemDetails = &problem
 	} else {
 		err = openapi.ReportError(errServerNoResponse)
 	}
-	return
+	return problemDetails, err
 }
