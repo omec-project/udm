@@ -19,7 +19,7 @@ func TestWebuiUrl(t *testing.T) {
 		{
 			name:       "default webui URL",
 			configFile: "udmcfg.yaml",
-			want:       "http://webui:5001",
+			want:       defaultWebuiUri,
 		},
 		{
 			name:       "custom webui URL",
@@ -59,7 +59,7 @@ func TestValidateWebuiUri(t *testing.T) {
 		},
 		{
 			name:    "valid http URI with port",
-			uri:     "http://webui:5001",
+			uri:     defaultWebuiUri,
 			isValid: true,
 		},
 		{

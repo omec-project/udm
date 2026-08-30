@@ -30,11 +30,17 @@ import (
 )
 
 const (
-	pathAmf3gppAccess     = "/:ueId/registrations/amf-3gpp-access"
-	pathAmfNon3gppAccess  = "/:ueId/registrations/amf-non-3gpp-access"
-	pathSmsf3gppAccess    = "/:ueId/registrations/smsf-3gpp-access"
-	pathSmsfNon3gppAccess = "/:ueId/registrations/smsf-non-3gpp-access"
-	contentTypeJson       = "application/json"
+	pathAmf3gppAccess       = "/:ueId/registrations/amf-3gpp-access"
+	pathAmfNon3gppAccess    = "/:ueId/registrations/amf-non-3gpp-access"
+	pathSmsf3gppAccess      = "/:ueId/registrations/smsf-3gpp-access"
+	pathSmsfNon3gppAccess   = "/:ueId/registrations/smsf-non-3gpp-access"
+	pathIpSmGw              = "/:ueId/registrations/ip-sm-gw"
+	pathNwdafRegistration   = "/:ueId/registrations/nwdaf-registrations/:nwdafRegistrationId"
+	pathSmfRegistration     = "/:ueId/registrations/smf-registrations/:pduSessionId"
+	pathDataRestorationUri  = "/:request.body#/dataRestorationCallbackUri"
+	pathDeregCallbackUri    = "/:request.body#/deregCallbackUri"
+	pathPcscfRestorationUri = "/:request.body#/pcscfRestorationCallbackUri"
+	contentTypeJson         = "application/json"
 )
 
 // Route is the information for every URI.
@@ -169,31 +175,31 @@ func getRoutes() []Route {
 		{
 			"IpSmGwDeregistration",
 			http.MethodDelete,
-			"/:ueId/registrations/ip-sm-gw",
+			pathIpSmGw,
 			HTTPIpSmGwDeregistration,
 		},
 		{
 			"IpSmGwRegistration",
 			http.MethodPut,
-			"/:ueId/registrations/ip-sm-gw",
+			pathIpSmGw,
 			HTTPIpSmGwRegistration,
 		},
 		{
 			"GetIpSmGwRegistration",
 			http.MethodGet,
-			"/:ueId/registrations/ip-sm-gw",
+			pathIpSmGw,
 			HTTPGetIpSmGwRegistration,
 		},
 		{
 			"NwdafDeregistration",
 			http.MethodDelete,
-			"/:ueId/registrations/nwdaf-registrations/:nwdafRegistrationId",
+			pathNwdafRegistration,
 			HTTPNwdafDeregistration,
 		},
 		{
 			"NwdafRegistration",
 			http.MethodPut,
-			"/:ueId/registrations/nwdaf-registrations/:nwdafRegistrationId",
+			pathNwdafRegistration,
 			HTTPNwdafRegistration,
 		},
 		{
@@ -223,13 +229,13 @@ func getRoutes() []Route {
 		{
 			"UpdateNwdafRegistration",
 			http.MethodPatch,
-			"/:ueId/registrations/nwdaf-registrations/:nwdafRegistrationId",
+			pathNwdafRegistration,
 			HTTPUpdateNwdafRegistration,
 		},
 		{
 			"UpdateSmfRegistration",
 			http.MethodPatch,
-			"/:ueId/registrations/smf-registrations/:pduSessionId",
+			pathSmfRegistration,
 			HTTPUpdateSmfRegistration,
 		},
 		{
@@ -247,7 +253,7 @@ func getRoutes() []Route {
 		{
 			"RetrieveSmfRegistration",
 			http.MethodGet,
-			"/:ueId/registrations/smf-registrations/:pduSessionId",
+			pathSmfRegistration,
 			HTTPRetrieveSmfRegistration,
 		},
 		{
@@ -259,7 +265,7 @@ func getRoutes() []Route {
 		{
 			"SmfDeregistration",
 			http.MethodDelete,
-			"/:ueId/registrations/smf-registrations/:pduSessionId",
+			pathSmfRegistration,
 			HTTPSmfDeregistration,
 		},
 		{
@@ -271,7 +277,7 @@ func getRoutes() []Route {
 		{
 			"Registration",
 			http.MethodPut,
-			"/:ueId/registrations/smf-registrations/:pduSessionId",
+			pathSmfRegistration,
 			HTTPRegistration,
 		},
 		{
@@ -349,19 +355,19 @@ func getRoutes() []Route {
 		{
 			"DataRestorationNotificationAmf3gppRequestBodyDataRestorationCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/dataRestorationCallbackUri",
+			pathDataRestorationUri,
 			HTTPDataRestorationNotificationAmf3gppRequestBodyDataRestorationCallbackUriPost,
 		},
 		{
 			"DeregistrationNotificationAmf3gppRequestBodyDeregCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/deregCallbackUri",
+			pathDeregCallbackUri,
 			HTTPDeregistrationNotificationAmf3gppRequestBodyDeregCallbackUriPost,
 		},
 		{
 			"PcscfRestorationNotificationAmf3gppRequestBodyPcscfRestorationCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/pcscfRestorationCallbackUri",
+			pathPcscfRestorationUri,
 			HTTPPcscfRestorationNotificationAmf3gppRequestBodyPcscfRestorationCallbackUriPost,
 		},
 		{
@@ -373,19 +379,19 @@ func getRoutes() []Route {
 		{
 			"DataRestorationNotificationAmfNon3gppRequestBodyDataRestorationCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/dataRestorationCallbackUri",
+			pathDataRestorationUri,
 			HTTPDataRestorationNotificationAmfNon3gppRequestBodyDataRestorationCallbackUriPost,
 		},
 		{
 			"DeregistrationNotificationAmfNon3gppRequestBodyDeregCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/deregCallbackUri",
+			pathDeregCallbackUri,
 			HTTPDeregistrationNotificationAmfNon3gppRequestBodyDeregCallbackUriPost,
 		},
 		{
 			"PcscfRestorationNotificationAmfNon3gppRequestBodyPcscfRestorationCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/pcscfRestorationCallbackUri",
+			pathPcscfRestorationUri,
 			HTTPPcscfRestorationNotificationAmfNon3gppRequestBodyPcscfRestorationCallbackUriPost,
 		},
 		{
@@ -397,19 +403,19 @@ func getRoutes() []Route {
 		{
 			"DataRestorationNotificationRequestBodyDataRestorationCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/dataRestorationCallbackUri",
+			pathDataRestorationUri,
 			HTTPDataRestorationNotificationRequestBodyDataRestorationCallbackUriPost,
 		},
 		{
 			"DeregistrationNotificationRequestBodyDeregCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/deregCallbackUri",
+			pathDeregCallbackUri,
 			HTTPDeregistrationNotificationRequestBodyDeregCallbackUriPost,
 		},
 		{
 			"PcscfRestorationNotificationRequestBodyPcscfRestorationCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/pcscfRestorationCallbackUri",
+			pathPcscfRestorationUri,
 			HTTPPcscfRestorationNotificationRequestBodyPcscfRestorationCallbackUriPost,
 		},
 		{
@@ -421,13 +427,13 @@ func getRoutes() []Route {
 		{
 			"DataRestorationNotificationSmsf3gppRequestBodyDataRestorationCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/dataRestorationCallbackUri",
+			pathDataRestorationUri,
 			HTTPDataRestorationNotificationSmsf3gppRequestBodyDataRestorationCallbackUriPost,
 		},
 		{
 			"DataRestorationNotificationSmsfNon3gppRequestBodyDataRestorationCallbackUriPost",
 			http.MethodPost,
-			"/:request.body#/dataRestorationCallbackUri",
+			pathDataRestorationUri,
 			HTTPDataRestorationNotificationSmsfNon3gppRequestBodyDataRestorationCallbackUriPost,
 		},
 	}

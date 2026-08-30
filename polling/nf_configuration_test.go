@@ -24,6 +24,8 @@ import (
 	"github.com/omec-project/openapi/v2/models"
 )
 
+const testContentTypeJSON = "application/json"
+
 func startTestPollingService(ctx context.Context, webuiURI string, plmnConfigChan chan<- []models.PlmnId) (context.CancelFunc, <-chan struct{}) {
 	testCtx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
@@ -208,7 +210,7 @@ func TestFetchPlmnConfig(t *testing.T) {
 		{
 			name:           "200 OK with valid JSON",
 			statusCode:     http.StatusOK,
-			contentType:    "application/json",
+			contentType:    testContentTypeJSON,
 			responseBody:   string(validJson),
 			expectedError:  "",
 			expectedResult: validPlmnList,
@@ -223,28 +225,28 @@ func TestFetchPlmnConfig(t *testing.T) {
 		{
 			name:          "400 Bad Request",
 			statusCode:    http.StatusBadRequest,
-			contentType:   "application/json",
+			contentType:   testContentTypeJSON,
 			responseBody:  "",
 			expectedError: "server returned 400 error code",
 		},
 		{
 			name:          "500 Internal Server Error",
 			statusCode:    http.StatusInternalServerError,
-			contentType:   "application/json",
+			contentType:   testContentTypeJSON,
 			responseBody:  "",
 			expectedError: "server returned 500 error code",
 		},
 		{
 			name:          "Unexpected Status Code 418",
 			statusCode:    http.StatusTeapot,
-			contentType:   "application/json",
+			contentType:   testContentTypeJSON,
 			responseBody:  "",
 			expectedError: "unexpected status code: 418",
 		},
 		{
 			name:          "200 OK with invalid JSON",
 			statusCode:    http.StatusOK,
-			contentType:   "application/json",
+			contentType:   testContentTypeJSON,
 			responseBody:  "{invalid-json}",
 			expectedError: "failed to parse JSON response:",
 		},
@@ -254,7 +256,7 @@ func TestFetchPlmnConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				accept := r.Header.Get("Accept")
-				if accept != "application/json" {
+				if accept != testContentTypeJSON {
 					t.Errorf("expected Accept header 'application/json', got '%s'", accept)
 				}
 

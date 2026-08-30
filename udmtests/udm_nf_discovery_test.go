@@ -400,7 +400,7 @@ func TestNfSubscriptionStatusNotify(t *testing.T) {
 		nfInstanceId                                         string
 		nfInstanceIdForSubscription                          string
 		subscriptionID                                       string
-		notificationEventType                                string
+		notificationEventType                                models.NotificationEventType
 		expectedCallCountSendRemoveSubscription              int
 		expectedCallCountNRFCacheRemoveNfProfileFromNrfCache int
 		enableNrfCaching                                     bool
@@ -412,7 +412,7 @@ func TestNfSubscriptionStatusNotify(t *testing.T) {
 			nfInstanceID,
 			nfInstanceID,
 			subscriptionID,
-			"NF_DEREGISTERED",
+			models.NOTIFICATIONEVENTTYPE_NF_DEREGISTERED,
 			1,
 			1,
 			true,
@@ -424,7 +424,7 @@ func TestNfSubscriptionStatusNotify(t *testing.T) {
 			nfInstanceID,
 			"",
 			"",
-			"NF_DEREGISTERED",
+			models.NOTIFICATIONEVENTTYPE_NF_DEREGISTERED,
 			0,
 			1,
 			true,
@@ -436,7 +436,7 @@ func TestNfSubscriptionStatusNotify(t *testing.T) {
 			nfInstanceID,
 			nfInstanceID,
 			subscriptionID,
-			"NF_DEREGISTERED",
+			models.NOTIFICATIONEVENTTYPE_NF_DEREGISTERED,
 			1,
 			0,
 			false,
@@ -448,7 +448,7 @@ func TestNfSubscriptionStatusNotify(t *testing.T) {
 			nfInstanceID,
 			nfInstanceID,
 			subscriptionID,
-			"NF_REGISTERED",
+			models.NOTIFICATIONEVENTTYPE_NF_REGISTERED,
 			0,
 			0,
 			true,
@@ -460,7 +460,7 @@ func TestNfSubscriptionStatusNotify(t *testing.T) {
 			nfInstanceID,
 			nfInstanceID,
 			subscriptionID,
-			"NF_DEREGISTERED",
+			models.NOTIFICATIONEVENTTYPE_NF_DEREGISTERED,
 			1,
 			1,
 			true,
@@ -472,7 +472,7 @@ func TestNfSubscriptionStatusNotify(t *testing.T) {
 			"",
 			"",
 			subscriptionID,
-			"NF_DEREGISTERED",
+			models.NOTIFICATIONEVENTTYPE_NF_DEREGISTERED,
 			0,
 			0,
 			true,
@@ -495,7 +495,7 @@ func TestNfSubscriptionStatusNotify(t *testing.T) {
 			udmContext.UDM_Self().EnableNrfCaching = parameters[i].enableNrfCaching
 			udmContext.UDM_Self().NfStatusSubscriptions.Store(parameters[i].nfInstanceIdForSubscription, parameters[i].subscriptionID)
 			notificationData := models.NotificationData{}
-			notificationData.SetEvent(models.NotificationEventType(parameters[i].notificationEventType))
+			notificationData.SetEvent(parameters[i].notificationEventType)
 			notificationData.SetNfInstanceUri(parameters[i].nfInstanceId)
 			notificationData.SetNfProfile(*udrProfile)
 			err := producer.NfSubscriptionStatusNotifyProcedure(notificationData)

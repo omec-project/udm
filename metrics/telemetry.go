@@ -24,20 +24,26 @@ type UdmStats struct {
 
 var udmStats *UdmStats
 
+// queryTypeLabel and resultLabel are common label names used across the counter vectors below.
+const (
+	queryTypeLabel = "query_type"
+	resultLabel    = "result"
+)
+
 func initUdmStats() *UdmStats {
 	return &UdmStats{
 		udmSubscriberDataManagement: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "udm_subscriber_data_management",
 			Help: "Counter of total Subscriber Data management queries",
-		}, []string{"query_type", "requested_data_type", "result"}),
+		}, []string{queryTypeLabel, "requested_data_type", resultLabel}),
 		udmUeContextManagement: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "udm_ue_context_management",
 			Help: "Counter of total UE context management queries",
-		}, []string{"query_type", "requested_data_type", "result"}),
+		}, []string{queryTypeLabel, "requested_data_type", resultLabel}),
 		udmUeAuthentication: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "udm_ue_authentication",
 			Help: "Counter of total UE authentication queries",
-		}, []string{"query_type", "result"}),
+		}, []string{queryTypeLabel, resultLabel}),
 	}
 }
 

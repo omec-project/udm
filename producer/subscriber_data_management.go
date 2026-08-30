@@ -66,12 +66,12 @@ func getOrCreateUdmUe(supi string) *udm_context.UdmUeContext {
 	return udm_context.UDM_Self().NewUdmUe(supi)
 }
 
-func responseWithProblemDetails(action, resource string, successStatus int, header http.Header,
+func responseWithProblemDetails(action, resource string,
 	response any, problemDetails *models.ProblemDetails,
 ) *httpwrapper.Response {
 	if response != nil {
 		stats.IncrementUdmSubscriberDataManagementStats(action, resource, "SUCCESS")
-		return httpwrapper.NewResponse(successStatus, header, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	}
 
 	if problemDetails != nil {
@@ -129,7 +129,7 @@ func HandleGetAmDataRequest(request *httpwrapper.Request) *httpwrapper.Response 
 	plmnID := request.Query.Get(queryPlmnID)
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
 	response, problemDetails := getAmDataProcedure(supi, plmnID, supportedFeatures)
-	return responseWithProblemDetails("get", "am-data", http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("get", "am-data", response, problemDetails)
 }
 
 // GetAmDataProcedure
@@ -161,7 +161,7 @@ func HandleGetIdTranslationResultRequest(request *httpwrapper.Request) *httpwrap
 	logger.SdmLog.Debugln("handle GetIdTranslationResultRequest")
 	gpsi := request.Params["gpsi"]
 	response, problemDetails := getIdTranslationResultProcedure(gpsi)
-	return responseWithProblemDetails("get", "id-translation-result", http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("get", "id-translation-result", response, problemDetails)
 }
 
 func getIdTranslationResultProcedure(gpsi string) (response *models.IdTranslationResult,
@@ -202,7 +202,7 @@ func HandleGetSupiRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	plmnID := request.Query.Get(queryPlmnID)
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
 	response, problemDetails := getSupiProcedure(supi, plmnID, supportedFeatures)
-	return responseWithProblemDetails("get", "supi", http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("get", "supi", response, problemDetails)
 }
 
 func getSupiProcedure(supi string, plmnID string, supportedFeatures string) (
@@ -352,7 +352,7 @@ func HandleGetSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Respo
 	sharedDataIds := request.Query["sharedDataIds"]
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
 	response, problemDetails := getSharedDataProcedure(sharedDataIds, supportedFeatures)
-	return responseWithProblemDetails("get", "shared-data", http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("get", "shared-data", response, problemDetails)
 }
 
 func getSharedDataProcedure(sharedDataIds []string, supportedFeatures string) (
@@ -416,7 +416,7 @@ func HandleGetSmDataRequest(request *httpwrapper.Request) *httpwrapper.Response 
 	}
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
 	response, problemDetails := getSmDataProcedure(supi, plmnID, dnn, snssai, supportedFeatures)
-	return responseWithProblemDetails("get", metricSmData, http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("get", metricSmData, response, problemDetails)
 }
 
 func getSmDataProcedure(supi, plmnID, dnn, snssai, supportedFeatures string) (
@@ -433,7 +433,7 @@ func getSmDataProcedure(supi, plmnID, dnn, snssai, supportedFeatures string) (
 	err = json.Unmarshal([]byte(snssai), &snssaiJson)
 	if err != nil {
 		logger.SdmLog.Errorf("error unmarshaling JSON: %v", err)
-		return
+		return nil, utils.ProblemDetailsMalformedRequestSyntax(err.Error())
 	}
 
 	apiQuerySmDataRequest := clientAPI.SessionManagementSubscriptionDataAPI.
@@ -509,7 +509,7 @@ func HandleGetNssaiRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	plmnID := request.Query.Get(queryPlmnID)
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
 	response, problemDetails := getNssaiProcedure(supi, plmnID, supportedFeatures)
-	return responseWithProblemDetails("get", "nssai", http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("get", "nssai", response, problemDetails)
 }
 
 func getNssaiProcedure(supi string, plmnID string, supportedFeatures string) (
@@ -549,7 +549,7 @@ func HandleGetSmfSelectDataRequest(request *httpwrapper.Request) *httpwrapper.Re
 	plmnID := request.Query.Get(queryPlmnID)
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
 	response, problemDetails := getSmfSelectDataProcedure(supi, plmnID, supportedFeatures)
-	return responseWithProblemDetails("get", "smf-select-data", http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("get", "smf-select-data", response, problemDetails)
 }
 
 func getSmfSelectDataProcedure(supi string, plmnID string, supportedFeatures string) (
@@ -710,7 +710,7 @@ func HandleModifyRequest(request *httpwrapper.Request) *httpwrapper.Response {
 		stats.IncrementUdmSubscriberDataManagementStats("update", metricSdmSubs, "SUCCESS")
 		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	}
-	return responseWithProblemDetails("update", metricSdmSubs, http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("update", metricSdmSubs, response, problemDetails)
 }
 
 func buildSdmModificationPatchItems(mod *models.SdmSubsModification) []models.PatchItem {
@@ -820,7 +820,7 @@ func HandleModifyForSharedDataRequest(request *httpwrapper.Request) *httpwrapper
 	sdmSubsModification := request.Body.(models.SdmSubsModification)
 	subscriptionID := request.Params["subscriptionId"]
 	response, problemDetails := modifyForSharedDataProcedure(sdmSubsModification, subscriptionID)
-	return responseWithProblemDetails("update", metricSharedDataSubs, http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("update", metricSharedDataSubs, response, problemDetails)
 }
 
 func modifyForSharedDataProcedure(sdmSubsModification models.SdmSubsModification,
@@ -850,7 +850,7 @@ func HandleGetTraceDataRequest(request *httpwrapper.Request) *httpwrapper.Respon
 	supi := request.Params["supi"]
 	plmnID := request.Query.Get(queryPlmnID)
 	response, problemDetails := getTraceDataProcedure(supi, plmnID)
-	return responseWithProblemDetails("get", "trace-data", http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("get", "trace-data", response, problemDetails)
 }
 
 func getTraceDataProcedure(supi string, plmnID string) (
@@ -889,7 +889,7 @@ func HandleGetUeContextInSmfDataRequest(request *httpwrapper.Request) *httpwrapp
 	supi := request.Params["supi"]
 	supportedFeatures := request.Query.Get(querySupportedFeatures)
 	response, problemDetails := getUeContextInSmfDataProcedure(supi, supportedFeatures)
-	return responseWithProblemDetails("get", "ue-context-in-smf-data", http.StatusOK, nil, response, problemDetails)
+	return responseWithProblemDetails("get", "ue-context-in-smf-data", response, problemDetails)
 }
 
 func getUeContextInSmfDataProcedure(supi string, supportedFeatures string) (
