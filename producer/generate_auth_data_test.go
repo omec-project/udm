@@ -18,6 +18,7 @@ import (
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
 	"github.com/omec-project/udm/consumer"
+	udmContext "github.com/omec-project/udm/context"
 	"github.com/omec-project/util/httpwrapper"
 )
 
@@ -372,7 +373,11 @@ func TestHandleGenerateAuthDataRequest_NoUDRAvailable_ReturnsInternalServerError
 	}
 	defer func() { consumer.SendNfDiscoveryToNrf = origDirect }()
 
-	resp := HandleGenerateAuthDataRequest(newAuthRequest("imsi-001010000000001"))
+	const supi = "imsi-001010000000001"
+	resetUdrUriCache()
+	defer resetUdrUriCache()
+
+	resp := HandleGenerateAuthDataRequest(newAuthRequest(supi))
 
 	if resp.Status != http.StatusInternalServerError {
 		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, resp.Status)
@@ -383,6 +388,16 @@ func TestHandleGenerateAuthDataRequest_NoUDRAvailable_ReturnsInternalServerError
 	}
 	if pd.GetCause() != utils.CauseSystemFailure {
 		t.Errorf("expected cause %q, got %q", utils.CauseSystemFailure, pd.GetCause())
+	}
+}
+
+// resetUdrUriCache evicts any UDR URI cached on the shared, process-global
+// UDM context for the test SUPI, so that per-test httptest servers (whose
+// addresses are reused across tests/count iterations) aren't served stale
+// cached URIs from a previous test's NRF discovery.
+func resetUdrUriCache() {
+	if ue, ok := udmContext.UDM_Self().UdmUeFindBySupi("imsi-001010000000001"); ok {
+		ue.ClearUdrUri()
 	}
 }
 
@@ -464,6 +479,9 @@ func TestGenerateAuthDataProcedure_SQNIncrementAndPatch(t *testing.T) {
 	defer udrServer.Close()
 
 	defer stubNRFSearch(udrServer.URL)()
+
+	resetUdrUriCache()
+	defer resetUdrUriCache()
 
 	authReq := models.AuthenticationInfoRequest{
 		ServingNetworkName: "5G:mnc093.mcc208.3gppnetwork.org",
