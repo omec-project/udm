@@ -14,7 +14,7 @@ import (
 func SearchNFServiceUri(nfProfile models.NFProfileDiscovery, serviceName models.ServiceName,
 	nfServiceStatus models.NFServiceStatus,
 ) (nfUri string) {
-	for _, service := range nfProfile.GetNfServices() {
+	for _, service := range nfProfileServices(nfProfile) {
 		if service.GetServiceName() != serviceName || service.GetNfServiceStatus() != nfServiceStatus {
 			continue
 		}
@@ -26,6 +26,20 @@ func SearchNFServiceUri(nfProfile models.NFProfileDiscovery, serviceName models.
 	}
 
 	return
+}
+
+// nfProfileServices returns nfProfile's NF services, preferring the TS 29.510
+// Rel-16 nfServiceList over the deprecated nfServices array.
+func nfProfileServices(nfProfile models.NFProfileDiscovery) []models.NFService {
+	nfServiceList := nfProfile.GetNfServiceList()
+	if len(nfServiceList) == 0 {
+		return nfProfile.GetNfServices()
+	}
+	services := make([]models.NFService, 0, len(nfServiceList))
+	for _, service := range nfServiceList {
+		services = append(services, service)
+	}
+	return services
 }
 
 func resolveNFServiceURI(nfProfile models.NFProfileDiscovery, service models.NFService) string {

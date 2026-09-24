@@ -64,3 +64,58 @@ func TestSearchNFServiceUri_UsesLaterIpEndpoint(t *testing.T) {
 		t.Fatalf("expected URI from later endpoint, got %q", nfURI)
 	}
 }
+
+func TestSearchNFServiceUri_PrefersNfServiceListOverNfServicesWhenBothSet(t *testing.T) {
+	staleService := models.NewNFServiceWithDefaults()
+	staleService.SetServiceName(models.SERVICENAME_NUDR_DR)
+	staleService.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
+	staleService.SetApiPrefix("https://stale.example.com:8443/nudr-dr/v1")
+
+	freshService := models.NewNFServiceWithDefaults()
+	freshService.SetServiceName(models.SERVICENAME_NUDR_DR)
+	freshService.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
+	freshService.SetApiPrefix("https://fresh.example.com:8443/nudr-dr/v1")
+
+	profile := models.NewNFProfileDiscoveryWithDefaults()
+	profile.SetNfServices([]models.NFService{*staleService})
+	profile.SetNfServiceList(map[string]models.NFService{"0": *freshService})
+
+	nfURI := SearchNFServiceUri(*profile, models.SERVICENAME_NUDR_DR, models.NFSERVICESTATUS_REGISTERED)
+
+	if nfURI != "https://fresh.example.com:8443/nudr-dr/v1" {
+		t.Fatalf("expected URI from nfServiceList entry, got %q", nfURI)
+	}
+}
+
+func TestSearchNFServiceUri_FallsBackToNfServicesWhenNfServiceListEmpty(t *testing.T) {
+	service := models.NewNFServiceWithDefaults()
+	service.SetServiceName(models.SERVICENAME_NUDR_DR)
+	service.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
+	service.SetApiPrefix("https://legacy.example.com:8443/nudr-dr/v1")
+
+	profile := models.NewNFProfileDiscoveryWithDefaults()
+	profile.SetNfServices([]models.NFService{*service})
+	profile.SetNfServiceList(map[string]models.NFService{})
+
+	nfURI := SearchNFServiceUri(*profile, models.SERVICENAME_NUDR_DR, models.NFSERVICESTATUS_REGISTERED)
+
+	if nfURI != "https://legacy.example.com:8443/nudr-dr/v1" {
+		t.Fatalf("expected URI from legacy nfServices array, got %q", nfURI)
+	}
+}
+
+func TestSearchNFServiceUri_UsesNfServiceListOnly(t *testing.T) {
+	service := models.NewNFServiceWithDefaults()
+	service.SetServiceName(models.SERVICENAME_NUDR_DR)
+	service.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
+	service.SetApiPrefix("https://list-only.example.com:8443/nudr-dr/v1")
+
+	profile := models.NewNFProfileDiscoveryWithDefaults()
+	profile.SetNfServiceList(map[string]models.NFService{"0": *service})
+
+	nfURI := SearchNFServiceUri(*profile, models.SERVICENAME_NUDR_DR, models.NFSERVICESTATUS_REGISTERED)
+
+	if nfURI != "https://list-only.example.com:8443/nudr-dr/v1" {
+		t.Fatalf("expected URI from nfServiceList-only profile, got %q", nfURI)
+	}
+}
