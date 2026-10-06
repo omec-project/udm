@@ -58,7 +58,7 @@ func getUdrURI(id string) string {
 		})
 	} else if strings.Contains(id, "pei") {
 		var udrURI string
-		udmContext.UDM_Self().UdmUePool.Range(func(key, value interface{}) bool {
+		udmContext.UDM_Self().UdmUePool.Range(func(key, value any) bool {
 			ue := value.(*udmContext.UdmUeContext)
 			// Consolidation of PEI logic: Check both 3GPP and Non-3GPP registrations
 			is3GppMatch := ue.Amf3GppAccessRegistration != nil && ue.Amf3GppAccessRegistration.GetPei() == id

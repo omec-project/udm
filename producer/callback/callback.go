@@ -21,7 +21,7 @@ import (
 
 var callbackHTTPClient = &http.Client{Timeout: 10 * time.Second}
 
-func postJSONCallback(ctx context.Context, callbackURI string, payload interface{}) (*http.Response, error) {
+func postJSONCallback(ctx context.Context, callbackURI string, payload any) (*http.Response, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err

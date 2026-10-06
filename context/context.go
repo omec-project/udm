@@ -317,7 +317,7 @@ func (context *UDMContext) UdmUeFindBySupi(supi string) (*UdmUeContext, bool) {
 func (context *UDMContext) UdmUeFindByGpsi(gpsi string) (*UdmUeContext, bool) {
 	var ue *UdmUeContext
 	ok := false
-	context.UdmUePool.Range(func(key, value interface{}) bool {
+	context.UdmUePool.Range(func(key, value any) bool {
 		candidate := value.(*UdmUeContext)
 		if candidate.Gpsi == gpsi {
 			ue = candidate
