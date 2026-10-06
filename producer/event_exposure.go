@@ -77,7 +77,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 		subscriptionID := strconv.Itoa(int(id))
 		createdEeSubscription := models.NewCreatedEeSubscription(eesubscription)
 
-		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
+		udmSelf.UdmUePool.Range(func(key, value any) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.ExternalGroupID == ueIdentity {
 				ue.StoreEeSubscription(subscriptionID, &eesubscription)
@@ -93,7 +93,7 @@ func CreateEeSubscriptionProcedure(ueIdentity string,
 		}
 		subscriptionID := strconv.Itoa(int(id))
 		createdEeSubscription := models.NewCreatedEeSubscription(eesubscription)
-		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
+		udmSelf.UdmUePool.Range(func(key, value any) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			ue.StoreEeSubscription(subscriptionID, &eesubscription)
 			return true
@@ -128,7 +128,7 @@ func DeleteEeSubscriptionProcedure(ueIdentity string, subscriptionID string) {
 			ue.DeleteEeSubscription(subscriptionID)
 		}
 	case strings.HasPrefix(ueIdentity, prefixExtgroupID):
-		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
+		udmSelf.UdmUePool.Range(func(key, value any) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.ExternalGroupID == ueIdentity {
 				ue.DeleteEeSubscription(subscriptionID)
@@ -136,7 +136,7 @@ func DeleteEeSubscriptionProcedure(ueIdentity string, subscriptionID string) {
 			return true
 		})
 	case ueIdentity == anyUE:
-		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
+		udmSelf.UdmUePool.Range(func(key, value any) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			ue.DeleteEeSubscription(subscriptionID)
 			return true
@@ -195,7 +195,7 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 		}
 		return nil
 	case strings.HasPrefix(ueIdentity, prefixExtgroupID):
-		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
+		udmSelf.UdmUePool.Range(func(key, value any) bool {
 			ue := value.(*udm_context.UdmUeContext)
 			if ue.ExternalGroupID == ueIdentity {
 				applyPatchToUe(ue, subscriptionID, patchList)
@@ -204,7 +204,7 @@ func UpdateEeSubscriptionProcedure(ueIdentity string, subscriptionID string,
 		})
 		return nil
 	case ueIdentity == anyUE:
-		udmSelf.UdmUePool.Range(func(key, value interface{}) bool {
+		udmSelf.UdmUePool.Range(func(key, value any) bool {
 			applyPatchToUe(value.(*udm_context.UdmUeContext), subscriptionID, patchList)
 			return true
 		})
