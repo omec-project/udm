@@ -153,7 +153,8 @@ func (udm *UDM) Start() {
 		os.Exit(0)
 	}()
 
-	sslLog := filepath.Dir(factory.UdmConfig.CfgLocation) + "/sslkey.log"
+	// TLS key logging is a debugging aid: off unless the operator sets SSLKEYLOGFILE.
+	sslLog := os.Getenv("SSLKEYLOGFILE")
 	server, err := http2_util.NewServer(addr, sslLog, router)
 	if server == nil {
 		logger.InitLog.Errorf("initialize HTTP server failed: %+v", err)
@@ -169,6 +170,10 @@ func (udm *UDM) Start() {
 	case "http":
 		err = server.ListenAndServe()
 	case "https":
+		if server.TLSConfig != nil && server.TLSConfig.KeyLogWriter != nil {
+			logger.InitLog.Warnf("TLS key logging is enabled (SSLKEYLOGFILE=%s): SBI traffic is "+
+				"decryptable by anyone who can read this file", sslLog)
+		}
 		err = server.ListenAndServeTLS(sbi.Tls.Pem, sbi.Tls.Key)
 	default:
 		logger.InitLog.Fatalf("HTTP server setup failed: invalid server scheme %+v", serverScheme)
