@@ -62,12 +62,15 @@ func waitForPollingCondition(t *testing.T, timeout time.Duration, condition func
 
 func TestStartPollingService_Success(t *testing.T) {
 	originalFetchPlmnConfig := fetchPlmnConfig
+	originalInterval := initialPollingInterval
+	initialPollingInterval = 20 * time.Millisecond
 	plmnChan := make(chan []models.PlmnId, 1)
 	var cancel context.CancelFunc
 	var done <-chan struct{}
 	defer func() {
 		waitForPollingServiceStop(t, cancel, done)
 		fetchPlmnConfig = originalFetchPlmnConfig
+		initialPollingInterval = originalInterval
 	}()
 
 	expectedConfig := []models.PlmnId{{Mcc: "001", Mnc: "01"}}
@@ -88,12 +91,15 @@ func TestStartPollingService_Success(t *testing.T) {
 
 func TestStartPollingService_RetryAfterFailure(t *testing.T) {
 	originalFetchPlmnConfig := fetchPlmnConfig
+	originalInterval := initialPollingInterval
+	initialPollingInterval = 20 * time.Millisecond
 	plmnChan := make(chan []models.PlmnId, 1)
 	var cancel context.CancelFunc
 	var done <-chan struct{}
 	defer func() {
 		waitForPollingServiceStop(t, cancel, done)
 		fetchPlmnConfig = originalFetchPlmnConfig
+		initialPollingInterval = originalInterval
 	}()
 
 	var callCount atomic.Int32
