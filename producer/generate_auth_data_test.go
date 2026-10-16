@@ -406,21 +406,20 @@ func resetUdrUriCache() {
 // The returned restore function must be deferred by the caller.
 func stubNRFSearch(udrBaseURL string) (restore func()) {
 	orig := consumer.SendSearchNFInstances
-	apiPrefix := udrBaseURL
 	consumer.SendSearchNFInstances = func(
 		_ string, _, _ models.NFType,
 		_ consumer.SearchNFInstancesRequestConfigurer,
 	) (*models.SearchResult, error) {
-		svc := models.NFService{
-			ServiceName:     models.SERVICENAME_NUDR_DR,
-			NfServiceStatus: models.NFSERVICESTATUS_REGISTERED,
-			ApiPrefix:       &apiPrefix,
-		}
-		profile := models.NFProfileDiscovery{
-			NfInstanceId: "udr-test-instance",
-			NfServices:   []models.NFService{svc},
-		}
-		return &models.SearchResult{NfInstances: []models.NFProfileDiscovery{profile}}, nil
+		var svc models.NFService
+		svc.SetServiceName(models.SERVICENAME_NUDR_DR)
+		svc.SetNfServiceStatus(models.NFSERVICESTATUS_REGISTERED)
+		svc.SetApiPrefix(udrBaseURL)
+		profile := models.NFProfileDiscovery{}
+		profile.SetNfInstanceId("udr-test-instance")
+		profile.SetNfServices([]models.NFService{svc})
+		searchresult := models.NewSearchResultWithDefaults()
+		searchresult.SetNfInstances([]models.NFProfileDiscovery{profile})
+		return searchresult, nil
 	}
 	return func() { consumer.SendSearchNFInstances = orig }
 }
@@ -483,10 +482,9 @@ func TestGenerateAuthDataProcedure_SQNIncrementAndPatch(t *testing.T) {
 	resetUdrUriCache()
 	defer resetUdrUriCache()
 
-	authReq := models.AuthenticationInfoRequest{
-		ServingNetworkName: "5G:mnc093.mcc208.3gppnetwork.org",
-		AusfInstanceId:     "00000000-0000-0000-0000-000000000001",
-	}
+	var authReq models.AuthenticationInfoRequest
+	authReq.SetServingNetworkName("5G:mnc093.mcc208.3gppnetwork.org")
+	authReq.SetAusfInstanceId("00000000-0000-0000-0000-000000000001")
 
 	resp, pd := GenerateAuthDataProcedure(authReq, supi)
 

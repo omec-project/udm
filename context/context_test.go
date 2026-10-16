@@ -153,7 +153,7 @@ func newTestUeContext(sub *models.SdmSubscription) *UdmUeContext {
 
 func TestUpdateSubscriptionToNotifChange_SubscriptionNotFound(t *testing.T) {
 	ue := newTestUeContext(nil)
-	result := ue.UpdateSubscriptionToNotifChange(testSubscriptionID, &models.SdmSubsModification{})
+	result := ue.UpdateSubscriptionToNotifChange(testSubscriptionID, models.NewSdmSubsModification())
 	if result != nil {
 		t.Fatalf("expected nil for missing subscription, got %+v", result)
 	}
