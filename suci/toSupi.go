@@ -379,7 +379,7 @@ func ToSupi(suci string, suciProfiles []SuciProfile) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("parse HNPublicKeyID error: %+v", err)
 	}
-	if keyIndex > len(suciProfiles) {
+	if keyIndex < 1 || keyIndex > len(suciProfiles) {
 		return "", fmt.Errorf("keyIndex(%d) out of range(%d)", keyIndex, len(suciProfiles))
 	}
 
