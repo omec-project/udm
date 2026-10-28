@@ -6,6 +6,8 @@ Copyright 2019 free5GC.org
 SPDX-License-Identifier: Apache-2.0
 -->
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/omec-project/udm/badge)](https://scorecard.dev/viewer/?uri=github.com/omec-project/udm)
+[![GitHub latest release (SemVer)](https://img.shields.io/github/v/release/omec-project/udm?sort=semver)](https://github.com/omec-project/udm/releases)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://spdx.org/licenses/Apache-2.0.html)
 
 # UDM
 
@@ -13,10 +15,10 @@ Implements 3gpp 29.503 specification. Provides service to AUSF, AMF, SMF and
 consumes service from UDR. UDM supports SBI interface and any other network
 function can use the service.
 
-Compliance of the 5G Network functions can be found at [5G Compliance](https://docs.sd-core.opennetworking.org/main/overview/3gpp-compliance-5g.html)
+Compliance of the 5G Network functions can be found at [5G Compliance](https://docs.sd-core.aetherproject.org/overview/3gpp-compliance-5g.html)
 
 ## UDM flow diagram
-![UDM Flow Diagram](/docs/images/README-UDM.png)
+![UDM Flow Diagram](./docs/images/README-UDM.png)
 
 ## Dynamic Network configuration (via webconsole)
 
@@ -40,7 +42,7 @@ If the webconsole is served over HTTPS and uses a custom or self-signed certific
 you must install the root CA certificate into the trust store of the UDM environment.
 
 Check the official guide for installing root CA certificates on Ubuntu:
-[Install a Root CA Certificate in the Trust Store](https://documentation.ubuntu.com/server/how-to/security/install-a-root-ca-certificate-in-the-trust-store/index.html)
+[Install a Root CA Certificate in the Trust Store](https://ubuntu.com/server/docs/how-to/security/install-a-root-ca-certificate-in-the-trust-store/)
 
 ## Reach out to us through
 
