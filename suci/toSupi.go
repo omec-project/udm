@@ -6,7 +6,6 @@
 package suci
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	cryptoecdh "crypto/ecdh"
@@ -188,17 +187,15 @@ func profileA(input, supiType, privateKey string) (string, error) {
 
 	// test data from TS33.501 Annex C.4
 	// aHNPriv, _ := hex.DecodeString("c53c2208b61860b06c62e5406a7b330c2b577aa5558981510d128247d38bd1d")
-	var aHNPriv []byte
-	if aHNPrivTmp, err := hex.DecodeString(privateKey); err != nil {
+	aHNPriv, err := hex.DecodeString(privateKey)
+	if err != nil {
 		logger.Util3GPPLog.Errorf("decode error: %+v", err)
-	} else {
-		aHNPriv = aHNPrivTmp
+		return "", fmt.Errorf("invalid home network private key")
 	}
-	var decryptSharedKey []byte
-	if decryptSharedKeyTmp, err := curve25519.X25519(aHNPriv, decryptPublicKey); err != nil {
+	decryptSharedKey, err := curve25519.X25519(aHNPriv, decryptPublicKey)
+	if err != nil {
 		logger.Util3GPPLog.Errorf("X25519 error: %+v", err)
-	} else {
-		decryptSharedKey = decryptSharedKeyTmp
+		return "", fmt.Errorf("X25519 key agreement failed")
 	}
 	// logger.Util3GPPLog.Debugf("deShared: %x", decryptSharedKey)
 
@@ -210,7 +207,7 @@ func profileA(input, supiType, privateKey string) (string, error) {
 	// decryptIcb)
 
 	decryptMacTag := hmacSha256(decryptCipherText, decryptMacKey, profileAMacLen)
-	if bytes.Equal(decryptMacTag, decryptMac) {
+	if hmac.Equal(decryptMacTag, decryptMac) {
 		logger.Util3GPPLog.Infoln("decryption MAC match")
 	} else {
 		logger.Util3GPPLog.Errorln("decryption MAC failed")
@@ -228,6 +225,11 @@ func profileB(input, supiType, privateKey string) (string, error) {
 	if hexDecodeErr != nil {
 		logger.Util3GPPLog.Errorln("hex DecodeString error")
 		return "", hexDecodeErr
+	}
+
+	if len(s) == 0 {
+		logger.Util3GPPLog.Errorln("empty scheme output")
+		return "", fmt.Errorf("suci input too short")
 	}
 
 	var ProfileBPubKeyLen int // p256, module q = 2^256 - 2^224 + 2^192 + 2^96 - 1
@@ -256,11 +258,10 @@ func profileB(input, supiType, privateKey string) (string, error) {
 
 	// test data from TS33.501 Annex C.4
 	// bHNPriv, _ := hex.DecodeString("F1AB1074477EBCC7F554EA1C5FC368B1616730155E0041AC447D6301975FECDA")
-	var bHNPriv []byte
-	if bHNPrivTmp, err := hex.DecodeString(privateKey); err != nil {
+	bHNPriv, err := hex.DecodeString(privateKey)
+	if err != nil {
 		logger.Util3GPPLog.Errorf("decode error: %+v", err)
-	} else {
-		bHNPriv = bHNPrivTmp
+		return "", fmt.Errorf("invalid home network private key")
 	}
 
 	var xUncompressed, yUncompressed *big.Int
@@ -314,7 +315,7 @@ func profileB(input, supiType, privateKey string) (string, error) {
 	// decryptIcb)
 
 	decryptMacTag := hmacSha256(decryptCipherText, decryptMacKey, profileBMacLen)
-	if bytes.Equal(decryptMacTag, decryptMac) {
+	if hmac.Equal(decryptMacTag, decryptMac) {
 		logger.Util3GPPLog.Infoln("decryption MAC match")
 	} else {
 		logger.Util3GPPLog.Errorln("decryption MAC failed")
@@ -328,6 +329,7 @@ func profileB(input, supiType, privateKey string) (string, error) {
 
 // suci-0(SUPI type)-mcc-mnc-routingIndentifier-protectionScheme-homeNetworkPublicKeyIdentifier-schemeOutput.
 const (
+	suciPartCount      = 8 // number of "-" separated fields in a SUCI (TS 23.003 clause 2.2B)
 	supiTypePlace      = 1
 	mccPlace           = 2
 	mncPlace           = 3
@@ -353,7 +355,7 @@ func ToSupi(suci string, suciProfiles []SuciProfile) (string, error) {
 		logger.Util3GPPLog.Infoln("got supi")
 		return suci, nil
 	case "suci":
-		if len(suciPart) < 6 {
+		if len(suciPart) < suciPartCount {
 			return "", fmt.Errorf("suci with wrong format")
 		}
 	default:

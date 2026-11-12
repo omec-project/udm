@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -257,5 +258,63 @@ func TestPatchFailureCount_WithFailures(t *testing.T) {
 	count := patchFailureCount(result)
 	if count != 2 {
 		t.Fatalf("expected 2 failed operations, got %d", count)
+	}
+}
+
+func TestSharedDataSubscriptionLifecycle(t *testing.T) {
+	sub := models.NewSdmSubscription("nf-1", "https://nf.example/callback", []string{"/shared-data/1"})
+
+	header, created := subscribeToSharedDataProcedure(sub)
+	if created == nil {
+		t.Fatal("subscribe returned no subscription")
+	}
+	id := created.GetSubscriptionId()
+	if id == "" {
+		t.Fatal("expected a generated subscriptionId")
+	}
+	if loc := header.Get("Location"); !strings.HasSuffix(loc, "/shared-data-subscriptions/"+id) {
+		t.Fatalf("unexpected Location %q", loc)
+	}
+
+	mod := models.NewSdmSubsModification()
+	mod.SetMonitoredResourceUris([]string{"/shared-data/2"})
+	updated, pd := modifyForSharedDataProcedure(*mod, id)
+	if pd != nil || updated == nil || updated.GetMonitoredResourceUris()[0] != "/shared-data/2" {
+		t.Fatalf("modify failed: %+v %+v", updated, pd)
+	}
+
+	if pd := unsubscribeForSharedDataProcedure(id); pd != nil {
+		t.Fatalf("unsubscribe failed: %+v", pd)
+	}
+	if pd := unsubscribeForSharedDataProcedure(id); pd == nil || pd.GetStatus() != http.StatusNotFound {
+		t.Fatalf("expected 404 on second unsubscribe, got %+v", pd)
+	}
+	if _, pd := modifyForSharedDataProcedure(*mod, id); pd == nil || pd.GetStatus() != http.StatusNotFound {
+		t.Fatalf("expected 404 on modify of deleted subscription, got %+v", pd)
+	}
+}
+
+func TestResponseWithProblemDetailsTypedNilResponse(t *testing.T) {
+	var resp *models.SdmSubscription
+	pd := utils.ProblemDetailsDataNotFound()
+	got := responseWithProblemDetails("get", "test", resp, pd)
+	if got.Status != int(pd.GetStatus()) {
+		t.Fatalf("expected status %d for typed-nil response, got %d", pd.GetStatus(), got.Status)
+	}
+}
+
+// A failing procedure that returns a typed nil slice (e.g. getSharedDataProcedure) must report the
+// problem, not a 200 with a null body; a successful empty collection must stay a 200.
+func TestResponseWithProblemDetailsTypedNilSlice(t *testing.T) {
+	var resp []models.SharedDataUdm
+	pd := utils.ProblemDetailsSystemFailure("udr down")
+	if got := responseWithProblemDetails("get", "test", resp, pd); got.Status != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", got.Status)
+	}
+	if got := responseWithProblemDetails("get", "test", []models.SharedDataUdm{}, nil); got.Status != http.StatusOK {
+		t.Fatalf("expected 200 for empty collection, got %d", got.Status)
+	}
+	if got := createResponseWithProblemDetails("test", nil, resp, pd); got.Status != http.StatusInternalServerError {
+		t.Fatalf("expected 500 on create, got %d", got.Status)
 	}
 }

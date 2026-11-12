@@ -54,6 +54,7 @@ type UDMContext struct {
 	GpsiSupiList                   models.IdentityData
 	SharedSubsDataMap              map[string]models.SharedDataUdm // sharedDataIds as key
 	SubscriptionOfSharedDataChange sync.Map                        // subscriptionID as key
+	sharedSubsLock                 sync.Mutex                      // serializes updates of SubscriptionOfSharedDataChange values
 	NfStatusSubscriptions          sync.Map                        // map[NfInstanceID]models.NrfSubscriptionData.SubscriptionId
 	SuciProfiles                   []suci.SuciProfile
 	EeSubscriptionIDGenerator      *idgenerator.IDGenerator
@@ -227,8 +228,14 @@ func (udmUeContext *UdmUeContext) UpdateSubscriptionToNotifChange(subscriptionID
 	if !exists {
 		return nil
 	}
+	applySdmModification(sub, modification)
+	return deepCopySdmSubscription(sub)
+}
+
+// applySdmModification applies the fields set in modification to sub. A nil modification is a no-op.
+func applySdmModification(sub *models.SdmSubscription, modification *models.SdmSubsModification) {
 	if modification == nil {
-		return deepCopySdmSubscription(sub)
+		return
 	}
 	if modification.HasExpires() {
 		sub.SetExpires(modification.GetExpires())
@@ -239,7 +246,6 @@ func (udmUeContext *UdmUeContext) UpdateSubscriptionToNotifChange(subscriptionID
 	if modification.HasExpectedUeBehaviourThresholds() {
 		sub.SetExpectedUeBehaviourThresholds(modification.GetExpectedUeBehaviourThresholds())
 	}
-	return deepCopySdmSubscription(sub)
 }
 
 // deepCopySdmSubscription returns a deep copy of sub. Slice fields
@@ -286,9 +292,31 @@ func (udmUeContext *UdmUeContext) HasEeSubscription(subscriptionID string) bool 
 	return ok
 }
 
-// TODO: this function has wrong UE pool key with subscriptionID
+// CreateSubstoNotifSharedData stores a shared data subscription under its subscriptionID.
 func (context *UDMContext) CreateSubstoNotifSharedData(subscriptionID string, body *models.SdmSubscription) {
 	context.SubscriptionOfSharedDataChange.Store(subscriptionID, body)
+}
+
+// DeleteSubstoNotifSharedData removes a shared data subscription and reports whether it existed.
+func (context *UDMContext) DeleteSubstoNotifSharedData(subscriptionID string) bool {
+	context.sharedSubsLock.Lock()
+	defer context.sharedSubsLock.Unlock()
+	_, existed := context.SubscriptionOfSharedDataChange.LoadAndDelete(subscriptionID)
+	return existed
+}
+
+// UpdateSubstoNotifSharedData applies modification to a stored shared data subscription and returns a copy
+// of the updated subscription, or nil if the subscription does not exist.
+func (context *UDMContext) UpdateSubstoNotifSharedData(subscriptionID string, modification *models.SdmSubsModification) *models.SdmSubscription {
+	context.sharedSubsLock.Lock()
+	defer context.sharedSubsLock.Unlock()
+	value, ok := context.SubscriptionOfSharedDataChange.Load(subscriptionID)
+	if !ok {
+		return nil
+	}
+	sub := value.(*models.SdmSubscription)
+	applySdmModification(sub, modification)
+	return deepCopySdmSubscription(sub)
 }
 
 // SetSMSubsData ... functions to set SessionManagementSubsData

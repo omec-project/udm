@@ -515,3 +515,21 @@ func TestGenerateAuthDataProcedure_SQNIncrementAndPatch(t *testing.T) {
 		t.Errorf("patch value (incremented SQN): expected %q, got %q", wantSQN, got)
 	}
 }
+
+func TestAucSQN_InvalidLengths(t *testing.T) {
+	opc, k := make([]byte, 16), make([]byte, 16)
+	cases := map[string]struct{ auts, rand []byte }{
+		"short AUTS": {make([]byte, 5), make([]byte, 16)},
+		"long AUTS":  {make([]byte, 15), make([]byte, 16)},
+		"short RAND": {make([]byte, 14), make([]byte, 8)},
+		"nil inputs": {nil, nil},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			sqn, mac := aucSQN(opc, k, c.auts, c.rand)
+			if sqn != nil || mac != nil {
+				t.Fatalf("expected nil results, got sqn=%x mac=%x", sqn, mac)
+			}
+		})
+	}
+}

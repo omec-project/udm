@@ -11,9 +11,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 
-	"github.com/omec-project/openapi/v2/Nudm_SDM"
+	"github.com/google/uuid"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
 	udm_context "github.com/omec-project/udm/context"
@@ -66,17 +67,31 @@ func getOrCreateUdmUe(supi string) *udm_context.UdmUeContext {
 	return udm_context.UDM_Self().NewUdmUe(supi)
 }
 
+// isNilResponse reports whether response is nil, including a typed nil pointer
+// stored in the interface (which compares != nil).
+func isNilResponse(response any) bool {
+	if response == nil {
+		return true
+	}
+	v := reflect.ValueOf(response)
+	return v.Kind() == reflect.Pointer && v.IsNil()
+}
+
+// responseWithProblemDetails builds the response of a procedure. Problem details take precedence over
+// the response: a procedure that fails may still return a typed nil value (e.g. a nil slice) that does
+// not compare equal to nil once stored in an interface, while a successful procedure may legitimately
+// return an empty collection.
 func responseWithProblemDetails(action, resource string,
 	response any, problemDetails *models.ProblemDetails,
 ) *httpwrapper.Response {
-	if response != nil {
-		stats.IncrementUdmSubscriberDataManagementStats(action, resource, "SUCCESS")
-		return httpwrapper.NewResponse(http.StatusOK, nil, response)
-	}
-
 	if problemDetails != nil {
 		stats.IncrementUdmSubscriberDataManagementStats(action, resource, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
+	}
+
+	if !isNilResponse(response) {
+		stats.IncrementUdmSubscriberDataManagementStats(action, resource, "SUCCESS")
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	}
 
 	stats.IncrementUdmSubscriberDataManagementStats(action, resource, "FAILURE")
@@ -86,14 +101,14 @@ func responseWithProblemDetails(action, resource string,
 func createResponseWithProblemDetails(resource string, header http.Header,
 	response any, problemDetails *models.ProblemDetails,
 ) *httpwrapper.Response {
-	if response != nil {
-		stats.IncrementUdmSubscriberDataManagementStats("create", resource, "SUCCESS")
-		return httpwrapper.NewResponse(http.StatusCreated, header, response)
-	}
-
 	if problemDetails != nil {
 		stats.IncrementUdmSubscriberDataManagementStats("create", resource, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
+	}
+
+	if !isNilResponse(response) {
+		stats.IncrementUdmSubscriberDataManagementStats("create", resource, "SUCCESS")
+		return httpwrapper.NewResponse(http.StatusCreated, header, response)
 	}
 
 	stats.IncrementUdmSubscriberDataManagementStats("create", resource, "FAILURE")
@@ -580,34 +595,26 @@ func getSmfSelectDataProcedure(supi string, plmnID string, supportedFeatures str
 func HandleSubscribeToSharedDataRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.SdmLog.Debugln("handle SubscribeToSharedData")
 	sdmSubscription := request.Body.(models.SdmSubscription)
-	header, response, problemDetails := subscribeToSharedDataProcedure(&sdmSubscription)
-	return createResponseWithProblemDetails(metricSharedDataSubs, header, response, problemDetails)
+	header, response := subscribeToSharedDataProcedure(&sdmSubscription)
+	return createResponseWithProblemDetails(metricSharedDataSubs, header, response, nil)
 }
 
+// subscribeToSharedDataProcedure creates a shared data subscription. Shared data subscriptions are
+// owned by the UDM (there is no Nudr_DR resource for them), so the subscription is stored locally.
+// NOTE: the UDM does not yet monitor shared data for changes, so no notification is sent to the
+// callbackReference of these subscriptions; only the subscription lifecycle is handled.
 func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
-	header http.Header, response *models.SdmSubscription, problemDetails *models.ProblemDetails,
+	header http.Header, response *models.SdmSubscription,
 ) {
-	cfg := Nudm_SDM.NewConfiguration()
-	udmClientAPI := Nudm_SDM.NewAPIClient(cfg)
+	subscription := *sdmSubscription
+	subscriptionID := uuid.NewString()
+	subscription.SetSubscriptionId(subscriptionID)
+	udm_context.UDM_Self().CreateSubstoNotifSharedData(subscriptionID, &subscription)
 
-	apiSubscribeToSharedDataRequest := udmClientAPI.SubscriptionCreationForSharedDataAPI.SubscribeToSharedData(
-		context.Background())
-	apiSubscribeToSharedDataRequest = apiSubscribeToSharedDataRequest.SdmSubscription(*sdmSubscription)
-	sdmSubscriptionResp, res, err := udmClientAPI.SubscriptionCreationForSharedDataAPI.SubscribeToSharedDataExecute(apiSubscribeToSharedDataRequest)
-	if err != nil {
-		return nil, nil, problemDetailsFromClientError(logger.SdmLog, res, err)
-	}
-	defer closeResponseBody(logger.SdmLog, res, "SubscribeToSharedData")
-
-	if res.StatusCode == http.StatusCreated {
-		header = make(http.Header)
-		udm_context.UDM_Self().CreateSubstoNotifSharedData(sdmSubscriptionResp.GetSubscriptionId(), sdmSubscriptionResp)
-		resourceUri := udm_context.UDM_Self().GetSDMUri() + "/shared-data-subscriptions/" + sdmSubscriptionResp.GetSubscriptionId()
-		header.Set("Location", resourceUri)
-		return header, sdmSubscriptionResp, nil
-	}
-
-	return nil, nil, subscriptionCreationProblemDetails(res)
+	header = make(http.Header)
+	header.Set("Location", udm_context.UDM_Self().GetSDMUri()+"/shared-data-subscriptions/"+subscriptionID)
+	created := subscription
+	return header, &created
 }
 
 func HandleSubscribeRequest(request *httpwrapper.Request) *httpwrapper.Response {
@@ -654,22 +661,10 @@ func HandleUnsubscribeForSharedDataRequest(request *httpwrapper.Request) *httpwr
 }
 
 func unsubscribeForSharedDataProcedure(subscriptionID string) *models.ProblemDetails {
-	cfg := Nudm_SDM.NewConfiguration()
-	udmClientAPI := Nudm_SDM.NewAPIClient(cfg)
-
-	apiUnsubscribeForSharedDataRequest := udmClientAPI.SubscriptionDeletionForSharedDataAPI.UnsubscribeForSharedData(
-		context.Background(), subscriptionID)
-	res, err := udmClientAPI.SubscriptionDeletionForSharedDataAPI.UnsubscribeForSharedDataExecute(apiUnsubscribeForSharedDataRequest)
-	if err != nil {
-		return problemDetailsFromClientError(logger.SdmLog, res, err)
+	if !udm_context.UDM_Self().DeleteSubstoNotifSharedData(subscriptionID) {
+		return utils.ProblemDetailsWithCause("Subscription not found", http.StatusNotFound, "", utils.CauseSubscriptionNotFound)
 	}
-	defer closeResponseBody(logger.SdmLog, res, "UnsubscribeForSharedData")
-
-	if res.StatusCode == http.StatusNoContent {
-		return nil
-	}
-
-	return utils.ProblemDetailsDataNotFound()
+	return nil
 }
 
 func HandleUnsubscribeRequest(request *httpwrapper.Request) *httpwrapper.Response {
@@ -826,23 +821,11 @@ func HandleModifyForSharedDataRequest(request *httpwrapper.Request) *httpwrapper
 func modifyForSharedDataProcedure(sdmSubsModification models.SdmSubsModification,
 	subscriptionID string,
 ) (response *models.SdmSubscription, problemDetails *models.ProblemDetails) {
-	cfg := Nudm_SDM.NewConfiguration()
-	udmClientAPI := Nudm_SDM.NewAPIClient(cfg)
-
-	apiModifySharedDataSubsRequest := udmClientAPI.SubscriptionModificationAPI.ModifySharedDataSubs(
-		context.Background(), subscriptionID)
-	apiModifySharedDataSubsRequest = apiModifySharedDataSubsRequest.SdmSubsModification(sdmSubsModification)
-	modifyResp, res, err := udmClientAPI.SubscriptionModificationAPI.ModifySharedDataSubsExecute(apiModifySharedDataSubsRequest)
-	if err != nil {
-		return nil, problemDetailsFromClientError(logger.SdmLog, res, err)
+	updated := udm_context.UDM_Self().UpdateSubstoNotifSharedData(subscriptionID, &sdmSubsModification)
+	if updated == nil {
+		return nil, utils.ProblemDetailsWithCause("Subscription not found", http.StatusNotFound, "", utils.CauseSubscriptionNotFound)
 	}
-	defer closeResponseBody(logger.SdmLog, res, "ModifySharedDataSubs")
-
-	if res.StatusCode == http.StatusOK {
-		return modifyResp.SdmSubscription, nil
-	}
-
-	return nil, utils.ProblemDetailsDataNotFound()
+	return updated, nil
 }
 
 func HandleGetTraceDataRequest(request *httpwrapper.Request) *httpwrapper.Response {

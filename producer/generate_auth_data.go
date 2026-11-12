@@ -8,12 +8,12 @@ package producer
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 	"net/http"
-	"reflect"
 	"strings"
 
 	"github.com/omec-project/openapi/v2/models"
@@ -33,9 +33,17 @@ const (
 	keyStrLen int   = 32
 	opStrLen  int   = 32
 	opcStrLen int   = 32
+	autsLen   int   = 14 // SQNms^AK (6 octets) || MAC-S (8 octets), TS 33.102
+	randLen   int   = 16
 )
 
+// aucSQN recovers SQNms and computes MAC-S from AUTS. It returns nil, nil if AUTS or RAND have an invalid
+// length or if a Milenage function fails.
 func aucSQN(opc, k, auts, rand []byte) ([]byte, []byte) {
+	if len(auts) != autsLen || len(rand) != randLen {
+		logger.UeauLog.Errorf("invalid resynchronization info length: AUTS=%d RAND=%d", len(auts), len(rand))
+		return nil, nil
+	}
 	AK, SQNms := make([]byte, 6), make([]byte, 6)
 	macS := make([]byte, 8)
 	ConcSQNms := auts[:6]
@@ -49,6 +57,7 @@ func aucSQN(opc, k, auts, rand []byte) ([]byte, []byte) {
 	err = milenage.F2345(opc, k, rand, nil, nil, nil, nil, AK)
 	if err != nil {
 		logger.UeauLog.Errorln("milenage F2345 err ", err)
+		return nil, nil
 	}
 
 	for i := 0; i < 6; i++ {
@@ -58,6 +67,7 @@ func aucSQN(opc, k, auts, rand []byte) ([]byte, []byte) {
 	err = milenage.F1(opc, k, rand, SQNms, AMF, nil, macS)
 	if err != nil {
 		logger.UeauLog.Errorln("milenage F1 err", err)
+		return nil, nil
 	}
 
 	logger.UeauLog.Debugln("SQNms", SQNms)
@@ -264,6 +274,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 			opc, err = milenage.GenerateOPC(k, op)
 			if err != nil {
 				logger.UeauLog.Errorln("milenage GenerateOPC err", err)
+				return nil, utils.ProblemDetailsSystemFailure("unable to derive OPc")
 			}
 		} else {
 			problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, "", utils.CauseAuthenticationRejected)
@@ -315,7 +326,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		}
 
 		SQNms, macS := aucSQN(opc, k, Auts, randHex)
-		if reflect.DeepEqual(macS, Auts[6:]) {
+		if macS != nil && hmac.Equal(macS, Auts[6:]) {
 			_, err = rand.Read(RAND)
 			if err != nil {
 				problemDetails = utils.ProblemDetailsWithCause("Authentication rejected", http.StatusForbidden, err.Error(), utils.CauseAuthenticationRejected)
@@ -339,7 +350,9 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		} else {
 			logger.UeauLog.Errorln("Re-Sync MAC failed", supi)
 			logger.UeauLog.Errorln("MACS", macS)
-			logger.UeauLog.Errorln("Auts[6:]", Auts[6:])
+			if len(Auts) > 6 {
+				logger.UeauLog.Errorln("Auts[6:]", Auts[6:])
+			}
 			logger.UeauLog.Errorln("Sqn", SQNms)
 			problemDetails = utils.ProblemDetailsWithCause("Modification rejected", http.StatusForbidden, "", utils.CauseModifyNotAllowed)
 			return nil, problemDetails
@@ -392,6 +405,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	err = milenage.F1(opc, k, RAND, sqn, AMF, macA, macS)
 	if err != nil {
 		logger.UeauLog.Errorln("milenage F1 err ", err)
+		return nil, utils.ProblemDetailsSystemFailure("authentication vector generation failed")
 	}
 
 	// Generate RES, CK, IK, AK, AKstar
@@ -399,6 +413,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 	err = milenage.F2345(opc, k, RAND, RES, CK, IK, AK, AKstar)
 	if err != nil {
 		logger.UeauLog.Errorln("milenage F2345 err", err)
+		return nil, utils.ProblemDetailsSystemFailure("authentication vector generation failed")
 	}
 
 	// Generate AUTN
@@ -425,6 +440,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 			key, FC, P0, ueauth.KDFLen(P0), P1, ueauth.KDFLen(P1), P2, ueauth.KDFLen(P2))
 		if err != nil {
 			logger.UeauLog.Error(err)
+			return nil, utils.ProblemDetailsSystemFailure("XRES* derivation failed")
 		}
 		xresStar := kdfValForXresStar[len(kdfValForXresStar)/2:]
 
@@ -435,6 +451,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		kdfValForKausf, err := ueauth.GetKDFValue(key, FC, P0, ueauth.KDFLen(P0), P1, ueauth.KDFLen(P1))
 		if err != nil {
 			logger.UeauLog.Error(err)
+			return nil, utils.ProblemDetailsSystemFailure("Kausf derivation failed")
 		}
 
 		// Fill in rand, xresStar, autn, kausf
@@ -454,6 +471,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		kdfVal, err := ueauth.GetKDFValue(key, FC, P0, ueauth.KDFLen(P0), P1, ueauth.KDFLen(P1))
 		if err != nil {
 			logger.UeauLog.Error(err)
+			return nil, utils.ProblemDetailsSystemFailure("CK'/IK' derivation failed")
 		}
 
 		// For TS 35.208 test set 19 & RFC 5448 test vector 1
