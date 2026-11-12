@@ -326,18 +326,14 @@ func UpdateAmf3gppAccessProcedure(request models.Amf3GppAccessRegistrationModifi
 		return utils.ProblemDetailsWithCause("Context not found", http.StatusForbidden, "", utils.CauseContextNotFound)
 	}
 
+	// TS 29.503 Table 6.2.6.2.7-1: guami identifies the requesting AMF and is only used to validate the
+	// request; it does not imply a deregistration (purgeFlag does) and is not modified.
 	if guami, ok := request.GetGuamiOk(); ok {
 		udmUe, _ := udmContext.UDM_Self().UdmUeFindBySupi(ueID)
 		if !udmUe.SameAsStoredGUAMI3gpp(*guami) {
 			logger.UecmLog.Errorln(utils.CauseInvalidGuami)
 			return utils.ProblemDetailsWithCause("Invalid GUAMI", http.StatusForbidden, "", utils.CauseInvalidGuami)
 		}
-		logger.UecmLog.Debugln("UpdateAmf3gppAccess - deregistration")
-		request.SetPurgeFlag(true)
-
-		patchItemTmp := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/Guami")
-		patchItemTmp.SetValue(*guami)
-		patchItemReqArray = append(patchItemReqArray, *patchItemTmp)
 	}
 
 	purgeFlag := request.GetPurgeFlag()
@@ -366,6 +362,11 @@ func UpdateAmf3gppAccessProcedure(request models.Amf3GppAccessRegistrationModifi
 		patchItemTmp := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/BackupAmfInfo")
 		patchItemTmp.SetValue(backupAmfInfo)
 		patchItemReqArray = append(patchItemReqArray, *patchItemTmp)
+	}
+
+	if len(patchItemReqArray) == 0 {
+		// Nothing to modify (e.g. only the guami validator was present).
+		return nil
 	}
 
 	clientAPI, err := createUDMClientToUDR(ueID)
@@ -412,18 +413,13 @@ func UpdateAmfNon3gppAccessProcedure(request models.AmfNon3GppAccessRegistration
 		return utils.ProblemDetailsContextNotFound("")
 	}
 
+	// See UpdateAmf3gppAccessProcedure: guami is only a request validator.
 	if guami, ok := request.GetGuamiOk(); ok {
 		udmUe, _ := udmContext.UDM_Self().UdmUeFindBySupi(ueID)
 		if !udmUe.SameAsStoredGUAMINon3gpp(*guami) {
 			logger.UecmLog.Errorln(utils.CauseInvalidGuami)
 			return utils.ProblemDetailsWithCause("Invalid GUAMI", http.StatusForbidden, "", utils.CauseInvalidGuami)
 		}
-		logger.UecmLog.Debugln("UpdateAmfNon3gppAccess - deregistration")
-		request.SetPurgeFlag(true)
-
-		patchItemTmp := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/Guami")
-		patchItemTmp.SetValue(*guami)
-		patchItemReqArray = append(patchItemReqArray, *patchItemTmp)
 	}
 
 	purgeFlag := request.GetPurgeFlag()
@@ -452,6 +448,11 @@ func UpdateAmfNon3gppAccessProcedure(request models.AmfNon3GppAccessRegistration
 		patchItemTmp := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/BackupAmfInfo")
 		patchItemTmp.SetValue(backupAmfInfo)
 		patchItemReqArray = append(patchItemReqArray, *patchItemTmp)
+	}
+
+	if len(patchItemReqArray) == 0 {
+		// Nothing to modify (e.g. only the guami validator was present).
+		return nil
 	}
 
 	clientAPI, err := createUDMClientToUDR(ueID)
