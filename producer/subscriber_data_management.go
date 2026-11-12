@@ -77,17 +77,21 @@ func isNilResponse(response any) bool {
 	return v.Kind() == reflect.Pointer && v.IsNil()
 }
 
+// responseWithProblemDetails builds the response of a procedure. Problem details take precedence over
+// the response: a procedure that fails may still return a typed nil value (e.g. a nil slice) that does
+// not compare equal to nil once stored in an interface, while a successful procedure may legitimately
+// return an empty collection.
 func responseWithProblemDetails(action, resource string,
 	response any, problemDetails *models.ProblemDetails,
 ) *httpwrapper.Response {
-	if !isNilResponse(response) {
-		stats.IncrementUdmSubscriberDataManagementStats(action, resource, "SUCCESS")
-		return httpwrapper.NewResponse(http.StatusOK, nil, response)
-	}
-
 	if problemDetails != nil {
 		stats.IncrementUdmSubscriberDataManagementStats(action, resource, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
+	}
+
+	if !isNilResponse(response) {
+		stats.IncrementUdmSubscriberDataManagementStats(action, resource, "SUCCESS")
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	}
 
 	stats.IncrementUdmSubscriberDataManagementStats(action, resource, "FAILURE")
@@ -97,14 +101,14 @@ func responseWithProblemDetails(action, resource string,
 func createResponseWithProblemDetails(resource string, header http.Header,
 	response any, problemDetails *models.ProblemDetails,
 ) *httpwrapper.Response {
-	if !isNilResponse(response) {
-		stats.IncrementUdmSubscriberDataManagementStats("create", resource, "SUCCESS")
-		return httpwrapper.NewResponse(http.StatusCreated, header, response)
-	}
-
 	if problemDetails != nil {
 		stats.IncrementUdmSubscriberDataManagementStats("create", resource, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
+	}
+
+	if !isNilResponse(response) {
+		stats.IncrementUdmSubscriberDataManagementStats("create", resource, "SUCCESS")
+		return httpwrapper.NewResponse(http.StatusCreated, header, response)
 	}
 
 	stats.IncrementUdmSubscriberDataManagementStats("create", resource, "FAILURE")
@@ -597,6 +601,8 @@ func HandleSubscribeToSharedDataRequest(request *httpwrapper.Request) *httpwrapp
 
 // subscribeToSharedDataProcedure creates a shared data subscription. Shared data subscriptions are
 // owned by the UDM (there is no Nudr_DR resource for them), so the subscription is stored locally.
+// NOTE: the UDM does not yet monitor shared data for changes, so no notification is sent to the
+// callbackReference of these subscriptions; only the subscription lifecycle is handled.
 func subscribeToSharedDataProcedure(sdmSubscription *models.SdmSubscription) (
 	header http.Header, response *models.SdmSubscription,
 ) {

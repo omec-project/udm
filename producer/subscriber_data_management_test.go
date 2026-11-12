@@ -302,3 +302,19 @@ func TestResponseWithProblemDetailsTypedNilResponse(t *testing.T) {
 		t.Fatalf("expected status %d for typed-nil response, got %d", pd.GetStatus(), got.Status)
 	}
 }
+
+// A failing procedure that returns a typed nil slice (e.g. getSharedDataProcedure) must report the
+// problem, not a 200 with a null body; a successful empty collection must stay a 200.
+func TestResponseWithProblemDetailsTypedNilSlice(t *testing.T) {
+	var resp []models.SharedDataUdm
+	pd := utils.ProblemDetailsSystemFailure("udr down")
+	if got := responseWithProblemDetails("get", "test", resp, pd); got.Status != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", got.Status)
+	}
+	if got := responseWithProblemDetails("get", "test", []models.SharedDataUdm{}, nil); got.Status != http.StatusOK {
+		t.Fatalf("expected 200 for empty collection, got %d", got.Status)
+	}
+	if got := createResponseWithProblemDetails("test", nil, resp, pd); got.Status != http.StatusInternalServerError {
+		t.Fatalf("expected 500 on create, got %d", got.Status)
+	}
+}
