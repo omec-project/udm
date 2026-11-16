@@ -1,12 +1,8 @@
+// Copyright (C) 2026 Intel Corporation
+// SPDX-FileCopyrightText: 2024 Canonical Ltd.
 // SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
 // Copyright 2019 free5GC.org
-// SPDX-FileCopyrightText: 2024 Canonical Ltd.
 // SPDX-License-Identifier: Apache-2.0
-//
-
-/*
- * UDM Configuration Factory
- */
 
 package factory
 
@@ -54,6 +50,15 @@ type Sbi struct {
 	// IPv6Addr string `yaml:"ipv6Addr,omitempty"`
 	BindingIPv4 string `yaml:"bindingIPv4,omitempty"` // IP used to run the server in the node.
 	Port        int    `yaml:"port,omitempty"`
+}
+
+// GetSbiTlsPaths returns the certificate and private key files of the SBI. They are empty when the SBI has no
+// tls block, which is how an HTTP configuration looks: nothing reads them then.
+func (c *Config) GetSbiTlsPaths() (pem, key string) {
+	if c.Configuration != nil && c.Configuration.Sbi != nil && c.Configuration.Sbi.Tls != nil {
+		return c.Configuration.Sbi.Tls.Pem, c.Configuration.Sbi.Tls.Key
+	}
+	return "", ""
 }
 
 type Tls struct {

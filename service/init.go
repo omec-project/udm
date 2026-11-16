@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright 2019 free5GC.org
-// Copyright 2021 Open Networking Foundation <info@opennetworking.org>
+// Copyright (C) 2022-Present Intel Corporation
 // SPDX-FileCopyrightText: 2024 Canonical Ltd.
-// Copyright 2022 Intel Corporation
+// Copyright 2021 Open Networking Foundation <info@opennetworking.org>
+// Copyright 2019 free5GC.org
+// SPDX-License-Identifier: Apache-2.0
 //
 
 package service
@@ -103,7 +103,6 @@ func (udm *UDM) setLogLevel() {
 func (udm *UDM) Start() {
 	config := factory.UdmConfig
 	configuration := config.Configuration
-	sbi := configuration.Sbi
 	serviceName := configuration.ServiceList
 
 	logger.InitLog.Infof("UDM Config Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
@@ -153,34 +152,9 @@ func (udm *UDM) Start() {
 		os.Exit(0)
 	}()
 
-	// TLS key logging is a debugging aid: off unless the operator sets SSLKEYLOGFILE.
-	sslLog := os.Getenv("SSLKEYLOGFILE")
-	server, err := http2_util.NewServer(addr, sslLog, router)
-	if server == nil {
-		logger.InitLog.Errorf("initialize HTTP server failed: %+v", err)
-		return
-	}
-
-	if err != nil {
-		logger.InitLog.Warnf("initialize HTTP server: +%v", err)
-	}
-
-	serverScheme := factory.UdmConfig.Configuration.Sbi.Scheme
-	switch serverScheme {
-	case "http":
-		err = server.ListenAndServe()
-	case "https":
-		if server.TLSConfig != nil && server.TLSConfig.KeyLogWriter != nil {
-			logger.InitLog.Warnf("TLS key logging is enabled (SSLKEYLOGFILE=%s): SBI traffic is "+
-				"decryptable by anyone who can read this file", sslLog)
-		}
-		err = server.ListenAndServeTLS(sbi.Tls.Pem, sbi.Tls.Key)
-	default:
-		logger.InitLog.Fatalf("HTTP server setup failed: invalid server scheme %+v", serverScheme)
-		return
-	}
-
-	if err != nil {
+	// TLS key logging is a debugging aid: off unless the operator sets SSLKEYLOGFILE (see http2_util.NewSBIServer).
+	pem, key := factory.UdmConfig.GetSbiTlsPaths()
+	if err := http2_util.ListenAndServeSBI(addr, router, factory.UdmConfig.Configuration.Sbi.Scheme, pem, key, logger.InitLog); err != nil {
 		logger.InitLog.Fatalf("HTTP server setup failed: %+v", err)
 	}
 }
