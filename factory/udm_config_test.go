@@ -1,13 +1,13 @@
-// SPDX-License-Identifier: Apache-2.0
+// Copyright (C) 2026 Intel Corporation
 // SPDX-FileCopyrightText: 2024 Canonical Ltd.
-/*
- *  Tests for UDM Configuration Factory
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package factory
 
 import (
 	"testing"
+
+	"github.com/omec-project/util/nfconfig"
 )
 
 func TestWebuiUrl(t *testing.T) {
@@ -19,7 +19,7 @@ func TestWebuiUrl(t *testing.T) {
 		{
 			name:       "default webui URL",
 			configFile: "udmcfg.yaml",
-			want:       defaultWebuiUri,
+			want:       nfconfig.DefaultWebuiUri,
 		},
 		{
 			name:       "custom webui URL",
@@ -46,67 +46,26 @@ func TestWebuiUrl(t *testing.T) {
 	}
 }
 
-func TestValidateWebuiUri(t *testing.T) {
-	tests := []struct {
-		name    string
-		uri     string
-		isValid bool
+// An HTTP configuration has no sbi.tls block, and nothing may read the certificate paths of one: the service
+// takes them before it starts the listener, whatever the scheme is.
+func TestGetSbiTlsPaths(t *testing.T) {
+	cases := map[string]struct {
+		cfg      Config
+		pem, key string
 	}{
-		{
-			name:    "valid https URI with port",
-			uri:     "https://webui:5001",
-			isValid: true,
-		},
-		{
-			name:    "valid http URI with port",
-			uri:     defaultWebuiUri,
-			isValid: true,
-		},
-		{
-			name:    "valid https URI without port",
-			uri:     "https://webui",
-			isValid: true,
-		},
-		{
-			name:    "valid http URI without port",
-			uri:     "http://webui.com",
-			isValid: true,
-		},
-		{
-			name:    "invalid host",
-			uri:     "http://:8080",
-			isValid: false,
-		},
-		{
-			name:    "invalid scheme",
-			uri:     "ftp://webui:21",
-			isValid: false,
-		},
-		{
-			name:    "missing scheme",
-			uri:     "webui:9090",
-			isValid: false,
-		},
-		{
-			name:    "missing host",
-			uri:     "https://",
-			isValid: false,
-		},
-		{
-			name:    "empty string",
-			uri:     "",
-			isValid: false,
+		"no configuration": {Config{}, "", ""},
+		"no sbi":           {Config{Configuration: &Configuration{}}, "", ""},
+		"http without tls": {Config{Configuration: &Configuration{Sbi: &Sbi{Scheme: "http"}}}, "", ""},
+		"https with tls": {
+			Config{Configuration: &Configuration{Sbi: &Sbi{Scheme: "https", Tls: &Tls{Pem: "/tls/udm.pem", Key: "/tls/udm.key"}}}},
+			"/tls/udm.pem", "/tls/udm.key",
 		},
 	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := validateWebuiUri(tc.uri)
-			if err == nil && !tc.isValid {
-				t.Errorf("expected URI: %s to be invalid", tc.uri)
-			}
-			if err != nil && tc.isValid {
-				t.Errorf("expected URI: %s to be valid", tc.uri)
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			pem, key := tc.cfg.GetSbiTlsPaths()
+			if pem != tc.pem || key != tc.key {
+				t.Errorf("got %q, %q; want %q, %q", pem, key, tc.pem, tc.key)
 			}
 		})
 	}

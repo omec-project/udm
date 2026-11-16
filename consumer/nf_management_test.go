@@ -1,8 +1,11 @@
-// SPDX-License-Identifier: Apache-2.0
+// Copyright (C) 2026 Intel Corporation
 // Copyright 2023 Open Networking Foundation <info@opennetworking.org>
+// SPDX-License-Identifier: Apache-2.0
+
 package consumer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -35,12 +38,15 @@ func Test_nf_id_updated_and_nrf_url_is_not_overwritten_when_registering(t *testi
 	}
 	self := udmContext.UDM_Self()
 	self.NrfUri = svr.URL
+	// The instance ID is the NF's own, made at startup (util.InitUDMContext). Every request about the NF is
+	// addressed with it, the registration too; the NRF may name another one in Location, which is then adopted.
+	self.NfId = "4947a69a-f61b-4bc1-b9da-47c9c5d14b64"
 	self.RegisterIPv4 = "127.0.0.2"
 	self.UriScheme = models.URISCHEME_HTTPS
 	self.InitNFService([]string{"nudm-sdm", "nudm-uecm"}, "1.0.0")
 
 	plmnId := models.NewPlmnId("123", "45")
-	_, _, err := SendRegisterNFInstance([]models.PlmnId{*plmnId})
+	_, _, err := SendRegisterNFInstance(context.Background(), []models.PlmnId{*plmnId})
 	if err != nil {
 		t.Errorf("Got and error %+v", err)
 	}

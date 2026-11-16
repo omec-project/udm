@@ -1,170 +1,56 @@
+// Copyright (C) 2026 Intel Corporation
 // SPDX-FileCopyrightText: 2025 Canonical Ltd
-//
 // SPDX-License-Identifier: Apache-2.0
-//
 
 package nfregistration
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/nrfregistration"
 	"github.com/omec-project/udm/consumer"
 	"github.com/omec-project/udm/logger"
 )
 
-var (
-	keepAliveTimer      *time.Timer
-	keepAliveTimerMutex sync.Mutex
-	registerCtxMutex    sync.Mutex
-	afterFunc           = time.AfterFunc
-	retryTime           = 10 * time.Second
-)
+var service = newService()
 
-const defaultHeartbeatTimer int32 = 60
+func newService() *nrfregistration.Service[[]models.PlmnId] {
+	// The consumer functions are looked up on every call so tests can replace them.
+	svc, err := nrfregistration.New(nrfregistration.Config[[]models.PlmnId]{
+		NfName:  "UDM",
+		Log:     logger.NrfRegistrationLog,
+		IsEmpty: func(plmnConfig []models.PlmnId) bool { return len(plmnConfig) == 0 },
+		Register: func(ctx context.Context, plmnConfig []models.PlmnId) (*models.NFProfile, error) {
+			nfProfile, _, err := consumer.SendRegisterNFInstance(ctx, plmnConfig)
+			return nfProfile, err
+		},
+		Update: func(ctx context.Context, patch []models.PatchItem) (*models.NFProfile, *models.ProblemDetails, error) {
+			return consumer.SendUpdateNFInstance(ctx, patch)
+		},
+		Deregister: func(ctx context.Context) error { return consumer.SendDeregisterNFInstance(ctx) },
+	})
+	if err != nil {
+		panic(err) // the config above is static, so this is a programming error
+	}
+	return svc
+}
 
 // StartNfRegistrationService starts the registration service. If the new config is empty, the NF
-// deregisters from the NRF. Else, it registers to the NRF. It cancels registerCancel to ensure
-// that only one registration process runs at the time.
+// deregisters from the NRF. Else, it registers to the NRF. It cancels the registration in progress
+// so that only one registration process runs at the time.
 func StartNfRegistrationService(ctx context.Context, plmnConfigChan <-chan []models.PlmnId) {
-	var registerCancel context.CancelFunc
-	var registerCtx context.Context
-	logger.NrfRegistrationLog.Infoln("started NF registration to NRF service")
-	for {
-		select {
-		case <-ctx.Done():
-			if registerCancel != nil {
-				registerCancel()
-			}
-			logger.NrfRegistrationLog.Infoln("NF registration service shutting down")
-			return
-		case newPlmnConfig := <-plmnConfigChan:
-			// Cancel current sync if running
-			if registerCancel != nil {
-				logger.NrfRegistrationLog.Infoln("NF registration context cancelled")
-				registerCancel()
-			}
-
-			if len(newPlmnConfig) == 0 {
-				logger.NrfRegistrationLog.Debugln("PLMN config is empty. UDM will deregister")
-				DeregisterNF()
-				continue
-			}
-			logger.NrfRegistrationLog.Debugln("PLMN config is not empty. UDM will update registration")
-			registerCtx, registerCancel = context.WithCancel(context.Background())
-			// Create new cancellable context for this registration
-			go registerNF(registerCtx, newPlmnConfig)
-		}
-	}
+	service.Start(ctx, plmnConfigChan)
 }
 
-// registerNF sends a RegisterNFInstance. If it fails, it keeps retrying, until the context is cancelled by StartNfRegistrationService
-var registerNF = func(registerCtx context.Context, newPlmnConfig []models.PlmnId) {
-	registerCtxMutex.Lock()
-	defer registerCtxMutex.Unlock()
-	interval := 0 * time.Millisecond
-	for {
-		select {
-		case <-registerCtx.Done():
-			logger.NrfRegistrationLog.Infoln("no-op. Registration context was cancelled")
-			return
-		case <-time.After(interval):
-			nfProfile, _, err := consumer.SendRegisterNFInstance(newPlmnConfig)
-			if err != nil {
-				logger.NrfRegistrationLog.Errorln("register UDM instance to NRF failed. Will retry.", err.Error())
-				interval = retryTime
-				continue
-			}
-			logger.NrfRegistrationLog.Infoln("register UDM instance to NRF with updated profile succeeded")
-			heartbeatTimer := defaultHeartbeatTimer
-			if nfProfile != nil {
-				heartbeatTimer = nfProfile.GetHeartBeatTimer()
-			}
-			startKeepAliveTimer(heartbeatTimer, newPlmnConfig)
-			return
-		}
-	}
-}
+// deregisterTimeout bounds DeregisterNF: it waits for the registration work in progress, which it cancels, and
+// then sends the DELETE, and an NRF that does not answer must not hold up the termination of the NF.
+var deregisterTimeout = 10 * time.Second
 
-// heartbeatNF is the callback function, this is called when keepalivetimer elapsed.
-// It sends a Update NF instance to the NRF. If it fails, it tries to register again.
-// keepAliveTimer is restarted at the end.
-func heartbeatNF(plmnConfig []models.PlmnId) {
-	keepAliveTimerMutex.Lock()
-	if keepAliveTimer == nil {
-		keepAliveTimerMutex.Unlock()
-		logger.NrfRegistrationLog.Infoln("heartbeat timer has been stopped, heartbeat will not be sent to NRF")
-		return
-	}
-	keepAliveTimerMutex.Unlock()
-
-	registeredPatchItem := models.NewPatchItem(models.PATCHOPERATION_REPLACE, "/nfStatus")
-	registeredPatchItem.SetValue(models.NFSTATUS_REGISTERED)
-	patchItem := []models.PatchItem{*registeredPatchItem}
-	nfProfile, problemDetails, err := consumer.SendUpdateNFInstance(patchItem)
-
-	if shouldRegister(problemDetails, err) {
-		logger.NrfRegistrationLog.Debugln("NF heartbeat failed. Trying to register again")
-		nfProfile, _, err = consumer.SendRegisterNFInstance(plmnConfig)
-		if err != nil {
-			logger.NrfRegistrationLog.Errorln("register UDM instance error:", err.Error())
-		} else {
-			logger.NrfRegistrationLog.Infoln("register UDM instance to NRF with updated profile succeeded")
-		}
-	} else {
-		logger.NrfRegistrationLog.Debugln("UDM update NF instance (heartbeat) succeeded")
-	}
-	heartbeatTimer := defaultHeartbeatTimer
-	if nfProfile != nil {
-		heartbeatTimer = nfProfile.GetHeartBeatTimer()
-	}
-	startKeepAliveTimer(heartbeatTimer, plmnConfig)
-}
-
-func shouldRegister(problemDetails *models.ProblemDetails, err error) bool {
-	if problemDetails != nil {
-		logger.NrfRegistrationLog.Warnln("UDM update NF instance (heartbeat) problem details:", problemDetails)
-		return true
-	}
-	if err != nil {
-		logger.NrfRegistrationLog.Warnln("UDM update NF instance (heartbeat) error:", err.Error())
-		return true
-	}
-	return false
-}
-
+// DeregisterNF stops the heartbeat and deregisters the NF from the NRF.
 var DeregisterNF = func() {
-	keepAliveTimerMutex.Lock()
-	stopKeepAliveTimer()
-	keepAliveTimerMutex.Unlock()
-	err := consumer.SendDeregisterNFInstance()
-	if err != nil {
-		logger.NrfRegistrationLog.Warnln("deregister instance from NRF error:", err.Error())
-		return
-	}
-	logger.NrfRegistrationLog.Infoln("deregister instance from NRF successful")
-}
-
-func startKeepAliveTimer(profileHeartbeatTimer int32, plmnConfig []models.PlmnId) {
-	keepAliveTimerMutex.Lock()
-	defer keepAliveTimerMutex.Unlock()
-	stopKeepAliveTimer()
-	heartbeatTimer := defaultHeartbeatTimer
-	if profileHeartbeatTimer > 0 {
-		heartbeatTimer = profileHeartbeatTimer
-	}
-	heartbeatFunction := func() { heartbeatNF(plmnConfig) }
-	// AfterFunc starts timer and waits for keepAliveTimer to elapse and then calls heartbeatNF function
-	keepAliveTimer = afterFunc(time.Duration(heartbeatTimer)*time.Second, heartbeatFunction)
-	logger.NrfRegistrationLog.Debugf("started heartbeat timer: %d sec", heartbeatTimer)
-}
-
-func stopKeepAliveTimer() {
-	if keepAliveTimer != nil {
-		keepAliveTimer.Stop()
-		keepAliveTimer = nil
-		logger.NrfRegistrationLog.Debugln("stopped heartbeat timer")
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), deregisterTimeout)
+	defer cancel()
+	service.Deregister(ctx)
 }
